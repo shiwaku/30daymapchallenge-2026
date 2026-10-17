@@ -1,0 +1,28 @@
+# 取得データ・中間生成物（再生成可・大容量）
+data/
+work/
+output/
+*.pmtiles
+*.parquet
+*.tif
+
+# Node
+node_modules/
+dist/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# ローカル専用
+CLAUDE.local.md
