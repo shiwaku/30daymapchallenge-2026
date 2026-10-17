@@ -7,6 +7,10 @@
 
 > Interactions between things, or maybe the result would be an interactive map?
 
+## Description（日本語訳）
+
+物と物とのあいだのやり取り。あるいは、結果がインタラクティブな地図になるかも？
+
 ## 地図のテーマ
 
 人はどこへ通うか

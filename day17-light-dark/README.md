@@ -7,6 +7,10 @@
 
 > Play with visual effects. What can you map with just light and shadows?
 
+## Description（日本語訳）
+
+視覚効果で遊ぼう。光と影だけで何が地図にできる？
+
 ## 地図のテーマ
 
 夜の日本

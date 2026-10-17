@@ -7,6 +7,10 @@
 
 > A map so detailed it becomes the territory. Inspired by Borges' On Exactitude in Science.
 
+## Description（日本語訳）
+
+細かすぎて、実際の土地そのものになってしまう地図。ボルヘスの『学問の厳密さについて』に着想を得たお題。
+
 ## 地図のテーマ
 
 1億2600万人の地図

@@ -7,6 +7,10 @@
 
 > About 71% of the Earth's surface. That wet thing, you know?
 
+## Description（日本語訳）
+
+地球表面の約71%。あの濡れたもの、わかるよね？
+
 ## 地図のテーマ
 
 日本の流域

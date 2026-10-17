@@ -7,6 +7,10 @@
 
 > You have no more than 10 minutes to complete this map.
 
+## Description（日本語訳）
+
+この地図を仕上げる時間は10分以内。
+
 ## 地図のテーマ
 
 10分で今日の気温
