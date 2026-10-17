@@ -7,6 +7,10 @@
 
 > Do a map with a friend, colleague or a stranger. AI doesn't count as a friend :)
 
+## Description（日本語訳）
+
+友人、同僚、あるいは見知らぬ人と一緒に地図を作ろう。AI は友人に数えません :)
+
 ## 地図のテーマ
 
 誰かと1枚

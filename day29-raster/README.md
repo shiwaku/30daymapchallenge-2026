@@ -7,6 +7,10 @@
 
 > Do something cool with pixels.
 
+## Description（日本語訳）
+
+ピクセルで何かかっこいいことをしよう。
+
 ## 地図のテーマ
 
 CS立体図アート

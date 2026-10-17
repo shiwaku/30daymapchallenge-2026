@@ -7,6 +7,10 @@
 
 > How do you hear something? How do you map a soundscape? Noise pollution mapped?
 
+## Description（日本語訳）
+
+どうやって何かを聞く？ サウンドスケープはどう地図にする？ 騒音公害を地図にしてみては？
+
 ## 地図のテーマ
 
 頭の上を飛ぶ音

@@ -7,6 +7,10 @@
 
 > How do you see something? Maybe map a viewshed?
 
+## Description（日本語訳）
+
+どうやって何かを見る？ 可視領域（viewshed）を地図にしてみては？
+
 ## 地図のテーマ
 
 森の下に隠れたものを見る

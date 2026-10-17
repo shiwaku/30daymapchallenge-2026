@@ -7,6 +7,10 @@
 
 > Urban or rural. Cities and countryside.
 
+## Description（日本語訳）
+
+都市か農村か。都市と田園。
+
 ## 地図のテーマ
 
 都市はどこまで広がったか

@@ -7,6 +7,10 @@
 
 > Time to wrap up the challenge by closing your laptop for a while and going back to basics. Do an analogue map with pen and paper.
 
+## Description（日本語訳）
+
+しばらくノートパソコンを閉じて基本に戻り、チャレンジを締めくくろう。ペンと紙でアナログの地図を作る。
+
 ## 地図のテーマ
 
 一番好きだった場所
