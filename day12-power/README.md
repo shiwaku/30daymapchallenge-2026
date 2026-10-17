@@ -7,6 +7,10 @@
 
 > Power as in nuclear power? Or physical power or influence? Power grid on a map? Read this the way you want, like every other prompt.
 
+## Description（日本語訳）
+
+原子力の Power？ 体力や影響力の Power？ 送電網を地図に？ ほかのお題と同じく、好きなように解釈していい。
+
 ## 地図のテーマ
 
 日本の送電網

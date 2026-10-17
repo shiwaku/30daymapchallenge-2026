@@ -7,6 +7,10 @@
 
 > How do you map things which your nose can sense? What does a smelly map look like?
 
+## Description（日本語訳）
+
+鼻で感じられるものをどう地図にする？ においのする地図はどんな見た目？
+
 ## 地図のテーマ
 
 においのする井戸

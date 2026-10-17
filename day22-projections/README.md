@@ -7,6 +7,10 @@
 
 > The different ways of representing a globe on a flat surface. What does your favourite map projection say about you?
 
+## Description（日本語訳）
+
+地球儀を平面に表すさまざまな方法。あなたの好きな投影法は、あなたについて何を語る？
+
 ## 地図のテーマ
 
 世界のシェアモビリティ

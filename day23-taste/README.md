@@ -7,6 +7,10 @@
 
 > Food, drink or something else which you can taste.
 
+## Description（日本語訳）
+
+食べ物、飲み物、そのほか味わえるもの。
+
 ## 地図のテーマ
 
 日本のワイン・地ビール

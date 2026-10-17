@@ -7,6 +7,10 @@
 
 > A map of something which could be.
 
+## Description（日本語訳）
+
+ありえるかもしれない何かの地図。
+
 ## 地図のテーマ
 
 自転車で走りやすい東京

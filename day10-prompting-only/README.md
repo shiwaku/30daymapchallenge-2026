@@ -7,6 +7,10 @@
 
 > For this map, make AI work for its money and produce something from start to finish in a chat window or on the command line.
 
+## Description（日本語訳）
+
+この地図では AI にしっかり働いてもらい、チャット画面かコマンドラインの中だけで最初から最後まで作ろう。
+
 ## 地図のテーマ
 
 AI だけで1枚

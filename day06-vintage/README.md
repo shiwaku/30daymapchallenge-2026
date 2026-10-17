@@ -7,6 +7,10 @@
 
 > Spin up your time machine and do a map which looks like a historical map, or maybe the theme itself should be vintage.
 
+## Description（日本語訳）
+
+タイムマシンを起動して、昔の地図のように見える地図を作ろう。あるいはテーマそのものを昔のものにしてもいい。
+
 ## 地図のテーマ
 
 鉄道の150年
