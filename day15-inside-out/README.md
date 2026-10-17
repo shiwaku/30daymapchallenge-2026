@@ -7,6 +7,10 @@
 
 > Inside out, upside down. Something on this map is not quite right.
 
+## Description（日本語訳）
+
+裏返し、逆さま。この地図には、どこか正しくないところがある。
+
 ## 地図のテーマ
 
 大陸から見た日本

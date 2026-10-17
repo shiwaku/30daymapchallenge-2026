@@ -7,6 +7,10 @@
 
 > A map challenge classic. Map with polygons.
 
+## Description（日本語訳）
+
+マップチャレンジの定番。ポリゴンで地図を作る。
+
 ## 地図のテーマ
 
 13色で描く日本

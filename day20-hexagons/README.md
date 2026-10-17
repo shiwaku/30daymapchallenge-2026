@@ -7,6 +7,10 @@
 
 > Hexagons, the good old bestagons.
 
+## Description（日本語訳）
+
+六角形。おなじみの「最強の多角形（bestagons）」。
+
 ## 地図のテーマ
 
 六角形の山脈

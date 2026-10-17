@@ -7,6 +7,10 @@
 
 > The most abstract of the senses series. How would you map a feeling?
 
+## Description（日本語訳）
+
+五感シリーズで一番抽象的なお題。感情をどうやって地図にする？
+
 ## 地図のテーマ
 
 楽しかった道

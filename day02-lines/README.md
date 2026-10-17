@@ -7,6 +7,10 @@
 
 > A map challenge classic. Map with lines.
 
+## Description（日本語訳）
+
+マップチャレンジの定番。線で地図を作る。
+
 ## 地図のテーマ
 
 鉄道の太さ＝本数

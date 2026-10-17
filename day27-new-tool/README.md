@@ -7,6 +7,10 @@
 
 > The challenge has always been about learning things. Try out a new tool in your mapmaking workflow.
 
+## Description（日本語訳）
+
+このチャレンジは、いつも何かを学ぶためのもの。地図作りのワークフローに新しいツールを取り入れてみよう。
+
 ## 地図のテーマ
 
 新しいツールで1枚

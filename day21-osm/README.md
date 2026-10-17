@@ -7,6 +7,10 @@
 
 > The awesome data source for mapping. You can also use this day to edit OSM.
 
+## Description（日本語訳）
+
+地図作りのための素晴らしいデータソース。この日に OSM を編集してもいい。
+
 ## 地図のテーマ
 
 OSM の建物はどこまで描かれているか

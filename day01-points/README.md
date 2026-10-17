@@ -7,6 +7,10 @@
 
 > A map challenge classic. Map with points.
 
+## Description（日本語訳）
+
+マップチャレンジの定番。点で地図を作る。
+
 ## 地図のテーマ
 
 シェアサイクルはどこにあるか

@@ -7,6 +7,10 @@
 
 > Stretch the limits of maps and blend your map with an artwork or some creative data visualization. When does something become a map and when does it stop being one?
 
+## Description（日本語訳）
+
+地図の限界を広げ、アート作品や創造的なデータ可視化と混ぜ合わせよう。何かが地図になるのはいつで、地図でなくなるのはいつ？
+
 ## 地図のテーマ
 
 人口の山並み

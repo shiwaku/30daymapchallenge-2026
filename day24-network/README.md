@@ -7,6 +7,10 @@
 
 > Route network, transit network, human network or something completely different.
 
+## Description（日本語訳）
+
+道路網、交通網、人のネットワーク、あるいはまったく別の何か。
+
 ## 地図のテーマ
 
 街の通り道
