@@ -1,0 +1,199 @@
+<title>__CENTER__上空の朝</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<style>
+/* 全画面の地図に、左上の情報パネルと下端の再生バーを重ねる */
+:root {
+  --bg: #eef1f4; --fg: #17202b; --muted: #5a6573; --panel: rgba(255,255,255,.94); --line: #cfd6de; --halo: #ffffff;
+  --tile-bmax: 1; --ui: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
+  --num: ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e141b; --fg: #e3e9ef; --muted: #98a3b0; --panel: rgba(16,22,30,.92); --line: #2c3743; --halo: #0e141b; --tile-bmax: .42; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0e141b; --fg: #e3e9ef; --muted: #98a3b0; --panel: rgba(16,22,30,.92); --line: #2c3743; --halo: #0e141b; --tile-bmax: .42; color-scheme: dark; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--fg); font-family: var(--ui); }
+#map { position: absolute; inset: 0; }
+.panel { position: absolute; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 13px; line-height: 1.5; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+#info { top: calc(12px + env(safe-area-inset-top, 0px)); left: max(12px, env(safe-area-inset-left, 0px)); width: min(300px, calc(100vw - 48px)); max-height: calc(100% - 140px); overflow-y: auto; }
+#info h1 { font-size: 15px; margin: 0; text-wrap: balance; }
+#date { color: var(--muted); font-size: 12px; }
+#clock { font-family: var(--num); font-size: 30px; font-weight: 600; font-variant-numeric: tabular-nums; margin: 2px 0 6px; }
+#legend { display: grid; gap: 2px; }
+#legend div, #list button { display: flex; align-items: center; gap: 6px; }
+.sw { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.n { color: var(--muted); margin-left: auto; font-variant-numeric: tabular-nums; }
+details { margin-top: 8px; border-top: 1px solid var(--line); padding-top: 6px; }
+summary { cursor: pointer; font-weight: 700; }
+#list { display: grid; gap: 1px; margin-top: 4px; }
+#list button { width: 100%; text-align: left; font: inherit; font-size: 12px; color: var(--fg); background: transparent; border: 0; border-radius: 4px; padding: 3px 4px; cursor: pointer; }
+#list button:hover, #list button:focus-visible { background: color-mix(in srgb, var(--fg) 8%, transparent); outline: none; }
+#list .tm { font-family: var(--num); color: var(--muted); font-variant-numeric: tabular-nums; }
+.src { color: var(--muted); font-size: 11px; margin-top: 8px; }
+#ctrl { bottom: calc(26px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); width: min(560px, calc(100vw - 56px)); display: flex; gap: 8px; align-items: center; }
+#slider { flex: 1; min-width: 0; accent-color: var(--fg); }
+#ctrl button, #ctrl select { font: inherit; color: var(--fg); background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; }
+#ctrl button:focus-visible, #ctrl select:focus-visible, #slider:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.lbl { font-size: 11px; line-height: 1.25; white-space: nowrap; color: var(--fg); text-shadow: 0 0 3px var(--halo), 0 0 3px var(--halo), 0 0 2px var(--halo); transform: translate(10px, 0); pointer-events: none; }
+.lbl small { color: var(--muted); font-family: var(--num); }
+.maplibregl-popup-content { background: var(--panel); color: var(--fg); font-family: var(--ui); font-size: 12px; line-height: 1.5; }
+.maplibregl-popup-tip { display: none; }
+.maplibregl-ctrl-attrib { font-size: 10px; }
+@media (max-width: 520px) { #clock { font-size: 22px; } #info { max-height: 42%; } }
+/* maplibre-gl.css の必要部分 */
+.maplibregl-map { overflow: hidden; position: relative; -webkit-tap-highlight-color: transparent; }
+.maplibregl-canvas { left: 0; position: absolute; top: 0; }
+.maplibregl-canvas-container.maplibregl-interactive { cursor: grab; }
+.maplibregl-ctrl-bottom-right { position: absolute; right: 0; bottom: 0; z-index: 2; pointer-events: none; }
+.maplibregl-ctrl-bottom-right .maplibregl-ctrl { pointer-events: auto; margin: 0 4px 4px 0; float: right; clear: both; }
+.maplibregl-ctrl-attrib { background: color-mix(in srgb, var(--panel) 80%, transparent); padding: 0 5px; color: var(--muted); }
+.maplibregl-ctrl-attrib a { color: inherit; }
+.maplibregl-ctrl-attrib-button { display: none; }
+.maplibregl-marker { position: absolute; top: 0; left: 0; will-change: transform; }
+.maplibregl-popup { position: absolute; top: 0; left: 0; display: flex; pointer-events: none; will-change: transform; }
+.maplibregl-popup-content { position: relative; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,.2); padding: 8px 10px; pointer-events: auto; }
+.maplibregl-popup-close-button { position: absolute; right: 0; top: 0; border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 16px; }
+</style>
+
+<div id="map"></div>
+<div id="info" class="panel">
+  <h1>__CENTER__の上空を通った航空機</h1>
+  <div id="date"></div>
+  <div id="clock">--:--</div>
+  <div id="legend"></div>
+  <details id="det" open>
+    <summary>機体一覧（駅に最も近づいた時刻）</summary>
+    <div id="list"></div>
+  </details>
+  <div class="src">__CENTER__から半径 __RADIUS__km 以内を通った機体。所属は機種・機番・コールサインから推定。ADS-B を発信していない機体は含まれません。<br>データ: ADSB.lol（ODbL）／ 背景: 地理院タイル</div>
+</div>
+<div id="ctrl" class="panel">
+  <button id="play" aria-label="一時停止">⏸</button>
+  <input id="slider" type="range" min="0" max="1000" value="0" aria-label="時刻">
+  <select id="speed" aria-label="再生速度"><option value="60">60倍</option><option value="120" selected>120倍</option><option value="300">300倍</option></select>
+</div>
+
+<script>
+const DATA = __DATA__;
+const CATS = DATA.cats, AC = DATA.aircraft, T0 = DATA.t0, T1 = DATA.t1, TRAIL = 10 * 60;
+const color = Object.fromEntries(CATS.map(c => [c.key, c.color]));
+const tz = { timeZone: 'Asia/Tokyo' };
+const fmt = t => new Date(t * 1000).toLocaleTimeString('ja-JP', { ...tz, hour: '2-digit', minute: '2-digit' });
+document.getElementById('date').textContent = new Date(T0 * 1000 + 3 * 3600e3).toLocaleDateString('ja-JP', { ...tz, year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }) + ' の朝';
+
+const legend = document.getElementById('legend');
+for (const c of CATS) {
+  const n = AC.filter(a => a.cat === c.key).length;
+  if (n) legend.insertAdjacentHTML('beforeend', `<div><span class="sw" style="background:${c.color}"></span>${c.label}<span class="n">${n}機</span></div>`);
+}
+const list = document.getElementById('list');
+for (const a of [...AC].sort((x, y) => x.tc - y.tc)) {
+  const b = document.createElement('button');
+  b.innerHTML = `<span class="tm">${fmt(a.tc)}</span><span class="sw" style="background:${color[a.cat]}"></span>${a.label}`;
+  b.addEventListener('click', () => { seek(a.tc - 120); });
+  list.appendChild(b);
+}
+if (matchMedia('(max-width: 520px)').matches) document.getElementById('det').open = false;
+
+const base = document.baseURI.replace(/[^/]*$/, '');
+const map = new maplibregl.Map({
+  container: 'map', center: DATA.center, zoom: innerWidth < 520 ? 9.6 : 10.4, maxZoom: 14, minZoom: 9,
+  maxBounds: [[138.9, 35.5], [139.9, 36.35]], attributionControl: { compact: false },
+  style: {
+    version: 8,
+    sources: { pale: { type: 'raster', tiles: [/^https?:/.test(DATA.tiles) ? DATA.tiles : base + DATA.tiles], tileSize: 256, maxzoom: DATA.tileMaxZoom,
+      attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">地理院タイル</a> ／ <a href="https://adsb.lol/" target="_blank">ADSB.lol</a> (ODbL)' } },
+    layers: [{ id: 'pale', type: 'raster', source: 'pale', paint: { 'raster-saturation': -0.7 } }]
+  }
+});
+
+function headAt(a, t) {
+  const p = a.pts;
+  if (t < p[0][0] || t > p[p.length - 1][0]) return null;
+  let i = 1; while (i < p.length && p[i][0] < t) i++;
+  if (i >= p.length) return p[p.length - 1];
+  const [ta, xa, ya, za] = p[i - 1], [tb, xb, yb, zb] = p[i];
+  if (tb - ta > 300) return null;  // 5分以上の欠測は補間しない
+  const r = (t - ta) / Math.max(tb - ta, 1);
+  const z = typeof za === 'number' && typeof zb === 'number' ? za + (zb - za) * r : za;
+  return [t, xa + (xb - xa) * r, ya + (yb - ya) * r, z];
+}
+
+const labels = new Map();
+function frame(t) {
+  const past = [], trail = [], heads = [], seen = new Set();
+  for (const a of AC) {
+    const done = a.pts.filter(p => p[0] <= t);
+    if (done.length > 1) past.push({ type: 'Feature', properties: { cat: a.cat }, geometry: { type: 'LineString', coordinates: done.map(p => [p[1], p[2]]) } });
+    const h = headAt(a, t);
+    if (!h) continue;
+    const recent = done.filter(p => p[0] >= t - TRAIL).map(p => [p[1], p[2]]);
+    recent.push([h[1], h[2]]);
+    if (recent.length > 1) trail.push({ type: 'Feature', properties: { cat: a.cat }, geometry: { type: 'LineString', coordinates: recent } });
+    heads.push({ type: 'Feature', properties: { id: a.id }, geometry: { type: 'Point', coordinates: [h[1], h[2]] } });
+    const alt = h[3] === 'ground' ? '地上' : typeof h[3] === 'number' ? `${Math.round(h[3] * 0.3048 / 10) * 10}m` : '';
+    let m = labels.get(a.id);
+    if (!m) {
+      const el = document.createElement('div'); el.className = 'lbl';
+      m = new maplibregl.Marker({ element: el, anchor: 'left' }).setLngLat([h[1], h[2]]).addTo(map);
+      labels.set(a.id, m);
+    }
+    m.getElement().innerHTML = `${a.label}<br><small>${alt}</small>`;
+    m.setLngLat([h[1], h[2]]);
+    seen.add(a.id);
+  }
+  for (const [id, m] of labels) if (!seen.has(id)) { m.remove(); labels.delete(id); }
+  map.getSource('past').setData({ type: 'FeatureCollection', features: past });
+  map.getSource('trail').setData({ type: 'FeatureCollection', features: trail });
+  map.getSource('heads').setData({ type: 'FeatureCollection', features: heads });
+  document.getElementById('clock').textContent = fmt(t);
+}
+
+const byId = Object.fromEntries(AC.map(a => [a.id, a]));
+const catColor = ['match', ['get', 'cat'], ...CATS.flatMap(c => [c.key, c.color]), '#888'];
+const headColor = ['match', ['get', 'id'], ...AC.flatMap(a => [a.id, color[a.cat]]), '#888'];
+let t = T0, playing = !matchMedia('(prefers-reduced-motion: reduce)').matches, last = null, ready = false;
+const slider = document.getElementById('slider'), speed = document.getElementById('speed'), play = document.getElementById('play');
+const setPlay = v => { playing = v; play.textContent = v ? '⏸' : '▶'; play.setAttribute('aria-label', v ? '一時停止' : '再生'); };
+setPlay(playing);
+function seek(nt) { t = Math.min(Math.max(nt, T0), T1); slider.value = Math.round((t - T0) / (T1 - T0) * 1000); if (ready) frame(t); }
+
+map.on('load', () => {
+  const css = getComputedStyle(document.documentElement);
+  map.setPaintProperty('pale', 'raster-brightness-max', Number(css.getPropertyValue('--tile-bmax')) || 1);
+  const empty = { type: 'FeatureCollection', features: [] };
+  for (const s of ['past', 'trail', 'heads']) map.addSource(s, { type: 'geojson', data: empty });
+  map.addSource('ring', { type: 'geojson', data: DATA.ring });
+  map.addSource('stn', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: DATA.center } } });
+  map.addLayer({ id: 'ring', type: 'line', source: 'ring', paint: { 'line-color': css.getPropertyValue('--muted').trim(), 'line-width': 1, 'line-dasharray': [3, 3] } });
+  map.addLayer({ id: 'past', type: 'line', source: 'past', paint: { 'line-color': catColor, 'line-width': 1.2, 'line-opacity': .3 } });
+  map.addLayer({ id: 'trail', type: 'line', source: 'trail', paint: { 'line-color': catColor, 'line-width': 3, 'line-opacity': .9 }, layout: { 'line-cap': 'round', 'line-join': 'round' } });
+  map.addLayer({ id: 'stn', type: 'circle', source: 'stn', paint: { 'circle-radius': 5, 'circle-color': css.getPropertyValue('--fg').trim(), 'circle-stroke-color': css.getPropertyValue('--halo').trim(), 'circle-stroke-width': 2 } });
+  map.addLayer({ id: 'heads', type: 'circle', source: 'heads', paint: { 'circle-color': headColor, 'circle-radius': 6, 'circle-stroke-color': '#fff', 'circle-stroke-width': 1.5 } });
+  const st = document.createElement('div'); st.className = 'lbl'; st.textContent = DATA.centerLabel;
+  new maplibregl.Marker({ element: st, anchor: 'left' }).setLngLat(DATA.center).addTo(map);
+
+  const popup = new maplibregl.Popup({ closeButton: true, maxWidth: '260px' });
+  map.on('click', 'heads', e => { const a = byId[e.features[0].properties.id]; popup.setLngLat(e.lngLat).setHTML(`<b>${a.label}</b><br>${a.detail}`).addTo(map); });
+  map.on('mouseenter', 'heads', () => map.getCanvas().style.cursor = 'pointer');
+  map.on('mouseleave', 'heads', () => map.getCanvas().style.cursor = '');
+
+  ready = true;
+  seek(playing ? T0 : AC.reduce((m, a) => a.cat === 'jasdf' ? Math.min(m, a.tc) : m, T1));
+  requestAnimationFrame(loop);
+});
+
+function loop(now) {
+  if (playing && last != null) {
+    let nt = t + (now - last) / 1000 * Number(speed.value);
+    if (nt > T1) nt = T0;
+    seek(nt);
+  }
+  last = now;
+  requestAnimationFrame(loop);
+}
+slider.addEventListener('input', () => seek(T0 + (T1 - T0) * slider.value / 1000));
+play.addEventListener('click', () => setPlay(!playing));
+</script>
