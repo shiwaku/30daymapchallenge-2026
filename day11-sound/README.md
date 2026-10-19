@@ -27,6 +27,10 @@
 
 - adsb-flight-data-converter（ADSB.lol）＋ 国勢調査メッシュ
 
+## 試作
+
+- [鶴ヶ島上空の朝](morning-flights/)（[ページ](https://shiwaku.github.io/30daymapchallenge-2026/day11-sound/morning-flights/)）: 2026年10月19日朝に鶴ヶ島駅の上空を通った航空機を、所属ごとに色分けしたアニメーション（MapLibre GL JS）
+
 ## 状況
 
 - 準備度: ○
