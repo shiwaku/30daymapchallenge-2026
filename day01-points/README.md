@@ -13,41 +13,43 @@
 
 ## 地図のテーマ
 
-シェアサイクルはどこにあるか
+動き続ける基準点（測地系はなぜ改定されるのか）
 
 ## 内容
 
-全国のシェアサイクルステーションを点で描く
+全国約1,450の電子基準点の、1996年からの毎日の位置を点で描く。水平の動きは位置（2.5万倍に拡大）、上下の動きは色で表す。
+地面は動き続けるが、公式の座標は元期で止めてある。ずれが補正しきれないほど大きくなると、測地系を決め直す。その様子を、点が流れ、地震で跳ぶアニメーションで見せる。白い点が元期の位置。
 
 ## 使用する技術
 
-- Python（ODPT API）→ tippecanoe → PMTiles → MapLibre GL JS
-
-## データ
-
-- [公共交通オープンデータセンター](https://www.odpt.org/)（ODPT）の GBFS `station_information`（CC BY 4.0）
-  - ドコモ・バイクシェア（`docomo-cycle`, `docomo-cycle-tokyo`。重複する station_id は除く）
-  - HELLO CYCLING（`hellocycling`）
-- 2026年10月29日取得: ドコモ・バイクシェア 6,231 / HELLO CYCLING 15,616、計 21,847 ステーション
-- 駐輪可能台数には 0 や 32767 などの外れ値があるので、表示では 1〜40 台に収めている
+- 電子基準点データ提供サービス（SFTP）→ Python（公式オフセット補正量の適用・固定点との差）
+- GeoParquet → **tylertoo 0.8.0** → PMTiles（全期間の軌跡、約1,300万点）
+- 7日おきの変位を Int16 バイナリにして、MapLibre GL JS で各局のその週の位置を動かす
 
 ## 作り方
 
 ```sh
-python -I scripts/fetch.py   # data/stations.geojson
-wsl -e tippecanoe -o data/stations.pmtiles --force -l stations -Z3 -z10 -r1   --no-feature-limit --no-tile-size-limit data/stations.geojson
-npx http-server -p 8731      # http://localhost:8731/
+# data/geonet/ に SFTP の /data/coordinates_F5.1/<年>/ を置く
+curl -o data/gsi_offset/corrf5_1o.dat https://mekira.gsi.go.jp/JAPANESE/corrf5_1o.dat
+python -I scripts/build.py data/geonet data/gsi_offset/corrf5_1o.dat data/geonet_disp.npz
+python -I scripts/to_geoparquet.py data/geonet_disp.npz data/geonet_trails.parquet 25000
+# geonet_bg.parquet は geonet_trails.parquet から du_mm と geometry だけを残したもの
+# tylertoo.overview(min_zoom=3, max_zoom=9, point_thinning=1.0, density_drop=False)
+# → tylertoo.export_pmtiles(layer_name="trails", feature_order="du_mm", tile_size_limit=None)
+python -I scripts/to_anim.py data/geonet_disp.npz data/anim
+npx http-server -p 8731   # http://localhost:8731/
 ```
-
-背景地図は使わず、点だけで描く。全国で見ると都市にしかないことが、東京に寄るとドコモ（都心）と HELLO CYCLING（その外側）の縄張りが見える。
 
 ## 状況
 
-- 準備度: ◎
 - [x] データ準備
 - [x] 地図作成（index.html）
-- [ ] スクリーンショット / 短い動画（chiitiler）
+- [ ] 投稿用の動画
 - [ ] 投稿（#30DayMapChallenge）
+
+## 経緯
+
+最初はシェアサイクルのステーションを点で描いたが、面白みが弱いので電子基準点に替えた（2026年10月29日）。
 
 ## 測地成果と元期（メモ）
 
