@@ -1,0 +1,49 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; background: #0b0d12; color: #e8e8ea; font-family: "Noto Sans JP", system-ui, sans-serif; }
+#map { position: absolute; inset: 0; }
+
+.panel {
+  position: absolute;
+  padding: 14px 16px;
+  background: rgba(11, 13, 18, 0.72);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  line-height: 1.55;
+}
+#title { top: 16px; left: 16px; max-width: min(360px, calc(100% - 32px)); }
+#title h1 { font-size: 18px; font-weight: 700; }
+#title .sub { font-size: 12px; color: #9a9ca3; }
+#title p { margin-top: 8px; font-size: 12px; color: #c8c9ce; }
+#title .note { color: #9a9ca3; }
+.legend { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 11px; color: #9a9ca3; }
+.legend .bar { width: 120px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, #2166ac, #67a9cf, #e8eef5, #ef8a62, #b2182b); }
+
+.chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; font-size: 12px; color: #9a9ca3; }
+.chips button { padding: 3px 10px; border: 1px solid #444; border-radius: 999px; background: transparent; color: #c8c9ce; font: inherit; cursor: pointer; }
+.chips button.on { background: #e8e8ea; color: #0b0d12; border-color: #e8e8ea; }
+
+/* 今使われている測地系。切り替わるたびに光らせる */
+#datum { position: absolute; top: 16px; right: 24px; text-align: right; pointer-events: none; text-shadow: 0 2px 12px #000; }
+#datum .name { font-size: clamp(40px, 9vw, 112px); font-weight: 900; line-height: 1; letter-spacing: 0.02em; }
+#datum .desc { margin-top: 8px; font-size: clamp(12px, 1.6vw, 18px); color: #c8c9ce; }
+#datum.flash .name { animation: flash 1.6s ease-out; }
+@keyframes flash { from { color: #ffd23f; transform: scale(1.08); } to { color: #e8e8ea; transform: scale(1); } }
+
+/* 地震名。起きた週から半年かけて薄くする */
+#quake { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; opacity: 0; text-shadow: 0 2px 16px #000; }
+#quake .date { font-size: clamp(14px, 2vw, 24px); color: #ffd23f; }
+#quake .name { font-size: clamp(32px, 6vw, 84px); font-weight: 900; color: #ffd23f; line-height: 1.1; white-space: nowrap; }
+
+#time { bottom: 28px; left: 16px; right: 16px; max-width: 760px; margin: 0 auto; }
+#time .row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+#time .chips { margin-top: 0; }
+#date { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+#epoch { min-height: 1.5em; font-size: 14px; color: #c8c9ce; }
+.controls { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+#play { width: 36px; height: 36px; border: none; border-radius: 50%; background: #e8e8ea; color: #0b0d12; font-size: 14px; cursor: pointer; }
+#slider { flex: 1; accent-color: #ffd23f; }
+
+.maplibregl-ctrl-attrib, .maplibregl-ctrl-attrib-inner { background: rgba(11, 13, 18, 0.78) !important; color: #c8c9ce !important; font-size: 11px; }
+.maplibregl-ctrl-attrib a { color: #e8e8ea; }
+.maplibregl-ctrl-attrib-button { filter: invert(1); }
