@@ -16,6 +16,8 @@ html, body { height: 100%; overflow: hidden; background: #0b0d12; color: #e8e8ea
 #title .sub { font-size: 12px; color: #9a9ca3; }
 #title p { margin-top: 8px; font-size: 12px; color: #c8c9ce; }
 #title .note { color: #9a9ca3; }
+#title .howto { margin-top: 8px; padding-left: 1.1em; font-size: 12px; color: #c8c9ce; }
+#title .howto b { color: #e8e8ea; }
 .legend { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 11px; color: #9a9ca3; }
 .legend .bar { width: 120px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, #2166ac, #67a9cf, #e8eef5, #ef8a62, #b2182b); }
 
@@ -47,3 +49,6 @@ html, body { height: 100%; overflow: hidden; background: #0b0d12; color: #e8e8ea
 .maplibregl-ctrl-attrib, .maplibregl-ctrl-attrib-inner { background: rgba(11, 13, 18, 0.78) !important; color: #c8c9ce !important; font-size: 11px; }
 .maplibregl-ctrl-attrib a { color: #e8e8ea; }
 .maplibregl-ctrl-attrib-button { filter: invert(1); }
+
+/* 録画用。操作部品を隠す */
+.record .controls, .record #time .chips, .record #scale, .record .maplibregl-ctrl-attrib-button { display: none; }

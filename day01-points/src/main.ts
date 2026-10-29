@@ -17,15 +17,17 @@ const SQRT_K = 120000;
 
 // その時点で使われていた測地系（切り替わった日）
 const DATUMS = [
-  { from: "1900-01-01", name: "日本測地系", desc: "明治以来の測地系（2002年3月まで）" },
-  { from: "2002-04-01", name: "JGD2000", desc: "測地成果2000　元期 1997年1月1日" },
-  { from: "2011-10-31", name: "JGD2011", desc: "測地成果2011　元期 2011年5月24日（東日本を決め直す）" },
-  { from: "2025-04-01", name: "測地成果2024", desc: "標高を GNSS 基盤に改定（緯度・経度は JGD2011）" },
+  { from: "1900-01-01", name: "日本測地系", desc: "明治時代に決めた、日本の位置の基準（2002年3月まで）" },
+  { from: "2002-04-01", name: "JGD2000", desc: "世界の基準に合わせた新しい位置の基準。1997年1月1日の場所で固定" },
+  { from: "2011-10-31", name: "JGD2011", desc: "大地震で地面が動いたので、東日本だけ2011年5月24日の場所で決め直し" },
+  { from: "2025-04-01", name: "測地成果2024", desc: "高さの基準を GNSS で決め直し（緯度・経度はそのまま）" },
 ];
-// 元期: 公式の座標を止めた日。その日の位置を白い点で残す
-const EPOCHS = [
-  { date: "1997-01-01", label: "元期 1997年1月1日（測地成果2000）" },
-  { date: "2011-05-24", label: "元期 2011年5月24日（測地成果2011）" },
+// 元期: 公式の場所として止めた日。白い点と線の始まりはこの日の位置
+const EPOCH = "1997-01-01";
+// 節目の説明（起きた週から半年出す）
+const NOTES = [
+  { date: "1997-01-01", text: "この日の場所を「公式の場所」として止めた（白い点）" },
+  { date: "2011-05-24", text: "東日本の電子基準点約440点は、この日の場所で公式の場所を決め直した（西日本は1997年のまま）" },
 ];
 const QUAKES: [string, string][] = [
   ["2003-09-26", "十勝沖地震"],
@@ -53,7 +55,7 @@ const empty: FC = { type: "FeatureCollection", features: [] };
 
 const map = new maplibregl.Map({
   container: "map",
-  hash: true,
+  hash: !new URLSearchParams(location.search).has("record"),
   bounds: [[128, 30.5], [146.5, 45.8]],
   fitBoundsOptions: { padding: { top: 20, bottom: 160, left: 20, right: 20 } },
   minZoom: 3,
@@ -110,6 +112,9 @@ const map = new maplibregl.Map({
 });
 map.addControl(new maplibregl.AttributionControl({ compact: false }));
 
+// ?record のときは自動再生せず、録画用スクリプトから window.__render(週) で1コマずつ描く
+const RECORD = new URLSearchParams(location.search).has("record");
+
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector(sel) as T;
 const DAY_MS = 86400000;
 
@@ -123,7 +128,8 @@ async function main() {
   const t0 = Date.parse(meta.start);
   const toWeek = (iso: string) => Math.round((Date.parse(iso) - t0) / DAY_MS / 7);
   const datums = DATUMS.map((d) => ({ ...d, week: toWeek(d.from) }));
-  const epochs = EPOCHS.map((e) => ({ ...e, week: toWeek(e.date) }));
+  const epochWeek = toWeek(EPOCH);
+  const notes = NOTES.map((x) => ({ ...x, week: toWeek(x.date) }));
   const quakes = QUAKES.map(([d, name]) => ({ week: toWeek(d), date: d.replace(/-/g, "/"), name }));
 
   // 欠測の週は、直前に観測があった週の値で埋める
@@ -137,6 +143,16 @@ async function main() {
       filled.set(last.subarray(i * 3, i * 3 + 3), o);
     }
   }
+
+  // 上下は、元期の高さ（元期より後に設けた局は最初の観測）からの変化で色を付ける
+  const baseU = new Int16Array(n);
+  for (let i = 0; i < n; i++) {
+    let w = epochWeek;
+    while (w < W && filled[(w * n + i) * 3] === MISSING) w++;
+    if (w === W) w = 0;
+    baseU[i] = filled[(w * n + i) * 3 + 2];
+  }
+  const du = (w: number, i: number) => filled[(w * n + i) * 3 + 2] - baseU[i];
 
   // 1m あたりの度
   const kx = meta.stations.map((s) => (180 / Math.PI) / (R * Math.cos((s.lat * Math.PI) / 180)));
@@ -161,14 +177,14 @@ async function main() {
     const features: GeoJSON.Feature[] = [];
     for (let i = 0; i < n; i++) {
       const p = pos(w, i);
-      if (p) features.push({ type: "Feature", geometry: { type: "Point", coordinates: p }, properties: { du: filled[(w * n + i) * 3 + 2] } });
+      if (p) features.push({ type: "Feature", geometry: { type: "Point", coordinates: p }, properties: { du: du(w, i) } });
     }
     return { type: "FeatureCollection", features };
   }
-  // 尾は直前の元期から今までの動き（公式の座標からどれだけ離れたか）
+  // 線は元期から今までの道のり（公式の場所からどれだけ離れたか）
   function tails(w: number): FC {
     const features: GeoJSON.Feature[] = [];
-    const from = epochs.filter((e) => e.week <= w).pop()?.week ?? 0;
+    const from = w >= epochWeek ? epochWeek : 0;
     for (let i = 0; i < n; i++) {
       const coords: [number, number][] = [];
       for (let k = from; k < w; k += TAIL_STEP) {
@@ -178,21 +194,19 @@ async function main() {
       const p = pos(w, i);
       if (p) coords.push(p);
       if (coords.length > 1) {
-        features.push({ type: "Feature", geometry: { type: "LineString", coordinates: coords }, properties: { du: filled[(w * n + i) * 3 + 2] } });
+        features.push({ type: "Feature", geometry: { type: "LineString", coordinates: coords }, properties: { du: du(w, i) } });
       }
     }
     return { type: "FeatureCollection", features };
   }
 
   // 元期の点は拡大率が変わったときだけ作り直す
-  let epochCache = new Map<number, GeoJSON.Feature[]>();
-  const epochPoints = (w: number): FC => ({
-    type: "FeatureCollection",
-    features: epochs.filter((e) => e.week <= w).flatMap((e) => {
-      if (!epochCache.has(e.week)) epochCache.set(e.week, points(e.week).features);
-      return epochCache.get(e.week)!;
-    }),
-  });
+  let epochCache: FC | null = null;
+  const epochPoints = (w: number): FC => {
+    if (w < epochWeek) return empty;
+    epochCache ??= points(epochWeek);
+    return epochCache;
+  };
 
   const slider = $<HTMLInputElement>("#slider");
   const datumEl = $("#datum");
@@ -203,21 +217,20 @@ async function main() {
 
   let week = 0;
   let datumName = "";
-  let shownEpochs = -1;
+  let shownEpoch: boolean | null = null;
   function render(w: number) {
     week = w;
     src("now").setData(points(w));
     src("tails").setData(tails(w));
-    const nEpochs = epochs.filter((e) => e.week <= w).length;
-    if (nEpochs !== shownEpochs) {
-      shownEpochs = nEpochs;
+    if ((w >= epochWeek) !== shownEpoch) {
+      shownEpoch = w >= epochWeek;
       src("epochs").setData(epochPoints(w));
     }
 
     const d = new Date(t0 + w * 7 * DAY_MS);
     $("#date").textContent = `${d.getUTCFullYear()}年${d.getUTCMonth() + 1}月${d.getUTCDate()}日`;
-    const ep = epochs.find((e) => w >= e.week && w < e.week + 26);
-    $("#epoch").textContent = ep ? `${ep.label}：この日の位置で公式の座標を止める` : "";
+    const note = notes.find((x) => w >= x.week && w < x.week + 26);
+    $("#epoch").textContent = note ? note.text : "";
 
     const datum = datums.filter((x) => x.week <= w).pop()!;
     if (datum.name !== datumName) {
@@ -240,6 +253,19 @@ async function main() {
     slider.value = String(w);
   }
   render(0);
+
+  if (RECORD) {
+    document.body.classList.add("record");
+    const w = window as unknown as { __weeks: number; __render: (w: number) => Promise<void> };
+    w.__weeks = W;
+    w.__render = (k: number) =>
+      new Promise((resolve) => {
+        render(k);
+        map.once("idle", () => resolve());
+        map.triggerRepaint();
+      });
+    return;
+  }
 
   let playing = true;
   let weeksPerSec = 26;
@@ -277,8 +303,8 @@ async function main() {
   };
   chips("#scale", (b) => {
     scale = Number(b.dataset.scale);
-    epochCache = new Map();
-    shownEpochs = -1;
+    epochCache = null;
+    shownEpoch = null;
     map.setLayoutProperty("trails", "visibility", scale === BG_SCALE ? "visible" : "none");
     render(week);
   });
