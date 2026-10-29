@@ -285,19 +285,31 @@ async function main() {
     return;
   }
 
+  // 地震の週では少し止める。早送りで飛び越えないよう、その週に合わせてから止める
+  const QUAKE_HOLD = 1.5;
   let playing = true;
   let weeksPerSec = 26;
   let acc = 0;
+  let hold = 0;
   let prev = performance.now();
   function tick(now: number) {
     const dt = Math.min((now - prev) / 1000, 0.1);
     prev = now;
-    if (playing) {
+    if (playing && hold > 0) {
+      hold -= dt;
+    } else if (playing) {
       acc += dt * weeksPerSec;
       if (acc >= 1) {
         const step = Math.floor(acc);
         acc -= step;
-        render(week + step >= W ? 0 : week + step);
+        let next = week + step >= W ? 0 : week + step;
+        const q = quakes.find((x) => x.week > week && x.week <= next);
+        if (q) {
+          next = q.week;
+          acc = 0;
+          hold = QUAKE_HOLD;
+        }
+        render(next);
       }
     }
     requestAnimationFrame(tick);
@@ -308,7 +320,10 @@ async function main() {
     playing = !playing;
     playBtn.textContent = playing ? "❚❚" : "▶";
   });
-  slider.addEventListener("input", () => render(Number(slider.value)));
+  slider.addEventListener("input", () => {
+    hold = 0;
+    render(Number(slider.value));
+  });
 
   const chips = (sel: string, onPick: (b: HTMLButtonElement) => void) => {
     const buttons = document.querySelectorAll<HTMLButtonElement>(`${sel} button`);
