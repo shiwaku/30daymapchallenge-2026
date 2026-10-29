@@ -18,13 +18,16 @@
 ## 内容
 
 全国約1,450の電子基準点の、1996年からの毎日の位置を点で描く。水平の動きは位置（2.5万倍に拡大）、上下の動きは色で表す。
-地面は動き続けるが、公式の座標は元期で止めてある。ずれが補正しきれないほど大きくなると、測地系を決め直す。その様子を、点が流れ、地震で跳ぶアニメーションで見せる。白い点が元期の位置。
+地面は動き続けるが、公式の座標は元期で止めてある。ずれが補正しきれないほど大きくなると、測地系を決め直す。その様子を、点が流れ、地震で跳ぶアニメーションで見せる。白い点が元期の位置、尾は元期から離れていった道のり。測地系の切り替え日: JGD2000 は2002年4月1日施行、測地成果2011は2011年10月31日公表、測地成果2024は2025年4月1日公表。
 
 ## 使用する技術
 
 - 電子基準点データ提供サービス（SFTP）→ Python（公式オフセット補正量の適用・固定点との差）
 - GeoParquet → **tylertoo 0.8.0** → PMTiles（全期間の軌跡、約1,300万点）
-- 7日おきの変位を Int16 バイナリにして、MapLibre GL JS で各局のその週の位置を動かす
+- 7日おきの変位を Int16 バイナリにして、Vite 8 ＋ MapLibre GL JS 6（TypeScript）で各局のその週の位置を動かす
+- 測地系の名前（日本測地系 → JGD2000 → JGD2011 → 測地成果2024）と地震名を大きく出す。水平の動きは「圧縮（√）」・2.5万倍・25万倍を切り替えられ、速度も変えられる
+- 「圧縮」は向きはそのままに、変位 d(m) を 120,000×√d (m) で描く。表示上の工夫で、データは変えていない
+- 公開版は `site/`（`npm run build` の出力）。GitHub Pages では /day01-points/site/
 
 ## 作り方
 
@@ -37,7 +40,9 @@ python -I scripts/to_geoparquet.py data/geonet_disp.npz data/geonet_trails.parqu
 # tylertoo.overview(min_zoom=3, max_zoom=9, point_thinning=1.0, density_drop=False)
 # → tylertoo.export_pmtiles(layer_name="trails", feature_order="du_mm", tile_size_limit=None)
 python -I scripts/to_anim.py data/geonet_disp.npz data/anim
-npx http-server -p 8731   # http://localhost:8731/
+npm install
+npm run dev     # http://localhost:5173/
+npm run build   # site/ に出力
 ```
 
 ## 状況

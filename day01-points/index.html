@@ -4,251 +4,48 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>動き続ける基準点 — #30DayMapChallenge Day 1 Points</title>
-  <link href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css" rel="stylesheet">
-  <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
-  <script src="https://unpkg.com/pmtiles@4.3.0/dist/pmtiles.js"></script>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; background: #0b0d12; color: #e8e8ea; font-family: "Noto Sans JP", sans-serif; }
-    #map { position: absolute; inset: 0; }
-
-    .panel {
-      position: absolute;
-      padding: 14px 16px;
-      background: rgba(11, 13, 18, 0.78);
-      border-radius: 8px;
-      line-height: 1.55;
-    }
-    #title { top: 16px; left: 16px; max-width: min(380px, calc(100% - 32px)); }
-    #title h1 { font-size: 18px; font-weight: 700; }
-    #title .sub { font-size: 12px; color: #9a9ca3; }
-    #title p { margin-top: 8px; font-size: 12px; color: #c8c9ce; }
-    #legend { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 11px; color: #9a9ca3; }
-    #legend .bar { width: 120px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, #2166ac, #67a9cf, #e8eef5, #ef8a62, #b2182b); }
-
-    #time { bottom: 28px; left: 16px; right: 16px; max-width: 720px; margin: 0 auto; }
-    #date { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
-    #event { min-height: 1.5em; font-size: 14px; color: #ffd23f; }
-    #controls { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
-    #play { width: 36px; height: 36px; border: none; border-radius: 50%; background: #e8e8ea; color: #0b0d12; font-size: 14px; cursor: pointer; }
-    #slider { flex: 1; accent-color: #ffd23f; }
-
-    .maplibregl-ctrl-attrib, .maplibregl-ctrl-attrib-inner { background: rgba(11, 13, 18, 0.78) !important; color: #c8c9ce !important; font-size: 11px; }
-    .maplibregl-ctrl-attrib a { color: #e8e8ea; }
-    .maplibregl-ctrl-attrib-button { filter: invert(1); }
-  </style>
 </head>
 <body>
-<div id="map"></div>
+  <div id="map"></div>
 
-<div id="title" class="panel">
-  <h1>動き続ける基準点</h1>
-  <div class="sub">#30DayMapChallenge 2026 Day 1 — Points</div>
-  <p>
-    全国約1,450の電子基準点の、1996年からの毎日の位置。地面は動き続けるが、公式の座標は「元期」で止めてある。
-    ずれが補正しきれないほど大きくなると、測地系を決め直す。白い点が元期の位置。
-  </p>
-  <div id="legend">沈降<span class="bar"></span>隆起（±0.5m）</div>
-  <p>水平の動きを2.5万倍に拡大。福江（長崎県）に対する動き。</p>
-</div>
+  <section id="title" class="panel">
+    <h1>動き続ける基準点</h1>
+    <div class="sub">#30DayMapChallenge 2026 Day 1 — Points</div>
+    <p>
+      全国約1,450の電子基準点の、1996年からの位置。地面は動き続けるが、公式の座標は「元期」で止めてある。
+      ずれが補正しきれないほど大きくなると、測地系を決め直す。白い点が元期の位置、尾は元期から離れていった道のり。
+    </p>
+    <div class="legend">沈降<span class="bar"></span>隆起（±0.5m）</div>
+    <div class="chips" id="scale">
+      <span>水平の拡大率</span>
+      <button type="button" data-scale="0" class="on">圧縮（√）</button>
+      <button type="button" data-scale="25000">2.5万倍</button>
+      <button type="button" data-scale="250000">25万倍</button>
+    </div>
+    <p class="note">福江（長崎県）に対する動き。「圧縮」は向きはそのままに、大きさを平方根で縮めて描く（3cm → 約21km、6m → 約300km）。</p>
+  </section>
 
-<div id="time" class="panel">
-  <div id="date">—</div>
-  <div id="event"></div>
-  <div id="controls">
-    <button id="play" type="button" aria-label="再生・一時停止">❚❚</button>
-    <input id="slider" type="range" min="0" value="0" step="1">
-  </div>
-</div>
+  <div id="datum"><div class="name">—</div><div class="desc"></div></div>
+  <div id="quake"><div class="date"></div><div class="name"></div></div>
 
-<script>
-  const SCALE = 25000; // geonet_bg.pmtiles と同じ拡大率
-  const R = 6378137;
-  const MISSING = -32768;
-  const WEEKS_PER_SEC = 12;
+  <section id="time" class="panel">
+    <div class="row">
+      <div id="date">—</div>
+      <div class="chips" id="speed">
+        <span>速度</span>
+        <button type="button" data-weeks="13">0.25年/秒</button>
+        <button type="button" data-weeks="26" class="on">0.5年/秒</button>
+        <button type="button" data-weeks="52">1年/秒</button>
+        <button type="button" data-weeks="104">2年/秒</button>
+      </div>
+    </div>
+    <div id="epoch"></div>
+    <div class="controls">
+      <button id="play" type="button" aria-label="再生・一時停止">❚❚</button>
+      <input id="slider" type="range" min="0" value="0" step="1">
+    </div>
+  </section>
 
-  // 元期: 公式の座標を止めた日
-  const EPOCHS = [
-    { date: "1997-01-01", label: "元期 1997年1月1日（測地成果2000）" },
-    { date: "2011-05-24", label: "元期 2011年5月24日（測地成果2011・東日本の座標を決め直す）" },
-  ];
-  const EVENTS = [
-    ["2003-09-26", "十勝沖地震"],
-    ["2004-10-23", "新潟県中越地震"],
-    ["2008-06-14", "岩手・宮城内陸地震"],
-    ["2011-03-11", "東北地方太平洋沖地震"],
-    ["2016-04-14", "熊本地震"],
-    ["2018-09-06", "北海道胆振東部地震"],
-    ["2024-01-01", "能登半島地震"],
-  ];
-
-  const protocol = new pmtiles.Protocol();
-  maplibregl.addProtocol("pmtiles", protocol.tile);
-
-  const DU_COLOR = ["interpolate", ["linear"], ["get", "du"], -500, "#2166ac", -150, "#67a9cf", 0, "#e8eef5", 150, "#ef8a62", 500, "#b2182b"];
-
-  const map = new maplibregl.Map({
-    container: "map",
-    hash: true,
-    bounds: [[128, 30.5], [146.5, 45.8]],
-    fitBoundsOptions: { padding: { top: 20, bottom: 140, left: 20, right: 20 } },
-    minZoom: 3,
-    maxZoom: 11,
-    attributionControl: false,
-    style: {
-      version: 8,
-      sources: {
-        trails: {
-          type: "vector",
-          url: "pmtiles://data/geonet_bg.pmtiles",
-          attribution:
-            '<a href="https://terras.gsi.go.jp/" target="_blank" rel="noopener">国土地理院 電子基準点日々の座標値（F5.1解）</a>を加工して作成',
-        },
-        now: { type: "geojson", data: { type: "FeatureCollection", features: [] } },
-        epochs: { type: "geojson", data: { type: "FeatureCollection", features: [] } },
-      },
-      layers: [
-        { id: "background", type: "background", paint: { "background-color": "#0b0d12" } },
-        {
-          id: "trails",
-          type: "circle",
-          source: "trails",
-          "source-layer": "trails",
-          paint: {
-            "circle-radius": ["interpolate", ["linear"], ["zoom"], 4, 0.6, 7, 1, 10, 1.8],
-            "circle-color": ["interpolate", ["linear"], ["get", "du_mm"], -500, "#2166ac", -150, "#67a9cf", 0, "#e8eef5", 150, "#ef8a62", 500, "#b2182b"],
-            "circle-opacity": 0.4,
-          },
-        },
-        {
-          id: "epochs",
-          type: "circle",
-          source: "epochs",
-          paint: {
-            "circle-radius": ["interpolate", ["linear"], ["zoom"], 4, 1.4, 8, 2.6],
-            "circle-color": "#ffffff",
-            "circle-opacity": 0.85,
-          },
-        },
-        {
-          id: "now",
-          type: "circle",
-          source: "now",
-          paint: {
-            "circle-radius": ["interpolate", ["linear"], ["zoom"], 4, 1.8, 8, 3.4],
-            "circle-color": DU_COLOR,
-            "circle-blur": 0.2,
-          },
-        },
-      ],
-    },
-  });
-  map.addControl(new maplibregl.AttributionControl({ compact: false }));
-
-  const dayMs = 86400000;
-  const toWeek = (start, iso) => Math.round((Date.parse(iso) - Date.parse(start)) / dayMs / 7);
-
-  async function main() {
-    const [meta, buf] = await Promise.all([
-      fetch("data/anim/stations.json").then((r) => r.json()),
-      fetch("data/anim/anim.bin").then((r) => r.arrayBuffer()),
-    ]);
-    const n = meta.stations.length;
-    const arr = new Int16Array(buf);
-    const st = meta.stations.map((s) => ({ ...s, kx: SCALE / 1000 / (R * Math.cos((s.lat * Math.PI) / 180)) * (180 / Math.PI), ky: SCALE / 1000 / R * (180 / Math.PI) }));
-    const epochs = EPOCHS.map((e) => ({ ...e, week: toWeek(meta.start, e.date) }));
-    const events = EVENTS.map(([d, label]) => ({ week: toWeek(meta.start, d), label: `${d.replace(/-/g, "/")} ${label}` }));
-
-    // 欠測の週は、直前に観測があった週の値を使う
-    const last = new Int16Array(n * 3).fill(MISSING);
-    function advance(w) {
-      for (let i = 0; i < n; i++) {
-        const o = (w * n + i) * 3;
-        if (arr[o] !== MISSING) last.set(arr.subarray(o, o + 3), i * 3);
-      }
-    }
-    function frame(w) {
-      advance(w);
-      const features = [];
-      for (let i = 0; i < n; i++) {
-        if (last[i * 3] === MISSING) continue;
-        const s = st[i];
-        features.push({
-          type: "Feature",
-          geometry: { type: "Point", coordinates: [s.lon + last[i * 3] * s.kx, s.lat + last[i * 3 + 1] * s.ky] },
-          properties: { du: last[i * 3 + 2] },
-        });
-      }
-      return features;
-    }
-
-    const slider = document.getElementById("slider");
-    const dateEl = document.getElementById("date");
-    const eventEl = document.getElementById("event");
-    const playBtn = document.getElementById("play");
-    slider.max = meta.weeks - 1;
-
-    let week = 0;
-    let playing = true;
-    let acc = 0;
-    let prev = performance.now();
-
-    function render(w) {
-      // スライダーで戻ったときに「直前の観測」を正しく引き継ぐため、最初から積み直す
-      if (w < week) {
-        last.fill(MISSING);
-        for (let k = 0; k < w; k++) advance(k);
-      } else {
-        for (let k = week + 1; k < w; k++) advance(k);
-      }
-      week = w;
-      map.getSource("now").setData({ type: "FeatureCollection", features: frame(w) });
-      const shown = epochs.filter((e) => e.week <= w);
-      const epochFeatures = shown.flatMap((e) => e.features || []);
-      map.getSource("epochs").setData({ type: "FeatureCollection", features: epochFeatures });
-      const d = new Date(Date.parse(meta.start) + w * 7 * dayMs);
-      dateEl.textContent = `${d.getUTCFullYear()}年${d.getUTCMonth() + 1}月${d.getUTCDate()}日`;
-      const ev = events.find((e) => w >= e.week && w < e.week + 26);
-      const ep = epochs.find((e) => w >= e.week && w < e.week + 26);
-      eventEl.textContent = [ev && ev.label, ep && ep.label].filter(Boolean).join("　／　");
-      slider.value = w;
-    }
-
-    // 元期の位置は、その週の各局の位置として先に作っておく
-    last.fill(MISSING);
-    for (let w = 0; w < meta.weeks; w++) {
-      const f = frame(w);
-      for (const e of epochs) if (e.week === w) e.features = f;
-    }
-    last.fill(MISSING);
-    week = 0;
-    render(0);
-
-    function tick(now) {
-      const dt = (now - prev) / 1000;
-      prev = now;
-      if (playing) {
-        acc += dt * WEEKS_PER_SEC;
-        if (acc >= 1) {
-          const step = Math.floor(acc);
-          acc -= step;
-          let w = week + step;
-          if (w >= meta.weeks) w = 0;
-          render(w);
-        }
-      }
-      requestAnimationFrame(tick);
-    }
-    requestAnimationFrame(tick);
-
-    playBtn.addEventListener("click", () => {
-      playing = !playing;
-      playBtn.textContent = playing ? "❚❚" : "▶";
-    });
-    slider.addEventListener("input", () => render(Number(slider.value)));
-  }
-
-  map.on("load", main);
-</script>
+  <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
