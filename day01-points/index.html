@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>動き続ける基準点 — #30DayMapChallenge Day 1 Points</title>
+</head>
+<body>
+  <div id="map"></div>
+
+  <section id="title" class="panel">
+    <h1>動き続ける基準点</h1>
+    <div class="sub">#30DayMapChallenge 2026 Day 1 — Points</div>
+    <p>
+      全国約1,450の電子基準点の、1996年からの位置。地面は動き続けるが、公式の座標は「元期」で止めてある。
+      ずれが補正しきれないほど大きくなると、測地系を決め直す。白い点が元期の位置、尾は元期から離れていった道のり。
+    </p>
+    <div class="legend">沈降<span class="bar"></span>隆起（±0.5m）</div>
+    <div class="chips" id="scale">
+      <span>水平の拡大率</span>
+      <button type="button" data-scale="0" class="on">圧縮（√）</button>
+      <button type="button" data-scale="25000">2.5万倍</button>
+      <button type="button" data-scale="250000">25万倍</button>
+    </div>
+    <p class="note">福江（長崎県）に対する動き。「圧縮」は向きはそのままに、大きさを平方根で縮めて描く（3cm → 約21km、6m → 約300km）。</p>
+  </section>
+
+  <div id="datum"><div class="name">—</div><div class="desc"></div></div>
+  <div id="quake"><div class="date"></div><div class="name"></div></div>
+
+  <section id="time" class="panel">
+    <div class="row">
+      <div id="date">—</div>
+      <div class="chips" id="speed">
+        <span>速度</span>
+        <button type="button" data-weeks="13">0.25年/秒</button>
+        <button type="button" data-weeks="26" class="on">0.5年/秒</button>
+        <button type="button" data-weeks="52">1年/秒</button>
+        <button type="button" data-weeks="104">2年/秒</button>
+      </div>
+    </div>
+    <div id="epoch"></div>
+    <div class="controls">
+      <button id="play" type="button" aria-label="再生・一時停止">❚❚</button>
+      <input id="slider" type="range" min="0" value="0" step="1">
+    </div>
+  </section>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
