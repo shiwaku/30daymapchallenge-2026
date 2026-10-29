@@ -8,7 +8,7 @@
 
 | DATE | NAME | Description（公式） | Description（日本語訳） | 地図のテーマ | 内容 | 使用する技術 | 準備 |
 |---|---|---|---|---|---|---|---|
-| 01-11-2026 | [Points](day01-points/) | A map challenge classic. Map with points. | マップチャレンジの定番。点で地図を作る。 | シェアサイクルはどこにあるか | 全国のシェアサイクルステーションを点で描く | Python（ODPT API）→ tippecanoe → PMTiles → MapLibre GL JS | ◎ |
+| 01-11-2026 | [Points](day01-points/) | A map challenge classic. Map with points. | マップチャレンジの定番。点で地図を作る。 | 動き続ける基準点 | 全国の電子基準点の1996年からの毎日の位置を点で描き、測地系がなぜ改定されるのかを見せる | GeoParquet → tylertoo → PMTiles ＋ MapLibre GL JS（アニメーション） | ◎ |
 | 02-11-2026 | [Lines](day02-lines/) | A map challenge classic. Map with lines. | マップチャレンジの定番。線で地図を作る。 | 鉄道の太さ＝本数 | 全国の鉄道を区間別の運行本数で太さを変えて描く | PMTiles → MapLibre GL JS（line-width を本数で式指定） | ◎ |
 | 03-11-2026 | [Polygons](day03-polygons/) | A map challenge classic. Map with polygons. | マップチャレンジの定番。ポリゴンで地図を作る。 | 13色で描く日本 | 全国の用途地域を13種類の色だけで描く | PMTiles → MapLibre GL JS | ◎ |
 | 04-11-2026 | [Clusters](day04-clusters/) | Clusters of something. Hotspots, groups, things that gather together. | 何かのクラスター。ホットスポット、グループ、集まってくるもの。 | チェーン店の縄張り | 全国チェーンと地域チェーンの店舗の集まり方を比べる（ドラッグストア・ホームセンターなど） | DuckDB Spatial（集計）→ PMTiles → MapLibre GL JS | ○ |
