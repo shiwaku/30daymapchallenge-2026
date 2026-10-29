@@ -3,28 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>動き続ける基準点 — #30DayMapChallenge Day 1 Points</title>
-  <script type="module" crossorigin src="./assets/index-BnkSJuQL.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-DyqY6IbO.css">
+  <title>動き続ける電子基準点 — #30DayMapChallenge Day 1 Points</title>
+  <script type="module" crossorigin src="./assets/index-AktKyylE.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-iqrB1luM.css">
 </head>
 <body>
   <div id="map"></div>
 
   <section id="title" class="panel">
-    <h1>動き続ける基準点</h1>
+    <h1>動き続ける電子基準点</h1>
     <div class="sub">#30DayMapChallenge 2026 Day 1 — Points</div>
     <p>
-      全国約1,450の電子基準点の、1996年からの位置。地面は動き続けるが、公式の座標は「元期」で止めてある。
-      ずれが補正しきれないほど大きくなると、測地系を決め直す。白い点が元期の位置、尾は元期から離れていった道のり。
+      地面は少しずつ動いている。でも地図の「公式の場所」は、ある日の位置で止めてある。
+      全国約1,450の電子基準点（GNSS の観測点）が、その公式の場所からどれだけ離れていったかを描いた。
     </p>
-    <div class="legend">沈降<span class="bar"></span>隆起（±0.5m）</div>
+    <ul class="howto">
+      <li><b>白い点</b>：1997年1月1日に止めた「公式の場所」</li>
+      <li><b>線</b>：そこから地面が動いた道のり</li>
+      <li><b>色</b>：そのあいだに地面が上がった（赤）か、下がった（青）か</li>
+    </ul>
+    <div class="legend">下がった<span class="bar"></span>上がった（±50cm）</div>
     <div class="chips" id="scale">
-      <span>水平の拡大率</span>
+      <span>動きの大きさ</span>
       <button type="button" data-scale="0" class="on">圧縮（√）</button>
       <button type="button" data-scale="25000">2.5万倍</button>
       <button type="button" data-scale="250000">25万倍</button>
     </div>
-    <p class="note">福江（長崎県）に対する動き。「圧縮」は向きはそのままに、大きさを平方根で縮めて描く（3cm → 約21km、6m → 約300km）。</p>
+    <p class="note">動きは数cm〜数mしかないので、大きく引き伸ばして描いている。「圧縮」は向きはそのままに、大きな動きほど縮めて描く（3cm → 約21km、6m → 約300km）。長崎県の福江を動かない点とみなした動き。</p>
   </section>
 
   <div id="datum"><div class="name">—</div><div class="desc"></div></div>

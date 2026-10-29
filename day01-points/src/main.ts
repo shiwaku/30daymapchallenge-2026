@@ -7,6 +7,7 @@ import "./style.css";
 
 // 開発時は day01-points/data、公開時（day01-points/site/）は ../data を読む
 const DATA = import.meta.env.DEV ? "./data/" : "../data/";
+const JAPAN: [[number, number], [number, number]] = [[128, 30.5], [146.5, 45.8]];
 
 const BG_SCALE = 25000; // geonet_bg.pmtiles の拡大率。これと同じときだけ背景の軌跡を出す
 const R = 6378137;
@@ -56,8 +57,7 @@ const empty: FC = { type: "FeatureCollection", features: [] };
 const map = new maplibregl.Map({
   container: "map",
   hash: !new URLSearchParams(location.search).has("record"),
-  bounds: [[128, 30.5], [146.5, 45.8]],
-  fitBoundsOptions: { padding: { top: 20, bottom: 160, left: 20, right: 20 } },
+  bounds: JAPAN,
   minZoom: 3,
   maxZoom: 11,
   attributionControl: false,
@@ -114,6 +114,23 @@ map.addControl(new maplibregl.AttributionControl({ compact: false }));
 
 // ?record のときは自動再生せず、録画用スクリプトから window.__render(週) で1コマずつ描く
 const RECORD = new URLSearchParams(location.search).has("record");
+
+// 日本を、左のタイトルと右の測地系の名前、下の時間パネルのあいだに収める
+function fitJapan() {
+  if (location.hash && !RECORD) return;
+  const wide = window.innerWidth >= 900;
+  const title = document.querySelector("#title")!.getBoundingClientRect();
+  const time = document.querySelector("#time")!.getBoundingClientRect();
+  map.fitBounds(JAPAN, {
+    animate: false,
+    padding: {
+      top: 20,
+      bottom: Math.max(20, window.innerHeight - time.top + 12),
+      left: wide ? title.right + 12 : 12,
+      right: wide ? window.innerWidth * 0.32 + 24 : 12,
+    },
+  });
+}
 
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector(sel) as T;
 const DAY_MS = 86400000;
@@ -253,6 +270,7 @@ async function main() {
     slider.value = String(w);
   }
   render(0);
+  fitJapan();
 
   if (RECORD) {
     document.body.classList.add("record");
