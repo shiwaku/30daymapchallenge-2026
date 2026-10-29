@@ -2,6 +2,7 @@
 
 - DATE: 01-11-2026
 - NAME: Points
+- ビューワ: https://shiwaku.github.io/30daymapchallenge-2026/day01-points/site/
 
 ## Description（公式）
 
