@@ -9,10 +9,12 @@ const DATA = import.meta.env.DEV ? "./data/" : "../data/";
 const JAPAN: [[number, number], [number, number]] = [[127.6, 30.8], [146.2, 45.6]];
 const BEARING = -38;
 
-// 片道1日この本数未満を「1時間に1本ほどか、それより少ない」とする（朝6時〜夜0時の18時間で割ると約1.1本）
-const SPARSE = 20;
+// 朝6時〜夜0時の18時間でならして、片道1日18本未満を「1時間に1本より少ない」、36本未満を「30分に1本より少ない」とする
+const HOURLY = 18;
+const HALF_HOURLY = 36;
 const COLOR = "#e8e8ea";
-const SPARSE_COLOR = "#ffb000";
+const HOURLY_COLOR = "#ff4040";
+const HALF_HOURLY_COLOR = "#ff9a1f";
 const DIM_COLOR = "#3a3e47";
 const ZERO_COLOR = "#ff5a5a";
 
@@ -57,10 +59,12 @@ map.addControl(new maplibregl.AttributionControl({ compact: false }));
 // 地図を回しているので、北の向きを出す
 map.addControl(new maplibregl.NavigationControl({ showZoom: false, visualizePitch: false }), "bottom-right");
 
-// 線の太さ（ズーム4.5ほどのときの px）。t=0 で路線図のような一定の太さ、t=1 で本数の平方根に比例
-function width(t: number): ExpressionSpecification {
+// 線の太さ（ズーム4.5ほどのときの px）。t=0 で路線図のような一定の太さ、t=1 で本数の平方根に比例。
+// e=1 で、30分に1本より少ない線を太くして目立たせる
+function width(t: number, e: number): ExpressionSpecification {
   const byCount: ExpressionSpecification = ["max", 0.15, ["*", 0.18, ["sqrt", ["get", "n"]]]];
-  const w: ExpressionSpecification = ["+", ["*", 1 - t, 1.3], ["*", t, byCount]];
+  const emph: ExpressionSpecification = ["case", ["<", ["get", "n"], HALF_HOURLY], 0.7 * e, 0];
+  const w: ExpressionSpecification = ["+", ["*", 1 - t, 1.3], ["*", t, byCount], emph];
   return ["interpolate", ["exponential", 2], ["zoom"], 4, ["*", 0.7, w], 12, ["*", 6, w]];
 }
 const sizeAt5 = (n: number) => Math.max(0.15, 0.18 * Math.sqrt(n));
@@ -109,7 +113,9 @@ async function main() {
   // 数字はすべてこのデータから出す（営業キロのない区間は距離の合計から外す）
   const kmOf = (f: (typeof feats)[number]) => f.properties.km ?? 0;
   const totalKm = feats.reduce((s, f) => s + kmOf(f), 0);
-  const sparseKm = feats.filter((f) => f.properties.n < SPARSE).reduce((s, f) => s + kmOf(f), 0);
+  const kmWhere = (ok: (n: number) => boolean) => feats.filter((f) => ok(f.properties.n)).reduce((s, f) => s + kmOf(f), 0);
+  const hourlyKm = kmWhere((n) => n < HOURLY);
+  const halfKm = kmWhere((n) => n >= HOURLY && n < HALF_HOURLY);
   const zero = feats.filter((f) => isZero(f.properties));
   const zeroKm = zero.reduce((s, f) => s + kmOf(f), 0);
   const busiest = feats.reduce((a, b) => (b.properties.n > a.properties.n ? b : a));
@@ -126,7 +132,7 @@ async function main() {
     source: "rail",
     // 細い線を上に重ねる。太い線の下に細い線が隠れないように
     layout: { "line-cap": "round", "line-join": "round", "line-sort-key": ["-", ["get", "n"]] },
-    paint: { "line-color": COLOR, "line-width": width(0), "line-color-transition": { duration: 800 } },
+    paint: { "line-color": COLOR, "line-width": width(0, 0), "line-color-transition": { duration: 800 } },
   });
   map.addLayer({
     id: "zero",
@@ -160,7 +166,9 @@ async function main() {
   const CAPTIONS = [
     `全国約${km(totalKm)}kmの鉄道（新幹線を除く）。路線図ではどれも同じ1本の線。`,
     `いちばん多いのは${p.op} ${p.line} ${p.a}〜${p.b}の片道約${Math.round(p.n)}本。少ない区間は片道数本しかない。線の太さは本数の平方根に比例させている。`,
-    `<b>${pct(sparseKm)}%</b>（約${km(sparseKm)}km）は片道1日${SPARSE}本未満。朝6時から夜0時までにならすと、1時間に1本ほどか、それより少ない。`,
+    `<div><b class="hourly">${pct(hourlyKm)}%</b>（約${km(hourlyKm)}km）は1時間に1本より少ない（片道1日${HOURLY}本未満）</div>` +
+      `<div><b class="half">${pct(halfKm)}%</b>（約${km(halfKm)}km）は30分に1本より少ない（${HOURLY}〜${HALF_HOURLY}本未満）</div>` +
+      `<div class="small">合わせて${pct(hourlyKm + halfKm)}%。朝6時から夜0時の18時間でならした目安</div>`,
     `<b class="zero">${zero.length}区間・約${km(zeroKm)}km</b>は、2026年3〜4月に列車が1本も数えられなかった。多くは災害で被災し、運休したまま。`,
   ];
 
@@ -170,21 +178,26 @@ async function main() {
       .join("");
     return step === 0
       ? `<div class="item"><div class="bar" style="height:1.3px"></div>どの線も同じ</div>`
-      : bars + (step === 3 ? `<div class="item"><div class="dash"></div>0本</div>` : "");
+      : step === 2
+        ? `<div class="item"><div class="bar" style="height:3px;background:${HOURLY_COLOR}"></div>1時間に1本未満</div>` +
+          `<div class="item"><div class="bar" style="height:3px;background:${HALF_HOURLY_COLOR}"></div>30分に1本未満</div>`
+        : bars + (step === 3 ? `<div class="item"><div class="dash"></div>0本</div>` : "");
   };
 
   let step = -1;
   let t = 0;
+  let e = 0;
   let anim = 0;
-  function animateWidth(to: number) {
+  function animateWidth(toT: number, toE: number) {
     cancelAnimationFrame(anim);
-    const from = t;
+    const [fromT, fromE] = [t, e];
     const start = performance.now();
     const frame = (now: number) => {
       const k = Math.min((now - start) / 2500, 1);
-      const e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
-      t = from + (to - from) * e;
-      map.setPaintProperty("rail", "line-width", width(t));
+      const ease = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
+      t = fromT + (toT - fromT) * ease;
+      e = fromE + (toE - fromE) * ease;
+      map.setPaintProperty("rail", "line-width", width(t, e));
       if (k < 1) anim = requestAnimationFrame(frame);
     };
     anim = requestAnimationFrame(frame);
@@ -196,11 +209,15 @@ async function main() {
     document.querySelectorAll<HTMLButtonElement>("#steps button").forEach((b) => b.classList.toggle("on", Number(b.dataset.step) === s));
     $("#caption").innerHTML = CAPTIONS[s];
     $("#legend").innerHTML = legend(s);
-    animateWidth(s === 0 ? 0 : 1);
+    animateWidth(s === 0 ? 0 : 1, s === 2 ? 1 : 0);
     map.setPaintProperty(
       "rail",
       "line-color",
-      s === 2 ? ["case", ["<", ["get", "n"], SPARSE], SPARSE_COLOR, DIM_COLOR] : s === 3 ? DIM_COLOR : COLOR,
+      s === 2
+        ? ["case", ["<", ["get", "n"], HOURLY], HOURLY_COLOR, ["<", ["get", "n"], HALF_HOURLY], HALF_HOURLY_COLOR, DIM_COLOR]
+        : s === 3
+          ? DIM_COLOR
+          : COLOR,
     );
     map.setLayoutProperty("zero", "visibility", s === 3 ? "visible" : "none");
     // マーカーの不透明度は MapLibre が上書きするので、中の要素で出し入れする
