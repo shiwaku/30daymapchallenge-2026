@@ -31,6 +31,14 @@ const STOPS: Record<string, { why: string; dx?: number; dy?: number }> = {
   "スカイレールサービス|瀬野線": { why: "2024年4月で運行を終え、廃止", dy: -16 },
   "長崎電気軌道|4系統": { why: "運転士不足で、2026年2月から4系統を休止中", dy: -62 },
 };
+// 目印にする駅（各地方の中心駅）。位置は gtfs-gis.jp 2026年版の事業者別・駅別データの JR の駅
+const STATIONS: [string, number, number][] = [
+  ["札幌", 141.3508, 43.0686], ["旭川", 142.3585, 43.7629], ["釧路", 144.382, 42.9906], ["函館", 140.7262, 41.7744],
+  ["青森", 140.7347, 40.8303], ["秋田", 140.1298, 39.7176], ["仙台", 140.8825, 38.2597], ["新潟", 139.061, 37.9122],
+  ["東京", 139.7654, 35.6817], ["金沢", 136.6478, 36.5783], ["名古屋", 136.8822, 35.1713], ["大阪", 135.4951, 34.7023],
+  ["岡山", 133.9183, 34.667], ["広島", 132.4754, 34.3975], ["高松", 134.0453, 34.3506], ["松山", 132.751, 33.8399],
+  ["博多", 130.4206, 33.59], ["熊本", 130.6885, 32.7898], ["鹿児島中央", 130.542, 31.584],
+];
 // データでは0本だが、公式の時刻表では平日も走っている（0になる理由は確かめられなかった）。
 // 「走っていない線」には数えず、ふつうの線として描く
 const NOT_ZERO = ["富山地方鉄道"];
@@ -126,6 +134,27 @@ async function main() {
     attribution:
       '<a href="https://gtfs-gis.jp/railway_honsu/" target="_blank" rel="noopener">gtfs-gis.jp 全国鉄道運行本数データ 2026年版</a>（西澤明、CC BY 4.0 / ODbL）を加工して作成',
   });
+  // 段階3の発光。少ない線の下に、ぼかした線を2重に敷く（外側は大きく淡く、内側は細く強く）
+  const GLOWS = [
+    { id: "glow-outer", width: [8, 64], blur: [8, 64], opacity: 0.35 },
+    { id: "glow-inner", width: [2.5, 20], blur: [2, 16], opacity: 0.8 },
+  ];
+  for (const g of GLOWS) {
+    map.addLayer({
+      id: g.id,
+      type: "line",
+      source: "rail",
+      filter: ["<", ["get", "n"], HALF_HOURLY],
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: {
+        "line-color": ["case", ["<", ["get", "n"], HOURLY], HOURLY_COLOR, HALF_HOURLY_COLOR],
+        "line-width": ["interpolate", ["exponential", 2], ["zoom"], 4, g.width[0], 12, g.width[1]],
+        "line-blur": ["interpolate", ["exponential", 2], ["zoom"], 4, g.blur[0], 12, g.blur[1]],
+        "line-opacity": 0,
+        "line-opacity-transition": { duration: 1500 },
+      },
+    });
+  }
   map.addLayer({
     id: "rail",
     type: "line",
@@ -158,6 +187,14 @@ async function main() {
     const stop = STOPS[key] ?? { why: "" };
     el.innerHTML = `<div class="box"><div class="name">${op} ${line}</div><div class="why">${stop.why}</div></div>`;
     return new maplibregl.Marker({ element: el, anchor: "left", offset: [8 + (stop.dx ?? 0), stop.dy ?? 0] }).setLngLat(at).addTo(map);
+  });
+
+  // 駅名。走っていない線の注記と重ならないよう、段階4では消す
+  const stations = STATIONS.map(([name, lon, lat]) => {
+    const el = document.createElement("div");
+    el.className = "station";
+    el.innerHTML = `<div class="box"><span class="dot"></span>${name}</div>`;
+    return new maplibregl.Marker({ element: el, anchor: "left", offset: [-3, 0] }).setLngLat([lon, lat]).addTo(map);
   });
 
   const pct = (x: number) => Math.round((100 * x) / totalKm);
@@ -220,8 +257,10 @@ async function main() {
           : COLOR,
     );
     map.setLayoutProperty("zero", "visibility", s === 3 ? "visible" : "none");
+    for (const g of GLOWS) map.setPaintProperty(g.id, "line-opacity", s === 2 ? g.opacity : 0);
     // マーカーの不透明度は MapLibre が上書きするので、中の要素で出し入れする
     for (const m of markers) m.getElement().classList.toggle("on", s === 3);
+    for (const m of stations) m.getElement().classList.toggle("on", s !== 3);
   }
 
   document.querySelectorAll<HTMLButtonElement>("#steps button").forEach((b) =>
