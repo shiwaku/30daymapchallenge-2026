@@ -34,9 +34,11 @@ html, body { height: 100%; overflow: hidden; background: #0b0d12; color: #e8e8ea
 #caption .half { color: #ff9a1f; }
 #caption .small { font-size: 12px; color: #c8c9ce; }
 
-.legend { display: flex; align-items: flex-end; gap: 10px; margin-top: 8px; font-size: 11px; color: #9a9ca3; }
+.legend { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin-top: 8px; font-size: 11px; color: #9a9ca3; }
 .legend .item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .legend .bar { width: 36px; background: #e8e8ea; border-radius: 2px; }
+.legend .unit { flex-basis: 100%; }
+.legend .bars { display: flex; align-items: flex-end; gap: 10px; }
 .legend .dash { width: 36px; height: 0; border-top: 2px dashed #ff5a5a; }
 
 /* 走っていない線の注記（地図の上に HTML で置く） */
@@ -53,11 +55,14 @@ html, body { height: 100%; overflow: hidden; background: #0b0d12; color: #e8e8ea
 /* 目印の駅 */
 .station { pointer-events: none; }
 .station .box {
-  display: flex; align-items: center; gap: 4px; padding: 1px 5px 1px 2px; border-radius: 4px;
-  background: rgba(11, 13, 18, 0.8); font-size: 11px; color: #e8e8ea; opacity: 0; transition: opacity 0.6s;
+  display: flex; align-items: center; gap: 5px; padding: 0 0 0 3px;
+  font-size: 14px; font-weight: 700; letter-spacing: 0.04em; color: #ffffff;
+  /* 背景の帯は置かず、地図の背景色の縁取りで線から文字を浮かせる */
+  text-shadow: 0 0 2px #0b0d12, 0 0 3px #0b0d12, 0 0 5px #0b0d12;
+  opacity: 0; transition: opacity 0.6s;
 }
 .station.on .box { opacity: 1; }
-.station .dot { width: 6px; height: 6px; border-radius: 50%; background: #0b0d12; border: 1.5px solid #e8e8ea; }
+.station .dot { width: 9px; height: 9px; border-radius: 50%; background: #ffffff; border: 2px solid #0b0d12; box-shadow: 0 0 0 1.5px #ffffff; }
 
 .maplibregl-ctrl-attrib, .maplibregl-ctrl-attrib-inner { background: rgba(11, 13, 18, 0.78) !important; color: #c8c9ce !important; font-size: 11px; }
 .maplibregl-ctrl-attrib a { color: #e8e8ea; }
