@@ -55,6 +55,9 @@ const DU_COLOR: maplibregl.ExpressionSpecification = [
 ];
 const empty: FC = { type: "FeatureCollection", features: [] };
 
+// 開いた時点で URL に位置があるかを覚えておく（地図は動くたびに URL へ位置を書くので、あとで見ると必ずある）
+const OPENED_WITH_HASH = location.hash.length > 1;
+
 const map = new maplibregl.Map({
   container: "map",
   hash: !new URLSearchParams(location.search).has("record"),
@@ -122,7 +125,7 @@ const RECORD = new URLSearchParams(location.search).has("record");
 
 // 日本を、左のタイトルと右の測地系の名前、下の時間パネルのあいだに収める
 function fitJapan() {
-  if (location.hash && !RECORD) return;
+  if (OPENED_WITH_HASH && !RECORD) return;
   const wide = window.innerWidth >= 900;
   const title = document.querySelector("#title")!.getBoundingClientRect();
   const time = document.querySelector("#time")!.getBoundingClientRect();
