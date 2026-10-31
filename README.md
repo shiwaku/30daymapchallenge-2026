@@ -1,6 +1,6 @@
-# 30DayMapChallenge 2026（個人）
+# 30DayMapChallenge 2026
 
-[#30DayMapChallenge](https://30daymapchallenge.com/) 2026（11月1日〜30日）に個人として参加するための作業リポジトリ。
+[#30DayMapChallenge](https://30daymapchallenge.com/) 2026（11月1日〜30日）に参加するための作業リポジトリ。
 
 ## 30日の一覧
 
