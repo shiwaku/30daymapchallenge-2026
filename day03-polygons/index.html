@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>建ててよい量で立ち上げた日本 — #30DayMapChallenge Day 3 Polygons</title>
+</head>
+<body>
+  <div id="map"></div>
+
+  <section id="title" class="panel">
+    <h1>建ててよい量で立ち上げた日本</h1>
+    <div class="sub">#30DayMapChallenge 2026 Day 3 — Polygons</div>
+    <p>
+      用途地域には、土地の広さに対してどれだけの床を建ててよいか（容積率）が決まっている。
+      全国の用途地域の面を、容積率の高さに立ち上げた。色は用途地域の13種類。
+    </p>
+    <ol class="steps" id="steps"></ol>
+    <div id="caption"></div>
+    <div class="legend" id="legend"></div>
+    <p class="note">
+      高さは容積率に比例させ、見やすいよう誇張している（建物の高さではない）。灰色の平らな面は、データに容積率が入っていないところ。
+      国土交通省「都市計画決定GISデータ」に入っている市区町村だけを描いている。
+    </p>
+  </section>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
