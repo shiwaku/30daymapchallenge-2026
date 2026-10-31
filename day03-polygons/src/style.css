@@ -1,0 +1,40 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; background: #0b0d12; color: #e8e8ea; font-family: "Noto Sans JP", system-ui, sans-serif; }
+#map { position: absolute; inset: 0; }
+
+.panel {
+  position: absolute;
+  padding: 14px 16px;
+  background: rgba(11, 13, 18, 0.72);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  line-height: 1.55;
+}
+#title { top: 16px; left: 16px; max-width: min(380px, calc(100% - 32px)); max-height: calc(100% - 60px); overflow-y: auto; }
+#title h1 { font-size: 18px; font-weight: 700; }
+#title .sub { font-size: 12px; color: #9a9ca3; }
+#title p { margin-top: 8px; font-size: 12px; color: #c8c9ce; }
+#title .note { color: #9a9ca3; }
+
+.steps { margin-top: 10px; list-style: none; display: flex; flex-wrap: wrap; gap: 4px; }
+.steps button {
+  padding: 4px 10px; border: 1px solid #333; border-radius: 8px; background: transparent; color: #9a9ca3;
+  font: inherit; font-size: 13px; cursor: pointer;
+}
+.steps button.on { border-color: #e8e8ea; color: #e8e8ea; }
+
+#caption { margin-top: 10px; min-height: 4.5em; font-size: 13px; color: #e8e8ea; }
+#caption b { font-size: 20px; font-weight: 900; }
+#caption .small { font-size: 12px; color: #c8c9ce; }
+
+.legend { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px 10px; margin-top: 8px; font-size: 11px; color: #c8c9ce; }
+.legend .item { display: flex; align-items: center; gap: 6px; }
+.legend .sw { width: 12px; height: 12px; border-radius: 2px; flex: none; }
+
+.maplibregl-ctrl-attrib, .maplibregl-ctrl-attrib-inner { background: rgba(11, 13, 18, 0.78) !important; color: #c8c9ce !important; font-size: 11px; }
+.maplibregl-ctrl-attrib a { color: #e8e8ea; }
+.maplibregl-ctrl-attrib-button { filter: invert(1); }
+.maplibregl-ctrl-group { background: rgba(232, 232, 234, 0.85); }
+
+body.record #title { display: none; }
