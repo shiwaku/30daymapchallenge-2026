@@ -7,7 +7,8 @@ import "./style.css";
 
 // 開発時は day01-points/data、公開時（day01-points/site/）は ../data を読む
 const DATA = import.meta.env.DEV ? "./data/" : "../data/";
-const JAPAN: [[number, number], [number, number]] = [[128, 30.5], [146.5, 45.8]];
+// 全国の電子基準点（南西諸島・小笠原・南鳥島・沖ノ鳥島を含む）が入る範囲
+const JAPAN: [[number, number], [number, number]] = [[122.6, 20.1], [154.3, 45.9]];
 
 const BG_SCALE = 25000; // geonet_bg.pmtiles の拡大率。これと同じときだけ背景の軌跡を出す
 const R = 6378137;
