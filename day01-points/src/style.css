@@ -26,9 +26,9 @@ html, body { height: 100%; overflow: hidden; background: #0b0d12; color: #e8e8ea
 .chips button.on { background: #e8e8ea; color: #0b0d12; border-color: #e8e8ea; }
 
 /* 今使われている測地系。切り替わるたびに光らせる */
-#datum { position: absolute; top: 16px; right: 24px; max-width: 30vw; text-align: right; pointer-events: none; text-shadow: 0 2px 12px #000; }
-#datum .name { font-size: clamp(36px, 5.2vw, 96px); font-weight: 900; line-height: 1.05; letter-spacing: 0.02em; }
-#datum .desc { margin-top: 8px; font-size: clamp(12px, 1.6vw, 18px); color: #c8c9ce; }
+#datum { position: absolute; top: 16px; right: 24px; max-width: 34vw; text-align: right; pointer-events: none; text-shadow: 0 2px 12px #000; }
+#datum .name { font-size: clamp(36px, 5.2vw, 96px); font-weight: 900; line-height: 1.05; letter-spacing: 0.02em; white-space: nowrap; }
+#datum .desc { margin-top: 8px; font-size: clamp(12px, 1.6vw, 18px); color: #c8c9ce; white-space: pre-line; text-wrap: balance; }
 #datum.flash .name { animation: flash 1.6s ease-out; }
 @keyframes flash { from { color: #ffd23f; transform: scale(1.08); } to { color: #e8e8ea; transform: scale(1); } }
 
@@ -46,7 +46,7 @@ html, body { height: 100%; overflow: hidden; background: #0b0d12; color: #e8e8ea
 #play { width: 36px; height: 36px; border: none; border-radius: 50%; background: #e8e8ea; color: #0b0d12; font-size: 14px; cursor: pointer; }
 #slider { flex: 1; accent-color: #ffd23f; }
 
-.maplibregl-ctrl-attrib, .maplibregl-ctrl-attrib-inner { background: rgba(11, 13, 18, 0.78) !important; color: #c8c9ce !important; font-size: 11px; }
+.maplibregl-ctrl-attrib, .maplibregl-ctrl-attrib-inner { background: rgba(11, 13, 18, 0.78) !important; color: #c8c9ce !important; font-size: 13px; }
 .maplibregl-ctrl-attrib a { color: #e8e8ea; }
 .maplibregl-ctrl-attrib-button { filter: invert(1); }
 

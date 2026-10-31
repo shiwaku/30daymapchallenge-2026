@@ -18,10 +18,10 @@ const SQRT_K = 120000;
 
 // その時点で使われていた測地系（切り替わった日）
 const DATUMS = [
-  { from: "1900-01-01", name: "日本測地系", desc: "明治時代に決めた、日本の位置の基準（2002年3月まで）" },
-  { from: "2002-04-01", name: "JGD2000", desc: "世界の基準に合わせた新しい位置の基準。1997年1月1日の場所で固定" },
-  { from: "2011-10-31", name: "JGD2011", desc: "大地震で地面が動いたので、東日本だけ2011年5月24日の場所で決め直し" },
-  { from: "2025-04-01", name: "測地成果2024", desc: "高さの基準を GNSS で決め直し（緯度・経度はそのまま）" },
+  { from: "1900-01-01", name: "旧日本測地系", desc: "明治時代に決めた、日本の位置の基準（2002年3月まで）" },
+  { from: "2002-04-01", name: "JGD2000", desc: "日本測地系2000。世界の基準に合わせ、1997年1月1日の場所で固定" },
+  { from: "2011-10-31", name: "JGD2011", desc: "日本測地系2011。地震で動いた東日本を、2011年5月24日の場所で決め直し" },
+  { from: "2025-04-01", name: "JGD2024", desc: "日本測地系2024（測地成果2024）\n高さを GNSS で決め直し、緯度・経度はそのまま" },
 ];
 // 元期: 公式の場所として止めた日。白い点と線の始まりはこの日の位置
 const EPOCH = "1997-01-01";
@@ -67,11 +67,15 @@ const map = new maplibregl.Map({
       trails: {
         type: "vector",
         url: `pmtiles://${new URL(DATA + "geonet_bg.pmtiles", location.href).href}`,
+      },
+      tails: { type: "geojson", data: empty },
+      // 出典は常に表示している層のソースに付ける（trails はふだん非表示なので、そこに付けると出ない）
+      now: {
+        type: "geojson",
+        data: empty,
         attribution:
           '<a href="https://terras.gsi.go.jp/" target="_blank" rel="noopener">国土地理院 電子基準点日々の座標値（F5.1解）</a>を加工して作成',
       },
-      tails: { type: "geojson", data: empty },
-      now: { type: "geojson", data: empty },
       epochs: { type: "geojson", data: empty },
     },
     layers: [
@@ -287,6 +291,8 @@ async function main() {
 
   // 地震の週では少し止める。早送りで飛び越えないよう、その週に合わせてから止める
   const QUAKE_HOLD = 1.5;
+  // 最後の週で止めてから最初に戻る（いきなり巻き戻ると、最後が旧日本測地系に見える）
+  const END_HOLD = 3;
   let playing = true;
   let weeksPerSec = 26;
   let acc = 0;
@@ -302,7 +308,14 @@ async function main() {
       if (acc >= 1) {
         const step = Math.floor(acc);
         acc -= step;
-        let next = week + step >= W ? 0 : week + step;
+        let next = week + step;
+        if (week === W - 1) {
+          next = 0;
+        } else if (next >= W - 1) {
+          next = W - 1;
+          acc = 0;
+          hold = END_HOLD;
+        }
         const q = quakes.find((x) => x.week > week && x.week <= next);
         if (q) {
           next = q.week;
