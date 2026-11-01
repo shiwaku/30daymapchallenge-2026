@@ -10,7 +10,7 @@
   shrink: 人口が減ったのに建物は増えた
   sprawl: 建物の伸び率 > 人口の伸び率（SDG 11.3.1 の比 > 1）
   dense:  人口の伸び率 >= 建物の伸び率（比 <= 1）
-  donut:  中心 0-5km の人口が減り、20-40km は増えた（型とは別に付ける印）
+  donut:  中心 0-5km の人口が 5% 以上減り、20-40km は増えた（型とは別に付ける印）
 """
 from pathlib import Path
 import json
@@ -61,7 +61,8 @@ for rank, g in d.groupby("rank"):
     else:
         typ = "dense"
     rings = [{"r": f"{lo}-{hi}", "p00": round(a[f"pop_{lo}_{hi}"]), "p20": round(b[f"pop_{lo}_{hi}"])} for lo, hi in RINGS]
-    donut = rings[0]["p20"] < rings[0]["p00"] and rings[-1]["p20"] > rings[-1]["p00"]
+    # 1km マスの推計値なので、数% の増減は誤差とみなす
+    donut = rings[0]["p20"] < rings[0]["p00"] * 0.95 and rings[-1]["p20"] > rings[-1]["p00"]
     feats.append({
         "type": "Feature",
         "geometry": {"type": "Point", "coordinates": [round(c.geometry.x, 4), round(c.geometry.y, 4)]},
