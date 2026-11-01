@@ -33,11 +33,15 @@ html, body { height: 100%; overflow: hidden; background: #0b0d12; color: #e8e8ea
 @keyframes flash { from { color: #ffd23f; transform: scale(1.08); } to { color: #e8e8ea; transform: scale(1); } }
 
 /* 地震名。起きた週から半年かけて薄くする */
-#quake { position: absolute; right: 24px; top: 46%; max-width: 30vw; text-align: right; pointer-events: none; opacity: 0; text-shadow: 0 2px 16px #000; }
+#quake { position: absolute; right: 24px; top: 46%; white-space: nowrap; text-align: right; pointer-events: none; opacity: 0; text-shadow: 0 2px 16px #000; }
 #quake .date { font-size: clamp(14px, 1.6vw, 22px); color: #ffd23f; }
-#quake .name { font-size: clamp(28px, 3.6vw, 64px); font-weight: 900; color: #ffd23f; line-height: 1.15; }
+#quake .name { font-size: clamp(24px, 3vw, 56px); font-weight: 900; color: #ffd23f; line-height: 1.15; }
 
 #time { bottom: 28px; left: 16px; right: 16px; max-width: 760px; margin: 0 auto; }
+/* 広い画面では時間パネルを右下の海に置き、地図に画面の高さを全部使わせる */
+@media (min-width: 900px) {
+  #time { left: auto; right: 24px; bottom: 40px; width: 540px; max-width: none; margin: 0; }
+}
 #time .row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
 #time .chips { margin-top: 0; }
 #date { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }

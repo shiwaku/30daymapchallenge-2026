@@ -7,8 +7,8 @@ import "./style.css";
 
 // 開発時は day01-points/data、公開時（day01-points/site/）は ../data を読む
 const DATA = import.meta.env.DEV ? "./data/" : "../data/";
-// 全国の電子基準点（南西諸島・小笠原・南鳥島・沖ノ鳥島を含む）が入る範囲
-const JAPAN: [[number, number], [number, number]] = [[122.6, 20.1], [154.3, 45.9]];
+// 南西諸島・伊豆・小笠原・硫黄島までの電子基準点が入る範囲（遠く離れた南鳥島・沖ノ鳥島は外す）
+const JAPAN: [[number, number], [number, number]] = [[122.6, 23.8], [146.6, 45.9]];
 
 const BG_SCALE = 25000; // geonet_bg.pmtiles の拡大率。これと同じときだけ背景の軌跡を出す
 const R = 6378137;
@@ -127,16 +127,13 @@ const RECORD = new URLSearchParams(location.search).has("record");
 function fitJapan() {
   if (OPENED_WITH_HASH && !RECORD) return;
   const wide = window.innerWidth >= 900;
-  const title = document.querySelector("#title")!.getBoundingClientRect();
   const time = document.querySelector("#time")!.getBoundingClientRect();
+  // 広い画面: 時間パネルは右下の海に置くので、上下は端まで使う。左はタイトルの下が空いているので詰める
   map.fitBounds(JAPAN, {
     animate: false,
-    padding: {
-      top: 20,
-      bottom: Math.max(20, window.innerHeight - time.top + 12),
-      left: wide ? title.right + 12 : 12,
-      right: wide ? window.innerWidth * 0.32 + 24 : 12,
-    },
+    padding: wide
+      ? { top: 16, bottom: 36, left: 16, right: window.innerWidth * 0.22 + 24 }
+      : { top: 20, bottom: Math.max(20, window.innerHeight - time.top + 12), left: 12, right: 12 },
   });
 }
 
