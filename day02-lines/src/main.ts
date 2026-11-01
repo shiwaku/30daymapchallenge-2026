@@ -175,6 +175,27 @@ async function main() {
       },
     });
   }
+  // 段階1の発光。段の色で、本数の多い線ほど太く光らせる（段ごとの太さ c.w を掛ける）
+  const GLOWS1 = [
+    { id: "glow1-outer", width: [5, 40], blur: [5, 40], opacity: 0.4 },
+    { id: "glow1-inner", width: [1.6, 13], blur: [1.2, 10], opacity: 0.85 },
+  ];
+  for (const g of GLOWS1) {
+    map.addLayer({
+      id: g.id,
+      type: "line",
+      source: "rail",
+      filter: [">=", ["get", "n"], HALF_HOURLY],
+      layout: { "line-cap": "round", "line-join": "round", "line-sort-key": ["get", "n"] },
+      paint: {
+        "line-color": CLASS_COLOR,
+        "line-width": ["interpolate", ["exponential", 2], ["zoom"], 4, ["*", g.width[0], byClass((c) => c.w)], 12, ["*", g.width[1], byClass((c) => c.w)]],
+        "line-blur": ["interpolate", ["exponential", 2], ["zoom"], 4, ["*", g.blur[0], byClass((c) => c.w)], 12, ["*", g.blur[1], byClass((c) => c.w)]],
+        "line-opacity": 0,
+        "line-opacity-transition": { duration: 1500 },
+      },
+    });
+  }
   map.addLayer({
     id: "rail",
     type: "line",
@@ -350,6 +371,7 @@ async function main() {
     );
     map.setLayoutProperty("zero", "visibility", s === 3 ? "visible" : "none");
     for (const g of GLOWS) map.setPaintProperty(g.id, "line-opacity", s === 2 ? g.opacity : 0);
+    for (const g of GLOWS1) map.setPaintProperty(g.id, "line-opacity", s === 1 ? g.opacity : 0);
     // マーカーの不透明度は MapLibre が上書きするので、中の要素で出し入れする
     for (const m of markers) m.getElement().classList.toggle("on", s === 3);
     updateStations();
