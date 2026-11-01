@@ -41,6 +41,8 @@ html, body { height: 100%; overflow: hidden; background: #0b0d12; color: #e8e8ea
 /* 広い画面では時間パネルを右下の海に置き、地図に画面の高さを全部使わせる */
 @media (min-width: 900px) {
   #time { left: auto; right: 24px; bottom: 40px; width: 540px; max-width: none; margin: 0; }
+  /* 日付の長さで速度ボタンが横に並んだり次の行に落ちたりしないよう、いつも2行に分ける */
+  body #time .row { flex-direction: column; align-items: flex-start; gap: 6px; }
 }
 #time .row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
 #time .chips { margin-top: 0; }
