@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>都市はどう広がったか — #30DayMapChallenge Day 9 Urban-rural</title>
+</head>
+<body>
+  <div id="map"></div>
+
+  <section id="title" class="panel">
+    <h1>都市はどう広がったか</h1>
+    <div class="sub">#30DayMapChallenge 2026 Day 9 — Urban-rural</div>
+    <p>
+      世界の人口上位100都市圏（3都市を除く97都市）について、中心から半径40km の人口と建物の面積が、2000年から2020年にどう変わったかを比べた。
+    </p>
+    <ul class="howto">
+      <li><span class="dot sprawl"></span><b>広がった</b>：人口の伸びより、建物の広がりが速い</li>
+      <li><span class="dot dense"></span><b>詰まった</b>：建物の広がりより、人口の伸びが速い</li>
+      <li><span class="dot shrink"></span><b>減っても広がった</b>：人口は減り、建物は増えた</li>
+      <li><span class="dot ring"></span><b>ドーナツ</b>：中心5km の人口が減り、20〜40km は増えた</li>
+    </ul>
+    <p class="note">円の大きさは2020年の人口（半径40km）。都市をクリックすると詳しく出る。</p>
+  </section>
+
+  <section id="city" class="panel" hidden>
+    <button id="close" type="button" aria-label="閉じる">×</button>
+    <h2 id="c-name"></h2>
+    <div id="c-type"></div>
+    <table id="c-table"></table>
+    <h3>中心からの距離ごとの人口の増減（2000→2020）</h3>
+    <div id="c-rings"></div>
+    <h3>建物の広がり（中心から 40km 四方）</h3>
+    <img id="c-img" alt="">
+    <div class="imglegend"><span class="sw old"></span>2000年にあった建物 <span class="sw new"></span>2000→2020年に増えた建物</div>
+  </section>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
