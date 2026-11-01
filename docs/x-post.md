@@ -58,16 +58,22 @@ https://shiwaku.github.io/30daymapchallenge-2026/day01-points/site/
 本文:
 
 ```text
-#30DayMapChallenge Day 2: Lines
-線はつながっている。列車は来ない
+#30DayMapChallenge Day 2 - Lines
+全国の鉄道を、平日1日に走る列車の本数で描いてみました🗺️
 
-全国の鉄道を、平日1日に走る列車の本数で描き直した。営業キロの約4割は、1時間に1本より少ない。
+📝線はつながっていても、営業キロの約4割は1時間に1本より少ない。最後に、いま列車が走っていない区間も出しています。
+
+デモサイトはこちら↓
 https://shiwaku.github.io/30daymapchallenge-2026/day02-lines/site/
+
+#MapLibre #GTFS
 ```
+
+（動画 day02-lines/output/day02-lines.mp4 を添付する）
 
 リプライ:
 
 ```text
-出典：gtfs-gis.jp 全国鉄道運行本数データ 2026年版（西澤明、CC BY 4.0）を加工して作成
+出典）gtfs-gis.jp 全国鉄道運行本数データ 2026年版（西澤明、CC BY 4.0 / ODbL）を加工して作成
 制作に生成AI（Claude Code）を使用（コードの作成）
 ```

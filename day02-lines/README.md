@@ -87,7 +87,7 @@ npm run build   # site/ に出力
 
 - [x] データ準備
 - [x] 地図作成（index.html）
-- [ ] 投稿用の動画
+- [x] 投稿用の動画（`npm run dev` のあと `node scripts/record-live.mjs` で `output/day02-lines.mp4`、約22秒。3つの段階を順に出し、出典は画面内）
 - [ ] 投稿（#30DayMapChallenge）
 
 ## 経緯
