@@ -61,7 +61,7 @@ https://shiwaku.github.io/30daymapchallenge-2026/day01-points/site/
 #30DayMapChallenge Day 2 - Lines
 全国の鉄道を、平日1日に走る列車の本数で描いてみました🗺️
 
-📝線はつながっていても、営業キロの約4割は1時間に1本より少ない。最後に、いま列車が走っていない区間も出しています。
+📝線はつながっていても、営業キロの約4割は1時間に1本より少ない。最後に、2026年春に列車が走っていなかった区間も出しています。
 
 デモサイトはこちら↓
 https://shiwaku.github.io/30daymapchallenge-2026/day02-lines/site/

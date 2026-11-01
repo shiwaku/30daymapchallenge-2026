@@ -317,7 +317,7 @@ async function main() {
   // 段階は1〜3（0番は使わない）
   const CAPTIONS = [
     "",
-    `全国約${km(totalKm)}kmの鉄道（新幹線を除く）。いちばん多いのは${p.op} ${p.line} ${p.a}〜${p.b}の片道約${Math.round(p.n)}本。1時間に約${Math.round(p.n / HOURLY)}本になる。線の色と太さは、1時間あたりの本数（片道、朝6時から夜0時の18時間でならした目安）。`,
+    `全国約${km(totalKm)}kmの鉄道（新幹線を除く）。いちばん多いのは${p.a}〜${p.b}の片道約${Math.round(p.n)}本（データ上の路線名は${p.op} ${p.line}。同じ区間を走るほかの路線の列車も合算した値）。1時間に約${Math.round(p.n / HOURLY)}本になる。線の色と太さは、1時間あたりの本数（片道、朝6時から夜0時の18時間でならした目安）。`,
     `<div><b class="hourly">${pct(hourlyKm)}%</b>（約${km(hourlyKm)}km）は1時間に1本より少ない（片道1日${HOURLY}本未満）</div>` +
       `<div><b class="half">${pct(halfKm)}%</b>（約${km(halfKm)}km）は30分に1本より少ない（${HOURLY}〜${HALF_HOURLY}本未満）</div>` +
       `<div class="small">合わせて${pct(hourlyKm + halfKm)}%。朝6時から夜0時の18時間でならした目安</div>`,
