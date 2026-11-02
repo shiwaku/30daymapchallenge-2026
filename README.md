@@ -9,7 +9,7 @@
 | DATE | NAME | Description（公式） | Description（日本語訳） | 地図のテーマ | 内容 | 使用する技術 | 準備 |
 |---|---|---|---|---|---|---|---|
 | 01-11-2026 | [Points](day01-points/) | A map challenge classic. Map with points. | マップチャレンジの定番。点で地図を作る。 | 動き続ける基準点 | 全国の電子基準点の1996年からの毎日の位置を点で描き、測地系がなぜ改定されるのかを見せる | Python（公式オフセット補正）→ 7日おきの変位を Int16 バイナリ → MapLibre GL JS（アニメーション）。全期間の軌跡は GeoParquet → tylertoo → PMTiles（2.5万倍のときの背景） | ◎ |
-| 02-11-2026 | [Lines](day02-lines/) | A map challenge classic. Map with lines. | マップチャレンジの定番。線で地図を作る。 | 線はつながっている。列車は来ない | 全国の鉄道を平日1日の本数で描き直し、本数の少ない線と、2026年春に走っていなかった区間を示す | GeoJSON ＋ MapLibre GL JS（line-width を本数で式指定） | ◎ |
+| 02-11-2026 | [Lines](day02-lines/) | A map challenge classic. Map with lines. | マップチャレンジの定番。線で地図を作る。 | 車で120分、世界8都市（投稿済み） | Overture Maps の道路から全球の道路網を作り、東京・ニューヨーク・パリなど8都市の中心から車で120分で届く道路を、所要時間の色で同じ縮尺に並べる。図は別リポジトリ [overture-road-route-search](https://github.com/shiwaku/overture-road-route-search)。鉄道の本数の地図（線はつながっている。列車は来ない）は未投稿で、別の日に回せる | Overture Maps（transportation）→ SciPy の Dijkstra（到達圏 API）→ 同じ縮尺の画像 | ◎ |
 | 03-11-2026 | [Polygons](day03-polygons/) | A map challenge classic. Map with polygons. | マップチャレンジの定番。ポリゴンで地図を作る。 | 建ててよい量で立ち上げた日本 | 全国の用途地域を容積率の高さに立ち上げ、13色で塗る | PMTiles（tylertoo）→ MapLibre GL JS（fill-extrusion） | ◎ |
 | 04-11-2026 | [Clusters](day04-clusters/) | Clusters of something. Hotspots, groups, things that gather together. | 何かのクラスター。ホットスポット、グループ、集まってくるもの。 | チェーン店の縄張り | 全国チェーンと地域チェーンの店舗の集まり方を比べる（ドラッグストア・ホームセンターなど） | DuckDB Spatial（集計）→ PMTiles → MapLibre GL JS | ○ |
 | 05-11-2026 | [Senses: Sight](day05-sight/) | How do you see something? Maybe map a viewshed? | どうやって何かを見る？ 可視領域（viewshed）を地図にしてみては？ | 森の下に隠れたものを見る | 山城の遺構を CS立体図で浮かび上がらせる | CS立体図 XYZ タイル ＋ MapLibre GL JS（乗算合成） | △ |
