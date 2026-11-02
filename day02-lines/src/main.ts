@@ -39,10 +39,10 @@ const STOPS: Record<string, { why: string; dx?: number; dy?: number }> = {
   "JR東日本|津軽線": { why: "2022年8月の大雨で被災し運休。2027年4月に廃止予定" },
   "JR四国|瀬戸大橋線（宇多津）": { why: "特急だけが走る連絡線（このデータは特急を数えない）" },
   "JR九州|肥薩線": { why: "2020年7月豪雨で被災し、運休中" },
-  "いすみ鉄道|いすみ線": { why: "2024年10月の脱線事故から運休中" },
+  "いすみ鉄道|いすみ線": { why: "2024年10月の脱線事故から運休中", dy: 50 },
   "大井川鐵道|本線": { why: "2022年9月の台風15号で被災し、運休中" },
-  "くま川鉄道|くま川鉄道線": { why: "2020年7月豪雨で橋が流され運休。2026年9月20日に再開", dy: 62 },
-  "スカイレールサービス|瀬野線": { why: "2024年4月で運行を終え、廃止", dy: -16 },
+  "くま川鉄道|くま川鉄道線": { why: "2020年7月豪雨で橋が流され運休。2026年9月20日に再開", dy: 40 },
+  "スカイレールサービス|瀬野線": { why: "2024年4月で運行を終え、廃止", dy: -50 },
   "長崎電気軌道|4系統": { why: "運転士不足で、2026年2月から4系統を休止中", dy: -62 },
 };
 // 目印にする駅（各地方の中心駅）。位置は gtfs-gis.jp 2026年版の事業者別・駅別データの JR の駅
@@ -175,6 +175,27 @@ async function main() {
       },
     });
   }
+  // 段階1の発光。段の色で、本数の多い線ほど太く光らせる（段ごとの太さ c.w を掛ける）
+  const GLOWS1 = [
+    { id: "glow1-outer", width: [5, 40], blur: [5, 40], opacity: 0.4 },
+    { id: "glow1-inner", width: [1.6, 13], blur: [1.2, 10], opacity: 0.85 },
+  ];
+  for (const g of GLOWS1) {
+    map.addLayer({
+      id: g.id,
+      type: "line",
+      source: "rail",
+      filter: [">=", ["get", "n"], HALF_HOURLY],
+      layout: { "line-cap": "round", "line-join": "round", "line-sort-key": ["get", "n"] },
+      paint: {
+        "line-color": CLASS_COLOR,
+        "line-width": ["interpolate", ["exponential", 2], ["zoom"], 4, ["*", g.width[0], byClass((c) => c.w)], 12, ["*", g.width[1], byClass((c) => c.w)]],
+        "line-blur": ["interpolate", ["exponential", 2], ["zoom"], 4, ["*", g.blur[0], byClass((c) => c.w)], 12, ["*", g.blur[1], byClass((c) => c.w)]],
+        "line-opacity": 0,
+        "line-opacity-transition": { duration: 1500 },
+      },
+    });
+  }
   map.addLayer({
     id: "rail",
     type: "line",
@@ -296,7 +317,7 @@ async function main() {
   // 段階は1〜3（0番は使わない）
   const CAPTIONS = [
     "",
-    `全国約${km(totalKm)}kmの鉄道（新幹線を除く）。いちばん多いのは${p.op} ${p.line} ${p.a}〜${p.b}の片道約${Math.round(p.n)}本。1時間に約${Math.round(p.n / HOURLY)}本になる。線の色と太さは、1時間あたりの本数（片道、朝6時から夜0時の18時間でならした目安）。`,
+    `全国約${km(totalKm)}kmの鉄道（新幹線を除く）。いちばん多いのは${p.a}〜${p.b}の片道約${Math.round(p.n)}本（データ上の路線名は${p.op} ${p.line}。同じ区間を走るほかの路線の列車も合算した値）。1時間に約${Math.round(p.n / HOURLY)}本になる。線の色と太さは、1時間あたりの本数（片道、朝6時から夜0時の18時間でならした目安）。`,
     `<div><b class="hourly">${pct(hourlyKm)}%</b>（約${km(hourlyKm)}km）は1時間に1本より少ない（片道1日${HOURLY}本未満）</div>` +
       `<div><b class="half">${pct(halfKm)}%</b>（約${km(halfKm)}km）は30分に1本より少ない（${HOURLY}〜${HALF_HOURLY}本未満）</div>` +
       `<div class="small">合わせて${pct(hourlyKm + halfKm)}%。朝6時から夜0時の18時間でならした目安</div>`,
@@ -350,6 +371,7 @@ async function main() {
     );
     map.setLayoutProperty("zero", "visibility", s === 3 ? "visible" : "none");
     for (const g of GLOWS) map.setPaintProperty(g.id, "line-opacity", s === 2 ? g.opacity : 0);
+    for (const g of GLOWS1) map.setPaintProperty(g.id, "line-opacity", s === 1 ? g.opacity : 0);
     // マーカーの不透明度は MapLibre が上書きするので、中の要素で出し入れする
     for (const m of markers) m.getElement().classList.toggle("on", s === 3);
     updateStations();
