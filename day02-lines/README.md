@@ -88,7 +88,15 @@ npm run build   # site/ に出力
 - [x] データ準備
 - [x] 地図作成（index.html）
 - [x] 投稿用の動画（`node scripts/record-live.mjs` で公開ページを録画し `output/day02-lines.mp4`、約20秒。自動で進む3つの段階をそのまま録る。出典は画面内）
-- [ ] 投稿（#30DayMapChallenge）
+- [ ] 投稿（#30DayMapChallenge）: この鉄道の地図は未投稿。Day 2 は下の「投稿したもの」で投稿したので、別の日に回せる
+
+## 投稿したもの（2026年11月2日）
+
+Day 2 の X 投稿は、この鉄道の地図ではなく、別のリポジトリ [overture-road-route-search](https://github.com/shiwaku/overture-road-route-search) の図にした。世界8都市の中心から車で120分で届く道路を、同じ縮尺で並べたもの（[reach_120_legal/all.png](https://github.com/shiwaku/overture-road-route-search/blob/main/docs/images/reach_120_legal/all.png)）。道路の線を中心からの所要時間で塗っているので、お題の「線で地図を作る」を満たす。
+
+- 出典: © Overture Maps Foundation（transportation、リリース 2026-10-21.0）、© OpenStreetMap contributors（ODbL）、法定速度は [osm-legal-default-speeds](https://github.com/westnordost/osm-legal-default-speeds)（CC BY-SA 2.0）
+- 言える範囲: 制限速度が無い区間は国の法定速度で、止まらずに走り続けた場合の上限。実態より速い。制限速度の入り方や道路の分類が国で違うので、都市どうしの比較には前提がある（元リポジトリの README）
+- 画像はこのリポジトリにはコピーせず、リンクだけにする
 
 ## 経緯
 

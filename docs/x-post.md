@@ -55,6 +55,28 @@ https://shiwaku.github.io/30daymapchallenge-2026/day01-points/site/
 
 ### Day 2 — Lines
 
+投稿済み（2026-11-02）。投稿したのは鉄道の地図ではなく、overture-road-route-search の到達圏の図（day02-lines/README.md の「投稿したもの」）。
+
+投稿した本文:
+
+```text
+#30DayMapChallenge Day 2 - lines
+Overture Mapsの道路データから作成した全球の道路ネットワークデータに基づく到達圏のAPI化の検証🚗
+世界は広い！！！！API / 描画の処理は改善が必要📝
+```
+
+（画像 https://github.com/shiwaku/overture-road-route-search/blob/main/docs/images/reach_120_legal/all.png を添付）
+
+リプライ（出典と生成AIの使用）:
+
+```text
+出典）© Overture Maps Foundation（2026-10-21.0）、© OpenStreetMap contributors、osm-legal-default-speeds（CC BY-SA 2.0）
+制作に生成AI（Claude Code）を使用（コードの作成）
+https://github.com/shiwaku/overture-road-route-search
+```
+
+以下は鉄道の地図の下書き（未投稿。別の日に回すときに使う）。
+
 本文:
 
 ```text
