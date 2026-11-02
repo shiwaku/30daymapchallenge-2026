@@ -2,7 +2,7 @@
 
 - DATE: 02-11-2026
 - NAME: Lines
-- ビューワ: https://shiwaku.github.io/30daymapchallenge-2026/day02-lines/site/
+- 投稿: 2026年11月2日（X）。投稿したのは下の「到達圏 120 分」の図
 
 ## Description（公式）
 
@@ -12,11 +12,41 @@
 
 マップチャレンジの定番。線で地図を作る。
 
-## 地図のテーマ
+## 投稿したもの: 到達圏 120 分の都市比較
+
+![到達圏 120 分の都市比較](https://raw.githubusercontent.com/shiwaku/overture-road-route-search/main/docs/images/reach_120_legal/all.png)
+
+Overture Maps の道路データから全球の道路ネットワークを作り、到達圏を返す API をローカルで動かして検証した。東京・ニューヨーク・ロサンゼルス・ロンドン・パリ・北京・デリー・サンパウロの8都市の中心から、車で120分で届く道路を、中心からの所要時間の色で、同じ縮尺に並べた。道路の線を所要時間で塗っているので、お題の「線で地図を作る」を満たす。
+
+- 作ったリポジトリ: [overture-road-route-search](https://github.com/shiwaku/overture-road-route-search)（図は [docs/images/reach_120_legal/all.png](https://github.com/shiwaku/overture-road-route-search/blob/main/docs/images/reach_120_legal/all.png)）。画像はこのリポジトリにはコピーせず、上で表示しているだけ
+- 道路は幹線（motorway〜tertiary とそのランプ）。一方通行と制限速度を使い、探索は SciPy の Dijkstra
+
+### 言える範囲
+
+- 制限速度が無い区間は国の法定速度で、止まらずに走り続けた場合の上限。実態より速い
+- 制限速度の入り方や道路の分類が国で違うので、都市どうしの比較には前提がある（元リポジトリの README）
+- 面積は、届いた道路が通る 5 km 四方のマスの合計
+
+### データ
+
+- 道路: © Overture Maps Foundation（transportation テーマ、リリース 2026-10-21.0）。元の多くは © OpenStreetMap contributors（ODbL）
+- 法定速度: [osm-legal-default-speeds](https://github.com/westnordost/osm-legal-default-speeds)（元は OSM wiki「Default speed limits」、CC BY-SA 2.0）
+
+### 投稿文
+
+`docs/x-post.md` の Day 2。出典と生成AIの使用はリプライに書く。
+
+## 未投稿: 鉄道の本数の地図（線はつながっている。列車は来ない）
+
+Day 2 用に作ったが、投稿は上の図にした。別の日に回せる。
+
+- ビューワ: https://shiwaku.github.io/30daymapchallenge-2026/day02-lines/site/
+
+### 地図のテーマ
 
 線はつながっている。列車は来ない（鉄道の太さ＝本数）
 
-## 内容
+### 内容
 
 路線図では山手線もローカル線も同じ太さで描かれるが、走っている列車の数はまるで違う。全国の鉄道を、平日1日に走る列車の本数で描き直す。背景の地図は置かず、線だけで日本を描く。
 
@@ -30,7 +60,7 @@
 
 数字はすべて、ビューワがデータから計算して出す。
 
-## 言える範囲
+### 言える範囲
 
 - 本数は、平日に走る定期列車の1日あたりの本数（上りと下りの平均）。特急など特別料金の要る列車は原則含まず、新幹線も含まない。そのため、特急だけが走る区間は0本になる
 - 区間別のデータなので、同じ区間を走る路線・事業者の列車は合算されている。いちばん多い代々木〜新宿（片道約967本）も、データ上の路線名は山手線だが、中央・総武線各駅停車の列車を合算した値（隣の中央線 御茶ノ水〜代々木は513本）。山手線だけの本数ではない
@@ -38,7 +68,7 @@
 - 営業キロの合計（約24,100km）は、このデータの区間の営業キロを足したもの。日本の鉄道の総延長ではない。営業キロのない4区間は合計から外した
 - 「1時間に1本」「30分に1本」は、朝6時から夜0時の18時間でならした目安（18本・36本）。時間帯ごとの本数はこのデータにはないので、朝夕に集中して走る線もならして数えている
 
-## 本数が0の区間
+### 本数が0の区間
 
 2026年版で本数が0の区間は17あり、そのうち14区間（9路線）を「走っていない線」として示す。理由は事業者・国・自治体の資料で確かめた（2026年10月30日）。時点は、本数を数えた2026年3〜4月。
 
@@ -56,7 +86,7 @@
 
 残る3区間（富山地方鉄道 市内線本線 富山駅〜丸の内〜富山大学前、都心線 丸の内〜中町（西町北））は、データでは0本だが、[公式の時刻表](https://www.chitetsu.co.jp/?p=70984)（2026年3月14日改正）では平日も走っている。0になる理由は確かめられなかったので、「走っていない線」には数えず、ほかの線と同じに描く。
 
-## 使用する技術
+### 使用する技術
 
 - Python（列名をそろえ、片道あたりの本数を足すだけ。値は変えない）
 - Vite 8 ＋ MapLibre GL JS 6（TypeScript）。約2,150区間なので、タイルにせず GeoJSON をそのまま読む
@@ -67,7 +97,7 @@
 - 地図は北が上。地図を回して北東を右に向ける処理（`fitJapan`）はあるが、`hash: true` で読み込み直後に URL に位置が入るため、公開ページでは働かない（北が上のほうが見やすいので、そのままにしている）。`?record` のときだけ回る
 - 公開版は `site/`（`npm run build` の出力）。GitHub Pages では /day02-lines/site/
 
-## 作り方
+### 作り方
 
 ```sh
 curl -o data/raw/unkohonsu2026_kukan.geojson https://gtfs-gis.jp/railway_honsu/data/unkohonsu2026_kukan.geojson
@@ -79,25 +109,17 @@ npm run dev     # http://localhost:5173/
 npm run build   # site/ に出力
 ```
 
-## データ
+### データ
 
 - [gtfs-gis.jp 全国鉄道運行本数データ](https://gtfs-gis.jp/railway_honsu/) 2026年版・区間別運行本数と事業者別・駅別運行本数（作成: 西澤明、ライセンス: CC BY 4.0 / ODbL）を加工して作成
 
-## 状況
+### 状況
 
 - [x] データ準備
 - [x] 地図作成（index.html）
 - [x] 投稿用の動画（`node scripts/record-live.mjs` で公開ページを録画し `output/day02-lines.mp4`、約20秒。自動で進む3つの段階をそのまま録る。出典は画面内）
-- [ ] 投稿（#30DayMapChallenge）: この鉄道の地図は未投稿。Day 2 は下の「投稿したもの」で投稿したので、別の日に回せる
+- [ ] 投稿（未投稿。別の日に回せる）
 
-## 投稿したもの（2026年11月2日）
-
-Day 2 の X 投稿は、この鉄道の地図ではなく、別のリポジトリ [overture-road-route-search](https://github.com/shiwaku/overture-road-route-search) の図にした。世界8都市の中心から車で120分で届く道路を、同じ縮尺で並べたもの（[reach_120_legal/all.png](https://github.com/shiwaku/overture-road-route-search/blob/main/docs/images/reach_120_legal/all.png)）。道路の線を中心からの所要時間で塗っているので、お題の「線で地図を作る」を満たす。
-
-- 出典: © Overture Maps Foundation（transportation、リリース 2026-10-21.0）、© OpenStreetMap contributors（ODbL）、法定速度は [osm-legal-default-speeds](https://github.com/westnordost/osm-legal-default-speeds)（CC BY-SA 2.0）
-- 言える範囲: 制限速度が無い区間は国の法定速度で、止まらずに走り続けた場合の上限。実態より速い。制限速度の入り方や道路の分類が国で違うので、都市どうしの比較には前提がある（元リポジトリの README）
-- 画像はこのリポジトリにはコピーせず、リンクだけにする
-
-## 経緯
+### 経緯
 
 最初の案は「区間別の本数で太さを変えて描く」だけだったが、同じ見せ方の公開デモ（railway-frequency-converter）がすでにあるので、路線図との対比と、走っていない区間を加えた（2026年10月30日）。路線図のように同じ太さで描く最初の段階は、それだけでは何も分からないので外した（2026年10月31日）。
