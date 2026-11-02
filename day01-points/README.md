@@ -28,7 +28,7 @@
 - 電子基準点データ提供サービス（SFTP）→ Python（公式オフセット補正量の適用・固定点との差）
 - GeoParquet → **tylertoo 0.8.0** → PMTiles（全期間の軌跡、約1,300万点）
 - 7日おきの変位を Int16 バイナリにして、Vite 8 ＋ MapLibre GL JS 6（TypeScript）で各局のその週の位置を動かす
-- 測地系の名前（日本測地系 → JGD2000 → JGD2011 → 測地成果2024）と地震名を大きく出す。水平の動きは「圧縮（√）」・2.5万倍・25万倍を切り替えられ、速度も変えられる
+- 測地系の名前（旧日本測地系 → JGD2000 → JGD2011 → JGD2024。名前は国土地理院「日本の測地系」に合わせる）と地震名を大きく出す。水平の動きは「圧縮（√）」・2.5万倍・25万倍を切り替えられ、速度も変えられる
 - 「圧縮」は向きはそのままに、変位 d(m) を 120,000×√d (m) で描く。表示上の工夫で、データは変えていない
 - 公開版は `site/`（`npm run build` の出力）。GitHub Pages では /day01-points/site/
 
@@ -52,7 +52,7 @@ npm run build   # site/ に出力
 
 - [x] データ準備
 - [x] 地図作成（index.html）
-- [ ] 投稿用の動画（`node scripts/record.mjs` で `output/day01-points.mp4`）
+- [x] 投稿用の動画（`npm run dev` のあと `node scripts/record-live.mjs` で `output/day01-points.mp4`。ふだんの再生を1年/秒でそのまま録る）
 - [ ] 投稿（#30DayMapChallenge）
 
 ## 経緯
