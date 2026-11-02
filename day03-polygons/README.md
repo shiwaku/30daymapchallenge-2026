@@ -14,9 +14,11 @@
 
 ## 投稿するもの: 都市の年輪（Urban rings）
 
-![都市の年輪](urban_rings.png)
+![都市の年輪（1975→2030 のアニメーション）](urban_rings.gif)
 
-2025年の人口が多い順に50の都市中心について、1975年から2030年まで5年ごとの都市中心のポリゴンを、年輪のように重ねた。内側の紫ほど古く、外側の明るい色ほど新しい。どの図も 190 km 四方で、同じ縮尺。
+最後の年の1枚: [urban_rings.png](urban_rings.png)
+
+2025年の人口が多い順に50の都市中心について、1975年から2030年まで5年ごとの都市中心のポリゴンを、年輪のように重ねた。内側の暗い藍ほど古く、外側の白に近い色ほど新しい。アニメーションでは、その年の外周を光らせる。どの図も 190 km 四方で、同じ縮尺。
 
 - 広州は1975→2025年に都市中心の面積が16.6倍、ダッカは9.5倍。東京は1.1倍、大阪は1.0倍で、ほとんど広がっていない
 - 上位50のうち、15都市は1.5倍未満、13都市は3倍以上
@@ -39,12 +41,12 @@ GHSL の都市化度（Degree of Urbanisation）の定義で、人口密度が1 
 ```sh
 # GHS-UCDB R2024A MTUC（V1.2）を取得して展開
 curl -L -o data/ucdb_mtuc/mtuc.zip https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_UCDB_GLOBE_R2024A/GHS_UCDB_MTUC_GLOBE_R2024A/V1-2/GHS_UCDB_MTUC_GLOBE_R2024A_V1_2.zip
-python -I -X utf8 scripts/urban_rings.py data/ucdb_mtuc/GHS_UCDB_MTUC_GLOBE_R2024A.gpkg output
-cp output/urban_rings.png urban_rings.png
+python -I -X utf8 scripts/urban_rings.py data/ucdb_mtuc/GHS_UCDB_MTUC_GLOBE_R2024A.gpkg output   # 図・GIF・MP4
+cp output/urban_rings.png output/urban_rings.gif .
 ```
 
 - 年ごとのレイヤー（GHSL_UCDB_MTUC_{年}_GLOBE_R2024）から、その都市中心と同じ ID（ID_UC_G0）のポリゴンだけを描く。新しい年から先に描き、古い年を上に重ねる
-- 色は magma の12段。matplotlib・GeoPandas で描いた。GHSL 全体の整理は [docs/ghsl.md](../docs/ghsl.md)
+- 色は暗い藍→紫→赤→橙→白の12段。光は、太さと濃さを変えた外周の線を4本重ねて、ぼかしたように見せる。図形は一度だけ作り、年ごとには表示を切り替えて書き出す（GIF は1コマ0.7秒、最後の年で3秒止める）。matplotlib・GeoPandas・ffmpeg で作った。GHSL 全体の整理は [docs/ghsl.md](../docs/ghsl.md)
 
 ### データ
 
