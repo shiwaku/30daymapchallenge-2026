@@ -1,0 +1,65 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; background: #07080c; color: #e8e8ea; font-family: "Noto Sans JP", system-ui, sans-serif; }
+#map { position: absolute; inset: 0; }
+
+.panel {
+  position: absolute;
+  padding: 14px 16px;
+  background: rgba(7, 8, 12, 0.78);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  line-height: 1.55;
+}
+#title { top: 16px; left: 16px; width: min(380px, calc(100% - 32px)); max-height: calc(100% - 60px); overflow-y: auto; }
+#title h1 { font-size: 22px; font-weight: 900; letter-spacing: 0.04em; }
+#title .sub { font-size: 12px; color: #9a9ca3; }
+#title p { margin-top: 8px; font-size: 12px; color: #c8c9ce; }
+#title .note { font-size: 11px; color: #8a8c93; }
+
+.steps { margin-top: 10px; list-style: none; display: flex; flex-direction: column; gap: 4px; counter-reset: s; }
+.steps li { counter-increment: s; }
+.steps button {
+  width: 100%; padding: 5px 10px; text-align: left;
+  border: 1px solid #333; border-radius: 8px; background: transparent; color: #9a9ca3;
+  font: inherit; font-size: 13px; cursor: pointer;
+}
+.steps button::before { content: counter(s) ". "; }
+.steps button.on { border-color: #e8e8ea; color: #e8e8ea; }
+
+#caption { margin-top: 10px; min-height: 7.5em; font-size: 13px; color: #e8e8ea; }
+#caption b { font-size: 18px; font-weight: 900; }
+#caption .rows { margin-top: 6px; display: grid; gap: 2px; }
+#caption .row { display: grid; grid-template-columns: 1fr auto 7.5em; align-items: baseline; gap: 8px; }
+#caption .row .v { font-size: 18px; font-weight: 900; text-align: right; }
+#caption .row .e { font-size: 11px; color: #9a9ca3; text-align: right; }
+.c { color: var(--c); font-weight: 700; }
+
+.legend { list-style: none; margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; }
+.legend button {
+  width: 100%; display: flex; align-items: center; gap: 6px; padding: 2px 4px;
+  border: 0; border-radius: 6px; background: transparent; color: #e8e8ea;
+  font: inherit; font-size: 12px; cursor: pointer; text-align: left; transition: opacity 0.6s;
+}
+.legend button:hover { background: rgba(255, 255, 255, 0.06); }
+.legend button.off { opacity: 0.35; }
+.legend .sw { flex: none; width: 12px; height: 12px; border-radius: 3px; background: var(--c); box-shadow: 0 0 6px var(--c); }
+.legend .n { margin-left: auto; font-size: 11px; color: #9a9ca3; font-variant-numeric: tabular-nums; }
+
+/* 沖縄の小さな地図 */
+#inset-box {
+  position: absolute; left: 16px; bottom: 36px; width: 170px; height: 150px;
+  border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 10px; overflow: hidden;
+  opacity: 0; pointer-events: none; transition: opacity 0.6s;
+}
+#inset-box.on { opacity: 1; }
+#inset { position: absolute; inset: 0; }
+#inset-box .label { position: absolute; left: 8px; top: 5px; font-size: 11px; color: #9a9ca3; }
+@media (max-width: 899px) { #inset-box { display: none; } }
+
+.maplibregl-ctrl-attrib, .maplibregl-ctrl-attrib-inner { background: rgba(7, 8, 12, 0.8) !important; color: #c8c9ce !important; font-size: 12px; }
+.maplibregl-ctrl-attrib a { color: #e8e8ea; }
+.maplibregl-ctrl-attrib-button { filter: invert(1); }
+.maplibregl-ctrl-group { background: rgba(232, 232, 234, 0.85); }
+
+.record .steps, .record .maplibregl-ctrl-group { display: none; }
