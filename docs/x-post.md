@@ -99,3 +99,7 @@ https://shiwaku.github.io/30daymapchallenge-2026/day02-lines/site/
 出典）gtfs-gis.jp 全国鉄道運行本数データ 2026年版（西澤明、CC BY 4.0 / ODbL）を加工して作成
 制作に生成AI（Claude Code）を使用（コードの作成）
 ```
+
+### Day 3 — Polygons
+
+本文とリプライは day03-polygons/README.md の「投稿文の下書き」。添付は day03-polygons/urban_rings.png。
