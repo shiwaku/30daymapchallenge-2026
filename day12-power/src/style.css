@@ -1,0 +1,57 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; background: #05060a; color: #e8e8ea; font-family: "Noto Sans JP", system-ui, sans-serif; }
+#map { position: absolute; inset: 0; }
+
+.panel {
+  position: absolute;
+  padding: 14px 16px;
+  background: rgba(5, 6, 10, 0.78);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  line-height: 1.55;
+}
+#title { top: 16px; left: 16px; width: min(360px, calc(100% - 32px)); max-height: calc(100% - 64px); overflow-y: auto; }
+#title h1 { font-size: 22px; font-weight: 700; color: #fff4d6; text-shadow: 0 0 12px rgba(255, 181, 74, 0.7); }
+#title .sub { font-size: 12px; color: #9a9ca3; }
+#title p { margin-top: 8px; font-size: 12px; color: #c8c9ce; }
+#title .note { color: #8a8c93; font-size: 11px; }
+
+#stats { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+#stats div { display: flex; align-items: baseline; gap: 6px; font-size: 12px; color: #c8c9ce; }
+#stats b { font-size: 22px; font-weight: 900; color: #ffb54a; min-width: 4.2em; text-align: right; }
+#stats span { color: #9a9ca3; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 10px; font-size: 11px; color: #9a9ca3; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend .bar { display: inline-block; width: 28px; height: 2px; background: #fff4d6; box-shadow: 0 0 6px 2px rgba(255, 181, 74, 0.8); }
+.legend .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; }
+.legend .dot.plant { background: #fff; box-shadow: 0 0 6px 2px rgba(255, 255, 255, 0.6); }
+.legend .dot.sub { background: #5fd4ff; box-shadow: 0 0 6px 2px rgba(95, 212, 255, 0.6); }
+
+#tip { display: none; pointer-events: none; padding: 6px 9px; font-size: 12px; z-index: 5; }
+#tip .small { color: #9a9ca3; font-size: 11px; }
+
+#credit {
+  position: absolute; left: 0; bottom: 0; right: 0;
+  padding: 4px 10px; font-size: 11px; color: #aeb0b6;
+  background: rgba(5, 6, 10, 0.78);
+}
+#credit a { color: #e8e8ea; }
+.maplibregl-ctrl-bottom-right { bottom: 24px; }
+.maplibregl-ctrl-group { background: rgba(232, 232, 234, 0.85); }
+.poster .maplibregl-ctrl-group { display: none; }
+
+/* スマートフォン: パネルを下に置き、説明を省く */
+@media (max-width: 700px) {
+  #title { top: auto; bottom: 40px; left: 8px; width: calc(100% - 16px); max-height: 42%; padding: 10px 12px; }
+  #title h1 { font-size: 17px; }
+  #lead, #title .note { display: none; }
+  #title .sub { font-size: 11px; }
+  .legend { margin-top: 6px; font-size: 10px; gap: 2px 10px; }
+  #stats { margin-top: 6px; gap: 0; }
+  #stats div { font-size: 11px; }
+  #stats b { font-size: 16px; min-width: 3.7em; }
+  .maplibregl-ctrl-group { display: none; }
+  #credit { font-size: 10px; padding: 3px 8px; }
+}
