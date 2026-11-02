@@ -65,7 +65,7 @@ Overture Mapsの道路データから作成した全球の道路ネットワー�
 世界は広い！！！！API / 描画の処理は改善が必要📝
 ```
 
-（画像 https://github.com/shiwaku/overture-road-route-search/blob/main/docs/images/reach_120_legal/all.png を添付）
+（画像 https://github.com/shiwaku/overture-road-route-search/blob/main/docs/images/reach_120_legal/all_en.png を添付）
 
 リプライ（出典と生成AIの使用）:
 
