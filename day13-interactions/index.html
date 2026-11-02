@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>人はどこへ通うか — #30DayMapChallenge Day 13 Interactions</title>
+</head>
+<body>
+  <div id="map"></div>
+
+  <section id="title" class="panel">
+    <h1>人はどこへ通うか</h1>
+    <div class="sub">#30DayMapChallenge 2026 Day 13 — Interactions</div>
+    <p id="lead">
+      2020年の国勢調査で、15歳以上の人が住んでいる市区町村から、どの市区町村へ通勤・通学しているかを線で描いた。
+      線は住んでいる所（青）から通う先（橙）へ向かい、太いほど人が多い。市区町村をクリックすると、そこから出て行く流れと、そこへ入って来る流れに切り替わる。
+    </p>
+    <div class="row">
+      <input id="search" type="search" list="names" placeholder="市区町村を探す（例: 千代田区、つくば市）" autocomplete="off">
+      <datalist id="names"></datalist>
+    </div>
+    <div class="row seg" id="mode">
+      <button type="button" data-mode="all" class="on">通勤＋通学</button>
+      <button type="button" data-mode="work">通勤</button>
+      <button type="button" data-mode="school">通学</button>
+    </div>
+    <div class="row seg" id="dir">
+      <button type="button" data-dir="both" class="on">出入り両方</button>
+      <button type="button" data-dir="out">出て行く</button>
+      <button type="button" data-dir="in">入って来る</button>
+    </div>
+    <div id="card"></div>
+    <div class="legend">
+      <span class="grad"></span><span>住んでいる所 → 通う先</span><span class="unit">線の太さ（いまのズーム）</span>
+      <span class="w"><i data-v="100"></i>100人</span>
+      <span class="w"><i data-v="1000"></i>1,000人</span>
+      <span class="w"><i data-v="10000"></i>1万人</span>
+    </div>
+    <p class="note" id="note"></p>
+  </section>
+
+  <div id="tip" class="panel"></div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
