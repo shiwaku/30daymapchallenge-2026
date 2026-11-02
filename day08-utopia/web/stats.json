@@ -1,0 +1,105 @@
+{
+ "osm_extract": "Geofabrik kanto-261101.osm.pbf（2026-11-01 時点の OSM）",
+ "snap_m": 20,
+ "gap_min_km": 2.0,
+ "thresholds_m": [
+  300,
+  1000
+ ],
+ "area_km2": 5681,
+ "total_km": 1587.8,
+ "by_kind_km": {
+  "cycleway": 1178.7,
+  "lane": 314.7,
+  "shared": 94.3
+ },
+ "shared_lane_km_excluded": 786.3,
+ "sidewalk_designated_km_excluded": 110.0,
+ "skipped_candidates": {
+  "shared_lane": 3328,
+  "bicycle=None/unclassified": 1849,
+  "bicycle=None/residential": 1797,
+  "bicycle=None/tertiary": 713,
+  "sidewalk": 608,
+  "bicycle=None/service": 586,
+  "bicycle=None/primary": 246,
+  "bicycle=None/secondary": 189,
+  "bicycle=designated/service": 42,
+  "bicycle=no/motorway": 39,
+  "bicycle=None/primary_link": 38,
+  "bicycle=None/tertiary_link": 17
+ },
+ "n_ways": 8238,
+ "n_components": 1480,
+ "largest_km": 60.5,
+ "largest_share": 0.0381,
+ "top10_km": [
+  60.5,
+  53.2,
+  43.2,
+  35.2,
+  26.7,
+  23.0,
+  21.4,
+  20.6,
+  20.3,
+  19.8
+ ],
+ "components_by_size": {
+  "0-1km": {
+   "n": 1119,
+   "km": 264.6
+  },
+  "1-10km": {
+   "n": 341,
+   "km": 867.9
+  },
+  "10-50km": {
+   "n": 18,
+   "km": 341.5
+  },
+  "50-1000000000.0km": {
+   "n": 2,
+   "km": 113.7
+  }
+ },
+ "n_big_components": 185,
+ "n_crossing_pairs_excluded": 1,
+ "n_gap_candidates": 171,
+ "fill": {
+  "300": {
+   "n_gaps": 67,
+   "gaps_m": 8505,
+   "largest_km": 75.6,
+   "largest_share": 0.0476,
+   "largest_n_gaps": 8,
+   "largest_gaps_m": 1038,
+   "largest_members": 9,
+   "n_components_ge10km": 23,
+   "top5_km": [
+    75.6,
+    72.2,
+    57.7,
+    53.2,
+    45.5
+   ]
+  },
+  "1000": {
+   "n_gaps": 125,
+   "gaps_m": 44097,
+   "largest_km": 215.0,
+   "largest_share": 0.1354,
+   "largest_n_gaps": 28,
+   "largest_gaps_m": 10813,
+   "largest_members": 29,
+   "n_components_ge10km": 17,
+   "top5_km": [
+    215.0,
+    164.3,
+    77.3,
+    77.1,
+    58.4
+   ]
+  }
+ }
+}
