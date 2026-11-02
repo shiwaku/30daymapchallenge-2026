@@ -14,11 +14,13 @@
 
 ## 投稿したもの: 到達圏 120 分の都市比較
 
-![到達圏 120 分の都市比較](https://raw.githubusercontent.com/shiwaku/overture-road-route-search/main/docs/images/reach_120_legal/all.png)
+図の見出しは「How far can you drive in 120 minutes? 8 cities at the same scale (legal default speeds where unposted)」。
+
+![到達圏 120 分の都市比較](https://raw.githubusercontent.com/shiwaku/overture-road-route-search/main/docs/images/reach_120_legal/all_en.png)
 
 Overture Maps の道路データから全球の道路ネットワークを作り、到達圏を返す API をローカルで動かして検証した。東京・ニューヨーク・ロサンゼルス・ロンドン・パリ・北京・デリー・サンパウロの8都市の中心から、車で120分で届く道路を、中心からの所要時間の色で、同じ縮尺に並べた。道路の線を所要時間で塗っているので、お題の「線で地図を作る」を満たす。
 
-- 作ったリポジトリ: [overture-road-route-search](https://github.com/shiwaku/overture-road-route-search)（図は [docs/images/reach_120_legal/all.png](https://github.com/shiwaku/overture-road-route-search/blob/main/docs/images/reach_120_legal/all.png)）。画像はこのリポジトリにはコピーせず、上で表示しているだけ
+- 作ったリポジトリ: [overture-road-route-search](https://github.com/shiwaku/overture-road-route-search)（図は [docs/images/reach_120_legal/all_en.png](https://github.com/shiwaku/overture-road-route-search/blob/main/docs/images/reach_120_legal/all_en.png)）。投稿したのは英語版（all_en.png。日本語版は all.png）。画像はこのリポジトリにはコピーせず、上で表示しているだけ
 - 道路は幹線（motorway〜tertiary とそのランプ）。一方通行と制限速度を使い、探索は SciPy の Dijkstra
 
 ### 言える範囲
