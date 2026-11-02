@@ -95,7 +95,7 @@ node scripts/shot.mjs http://localhost:5173/   # output/ にスクリーンシ�
 
 ```text
 #30DayMapChallenge Day 8 - Utopia
-東京・埼玉の自転車道と自転車レーンをOSMから集め、つながりごとに色分けしてみました🗺️
+東京・埼玉の自転車向きの道をOSMから集め、つながりごとに色分けしてみました🗺️
 📝ひと続きの最長は約60km。1km以下のすき間28か所（計約11km）を埋めると約215kmになる計算
 デモサイトはこちら↓
 https://shiwaku.github.io/30daymapchallenge-2026/day08-utopia/site/
