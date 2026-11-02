@@ -104,7 +104,7 @@ const CASTLES: Castle[] = [
   },
 ];
 
-const PHOTO_CREDIT = "航空写真: 地理院タイル（全国最新写真（シームレス））";
+const PHOTO_CREDIT = "航空写真: 地理院タイル（全国最新写真（シームレス）。GRUS画像を含む場合 © Axelspace）";
 const BUNKA_CREDIT = "城の解説: 文化遺産オンライン（文化庁）";
 
 const params = new URLSearchParams(location.search);
