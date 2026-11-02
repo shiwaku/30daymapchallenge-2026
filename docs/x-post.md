@@ -102,4 +102,4 @@ https://shiwaku.github.io/30daymapchallenge-2026/day02-lines/site/
 
 ### Day 3 — Polygons
 
-本文とリプライは day03-polygons/README.md の「投稿文の下書き」。添付は day03-polygons/urban_rings.png。
+本文とリプライは day03-polygons/README.md の「投稿文の下書き」。添付は day03-polygons/output/urban_rings.mp4（X には GIF より MP4 がよい。GIF は day03-polygons/urban_rings.gif）。
