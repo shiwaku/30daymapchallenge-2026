@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>自転車の道が、つながったら — #30DayMapChallenge Day 8 Utopia</title>
+  <script type="module" crossorigin src="./assets/index-CklQ2qQu.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-DQ3Xt_Tf.css">
+</head>
+<body>
+  <div id="map"></div>
+
+  <section id="title" class="panel">
+    <h1>自転車の道が、つながったら</h1>
+    <div class="sub">#30DayMapChallenge 2026 Day 8 — Utopia</div>
+    <p id="lead"></p>
+    <ol class="steps" id="steps">
+      <li><button type="button" data-step="0">いまの自転車の道</button></li>
+      <li><button type="button" data-step="1">300m までのすき間を埋めると</button></li>
+      <li><button type="button" data-step="2">1km までのすき間を埋めると</button></li>
+    </ol>
+    <div id="caption"></div>
+    <div class="legend" id="legend"></div>
+    <p class="note">
+      自転車に適した道 = OpenStreetMap で、自転車道（highway=cycleway）、車道の自転車レーン・自転車道（cycleway=lane / track）、
+      歩行者と共用で自転車が指定された道（path・footway など + bicycle=designated。車道沿いの歩道は除く）として描かれている道。
+      矢羽根（shared_lane）と住宅地の静かな道は含めない。
+      端点から20m以内の道はつながっているとみなす。
+      すき間は、2km以上のつながりどうしを直線で結んだ最短の線で、計算の結果。整備の計画ではなく、実際に通れるかも確かめていない。
+    </p>
+  </section>
+
+  <div id="tip" class="panel"></div>
+
+</body>
+</html>
