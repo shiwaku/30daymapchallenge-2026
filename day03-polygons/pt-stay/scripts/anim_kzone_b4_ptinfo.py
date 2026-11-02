@@ -5,6 +5,7 @@
 - 色: 公式配色（画像から抽出）を延長した14段階の段階区分 CLASS_BREAKS（ゾーンの時刻変化を見せるため細分化）
 - ゾーン境界線なし、都県境界・調査対象範囲枠を重ねる（小ゾーンを融合して作成、GPKG に保存）
 - 描画はオフスクリーン（キャンバス操作の影響を受けない）
+- 主要駅（stations_top 指定時）を日本語/英語併記で最上位に表示
 - 背景ベクトルタイルは split_basemap で「上: 道路・鉄道・文字」「下: 水面」に分け、乗算せずに重ねる
 ※公式は地点別滞留人口のヒートマップ。本図は計画基本ゾーン単位の塗り分けによる近似。
 """
@@ -166,7 +167,7 @@ def decorate(img, i, title):
 
 
 TOP_LINE_LAYERS = {"road", "railway"}                  # 色の上に重ねる線
-TOP_LABEL_LAYERS = {"label", "symbol", "transp"}       # 色の上に重ねる文字（注記・道路番号・交通）
+TOP_LABEL_LAYERS = {"label", "symbol"}                 # 色の上に重ねる文字（注記・道路番号）。駅名は station_layer で別途表示
 BOTTOM_LAYERS = {"waterarea"}                          # 色の下に敷く面
 
 
@@ -188,14 +189,41 @@ def split_basemap(vt):
     lab = vt.labeling().clone()
     lstyles = lab.styles()
     for st in lstyles:
-        st.setEnabled(st.layerName() in TOP_LABEL_LAYERS)
+        # 地理院注記の駅名（annoCtg = 422）は外す（主要駅は station_layer で日英併記）
+        st.setEnabled(st.layerName() in TOP_LABEL_LAYERS and "annoCtg = 422" not in st.filterExpression())
     lab.setStyles(lstyles)
     top.setLabeling(lab); top.setLabelsEnabled(True)
     bottom.setLabelsEnabled(False)
     return top, bottom
 
 
-def export(name, extent, title, basemap_layers, frames=None, frame_ms=700, split=True):
+def station_layer(top_n):
+    """主要駅（S12 2018年乗降客数の上位 top_n）を「日本語 / 英語」併記でラベル表示するレイヤ。
+    データ: GPKG の stations_major（S12-23 を駅グループ単位に集計、英語名は OSM name:en）。"""
+    from qgis.core import (QgsMarkerSymbol, QgsPalLayerSettings, QgsTextFormat, QgsTextBufferSettings,
+                           QgsVectorLayerSimpleLabeling, QgsPropertyCollection, QgsProperty)
+    from qgis.PyQt.QtGui import QFont, QColor
+    lyr = QgsVectorLayer(GPKG + "|layername=stations_major", "主要駅", "ogr")
+    lyr.setSubsetString(f'"rank" <= {int(top_n)}')
+    lyr.setRenderer(QgsSingleSymbolRenderer(QgsMarkerSymbol.createSimple(
+        {"name": "circle", "color": "#ffffff", "outline_color": "#222222", "outline_width": "0.45", "size": "2.2"})))
+    pal = QgsPalLayerSettings()
+    pal.isExpression = True
+    pal.fieldName = "'<b>' || \"name_ja\" || '</b><br><span style=\"font-size:7.5pt\">' || coalesce(\"name_en\", '') || '</span>'"
+    fmt = QgsTextFormat(); fmt.setFont(QFont("Meiryo")); fmt.setSize(10); fmt.setColor(QColor("#1a1a1a"))
+    fmt.setAllowHtmlFormatting(True)
+    buf = QgsTextBufferSettings(); buf.setEnabled(True); buf.setSize(1.3); buf.setColor(QColor(255, 255, 255)); buf.setOpacity(0.92)
+    fmt.setBuffer(buf); pal.setFormat(fmt)
+    pal.placement = Qgis.LabelPlacement.OrderedPositionsAroundPoint
+    pal.dist = 0.8
+    props = pal.dataDefinedProperties()
+    props.setProperty(QgsPalLayerSettings.Property.Priority, QgsProperty.fromExpression(f'10 - 9 * ("rank" - 1) / {max(1, int(top_n) - 1)}'))
+    pal.setDataDefinedProperties(props)
+    lyr.setLabeling(QgsVectorLayerSimpleLabeling(pal)); lyr.setLabelsEnabled(True)
+    return lyr
+
+
+def export(name, extent, title, basemap_layers, frames=None, frame_ms=700, split=True, stations_top=None):
     """split=True: ベクトルタイル背景を split_basemap で上下に分け、乗算せずに重ねる。"""
     from PIL import Image
     b4 = QgsProject.instance().mapLayer(B4_LAYER_ID)
@@ -205,7 +233,9 @@ def export(name, extent, title, basemap_layers, frames=None, frame_ms=700, split
         if vts:
             top, bottom = split_basemap(vts[0])
             _keep = (top, bottom)   # 描画中に破棄されないよう参照を保持
-            layers = [study, pref, top, b4, bottom]
+            st = [station_layer(stations_top)] if stations_top else []
+            _keep = (top, bottom, *st)
+            layers = st + [study, pref, top, b4, bottom]
             return _export_layers(name, extent, title, layers, frames, frame_ms)
     # b4 below vector-tile labels if basemap is a vector tile layer drawn on top; else under everything
     layers = [study, pref] + ([l for l in basemap_layers if l.type() == Qgis.LayerType.VectorTile]) + [b4] + \
