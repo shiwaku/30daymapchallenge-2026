@@ -100,9 +100,35 @@ function recount(fc: Cells, on: number[]): Cells {
       if (k[i] > top) [best, top] = [i, k[i]];
       else if (k[i] === top && top > 0) best = -1;
     }
-    Object.assign(f.properties, { c: best, m, s: m ? top / m : 0 });
+    // 同数のときは、同数になったチェーンの縞模様（tp = 模様の画像の名前）
+    const tied = best === -1 && top > 0 ? on.filter((i) => k[i] === top) : [];
+    Object.assign(f.properties, { c: best, m, s: m ? top / m : 0, tp: tied.length ? `tie-${tied.join("-")}` : "" });
+    if (tied.length) TIE_PATTERNS.add(tied.join("-"));
   }
   return fc;
+}
+
+// 同数のセルの縞模様。チェーンの色を 45° の斜めの縞にした画像を、組み合わせごとに作って地図に登録する
+const TIE_PATTERNS = new Set<string>();
+const STRIPE = 4; // 縞1本の幅（画面の px）
+function addTiePatterns(m: maplibregl.Map) {
+  const R = 2; // 高解像度の画面でもにじまないよう、2倍で描く
+  for (const key of TIE_PATTERNS) {
+    const id = `tie-${key}`;
+    if (m.hasImage(id)) continue;
+    const cs = key.split("-").map((i) => COLORS[Number(i)]);
+    // 斜めの縞がつながるよう、画像の一辺を「縞の周期 × 2」にする
+    const size = cs.length * STRIPE * 2;
+    const cv = document.createElement("canvas");
+    cv.width = cv.height = size * R;
+    const ctx = cv.getContext("2d")!;
+    for (let y = 0; y < size * R; y++)
+      for (let x = 0; x < size * R; x++) {
+        ctx.fillStyle = cs[Math.floor((x + y) / (STRIPE * R)) % cs.length];
+        ctx.fillRect(x, y, 1, 1);
+      }
+    m.addImage(id, ctx.getImageData(0, 0, cv.width, cv.height), { pixelRatio: R });
+  }
 }
 
 // セルのレイヤーを足す（本体の地図と沖縄の小さな地図で同じものを使う）
@@ -121,8 +147,17 @@ function addCells(m: maplibregl.Map, data: Cells[]) {
       type: "fill",
       source: src,
       ...range,
-      filter: [">", ["get", "m"], 0],
+      filter: ["all", [">", ["get", "m"], 0], ["!=", ["get", "c"], -1]],
       paint: { "fill-color": colorExpr, "fill-opacity": fade(["+", 0.08, ["*", 0.5, light]]), "fill-antialias": false },
+    });
+    // 同数のセルは、同数になったチェーンの色の縞で塗る
+    m.addLayer({
+      id: `${src}-tie`,
+      type: "fill",
+      source: src,
+      ...range,
+      filter: ["all", [">", ["get", "m"], 0], ["==", ["get", "c"], -1]],
+      paint: { "fill-pattern": ["get", "tp"], "fill-opacity": fade(["+", 0.35, ["*", 0.6, light]]), "fill-antialias": false },
     });
     // 五角形の形が見えるように、セルの縁を背景の色で細く抜く
     m.addLayer({
@@ -201,6 +236,7 @@ async function main() {
   const cells = [r9, r10, split(false), split(true), r12];
   const chains = stats.chains;
   cells.forEach((fc) => recount(fc, ALL));
+  addTiePatterns(map);
   addCells(map, cells);
   addBloom(map, $("#map"));
 
@@ -239,6 +275,7 @@ async function main() {
     style: { version: 8, sources: {}, layers: [{ id: "background", type: "background", paint: { "background-color": BG } }] },
   });
   inset.on("load", () => {
+    addTiePatterns(inset);
     addCells(inset, cells);
     addBloom(inset, $("#inset"));
   });
@@ -351,7 +388,7 @@ async function main() {
   // いまのズームで出ているセルのうち、いちばん細かいもの（市の中は約2km²）
   map.on("click", (e) => {
     const z = map.getZoom();
-    const layers = LEVELS.filter((lv) => z >= lv.min && z < lv.max).map((lv) => `${lv.src}-fill`);
+    const layers = LEVELS.filter((lv) => z >= lv.min && z < lv.max).flatMap((lv) => [`${lv.src}-fill`, `${lv.src}-tie`]);
     const hits = map.queryRenderedFeatures(e.point, { layers });
     const f = hits.find((h) => h.layer.id.startsWith("r12")) ?? hits[0];
     if (!f) return popup.remove();
@@ -401,17 +438,21 @@ async function main() {
   $("#caption").innerHTML = `8チェーン・<b>${num(stats.total)}</b>店。`;
   $("#legend").innerHTML = chains
     .map((c, i) => `<li><button type="button" data-c="${i}"><span class="sw" style="--c:${COLORS[i]}"></span>${c.name}<span class="n">${num(c.count)}</span></button></li>`)
-    .join("");
+    .join("") +
+    // 灰色のセル: いちばん多いチェーンが2つ以上並んだ（同数の）セル
+    `<li class="tie"><span class="sw stripe"></span>同数（いちばん多いチェーンが2つ以上。そのチェーンの色の縞）</li>`;
   const km2 = (r: number) => Math.round(stats.res[r].areaKm2);
   $("#note").innerHTML =
     `All the Places（${stats.run.slice(0, 10)} 実行分）が各社のサイトから集めた店舗。各社の公式の店舗数ではない。ローソンはローソンストア100・ナチュラルローソンを含む。` +
     `五角形は A5（地球を面積の等しい五角形に分ける格子）のセルで、全国では約${km2(9)}km²、拡大すると約${km2(10)}km²・約${km2(11)}km²（${cityAreas.features.map((x) => x.properties.name).join("・")}の中はさらに約${AREA[12]}km²）。` +
-    `色はセルのなかで店がいちばん多いチェーン（灰色は同数）、明るさは店の数とそのチェーンの割合。店の位置は出していない。地方の割合は住所の都道府県で集計。`;
+    `色はセルのなかで店がいちばん多いチェーン（同数のときは、そのチェーンの色の縞）、明るさは店の数とそのチェーンの割合。店の位置は出していない。地方の割合は住所の都道府県で集計。`;
 
   let solo = -1;
   function paint(on: number[]) {
+    cells.forEach((fc) => recount(fc, on));
+    addTiePatterns(map);
+    if (inset.loaded()) addTiePatterns(inset);
     cells.forEach((fc, j) => {
-      recount(fc, on);
       const src = LEVELS[j].src;
       (map.getSource(src) as maplibregl.GeoJSONSource).setData(fc);
       (inset.getSource(src) as maplibregl.GeoJSONSource | undefined)?.setData(fc);
