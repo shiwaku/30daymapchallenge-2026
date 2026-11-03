@@ -52,7 +52,7 @@ html, body { height: 100%; overflow: hidden; background: #07080c; color: #e8e8ea
 .record .maplibregl-ctrl-group { display: none; }
 
 /* 発光（ブルーム）: 地図の写しをぼかして明るさを足す */
-.bloom { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; mix-blend-mode: screen; opacity: 0.6; }
+.bloom { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; mix-blend-mode: screen; opacity: 1; }
 
 /* 住所の検索 */
 #search { margin-top: 10px; display: flex; gap: 6px; }
@@ -71,6 +71,7 @@ html, body { height: 100%; overflow: hidden; background: #07080c; color: #e8e8ea
 #region { position: absolute; right: 28px; top: 20px; z-index: 3; text-align: right; color: #fff; font-weight: 700; text-shadow: 0 0 4px #000, 0 0 8px #000, 0 0 12px #000; pointer-events: none; }
 #region .t { font-size: 30px; font-weight: 900; letter-spacing: 0.08em; }
 #region .s { margin-top: 2px; font-size: 15px; line-height: 1.6; }
+#region .cs { margin-top: 4px; font-size: 13px; font-weight: 500; color: #c8c9ce; }
 @media (max-width: 899px) { #region { display: none; } }
 
 /* セルを押したときの店の数 */

@@ -10,13 +10,18 @@
     name  市の名前
     k     チェーンごとの店の数（並びは scripts/prepare.py の CHAINS）。境界の中にある店を数える
     bbox  表示する範囲 [西, 南, 東, 北]
-公開するのは市ごとの店の数だけで、店の点は出さない
+    fine  約2km²のセルに分けた、約8km²のセル（解像度 11）の ID
+出力: data-web/a5-r12-cities.geojson  市にかかる約8km²のセルを、約2km²のセル（解像度 12）に分けて数えたもの。
+    市の外の店も、そのセルに入っていれば数える。properties は a5-r11.geojson と同じ
+約2km²にするのは市の中だけ。全国では店が1店だけのセルが48%になるが、川越市は33%・札幌市は15%で、
+全国の約8km²のセル（35%）を超えないため。公開するのはセルごとの店の数だけで、店の点は出さない
 """
 
 import json
 import sys
 from pathlib import Path
 
+import a5
 import shapely
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -32,6 +37,7 @@ def main(raw: Path, out: Path, specs: list[str]) -> None:
                 chain.append(i)
     tree = shapely.STRtree(pts)
     feats = []
+    fine: set[int] = set()
     for spec in specs:
         name, src = spec.split("=", 1)
         fc = json.loads(Path(src).read_text(encoding="utf-8"))
@@ -39,12 +45,31 @@ def main(raw: Path, out: Path, specs: list[str]) -> None:
         k = [0] * len(CHAINS)
         for j in tree.query(g, predicate="contains"):
             k[chain[j]] += 1
+        # 市にかかる約8km²のセル（市の境界から 200m 以内に店があるセル）
+        parents = {a5.lonlat_to_cell((pts[j].x, pts[j].y), 11) for j in tree.query(g.buffer(0.002), predicate="contains")}
+        fine |= parents
         bbox = [round(v, 4) for v in g.bounds]
         g = shapely.set_precision(shapely.simplify(g, 0.0003), 1e-5)
-        feats.append({"type": "Feature", "properties": {"name": name, "k": k, "bbox": bbox}, "geometry": json.loads(shapely.to_geojson(g))})
+        feats.append({"type": "Feature", "properties": {"name": name, "k": k, "bbox": bbox, "fine": sorted(a5.u64_to_hex(c) for c in parents)}, "geometry": json.loads(shapely.to_geojson(g))})
         print(name, sum(k), k, bbox)
-    out.write_text(json.dumps({"type": "FeatureCollection", "features": feats}, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-    print(out, out.stat().st_size // 1024, "KB")
+    write(out, feats)
+    # 約2km²のセル: fine のセルに入る店を数える
+    cells: dict[int, list[int]] = {}
+    for p, ci in zip(pts, chain):
+        c12 = a5.lonlat_to_cell((p.x, p.y), 12)
+        if a5.cell_to_parent(c12, 11) in fine:
+            cells.setdefault(c12, [0] * len(CHAINS))[ci] += 1
+    r12 = []
+    for c, k in cells.items():
+        ring = [[round(x, 5), round(y, 5)] for x, y in a5.cell_to_boundary(c)]
+        r12.append({"type": "Feature", "properties": {"i": a5.u64_to_hex(c), "k": k, "n": sum(k)}, "geometry": {"type": "Polygon", "coordinates": [ring]}})
+    write(out.parent / "a5-r12-cities.geojson", r12)
+    print("r12", len(r12), "cells, 1店", sum(1 for f in r12 if f["properties"]["n"] == 1))
+
+
+def write(p: Path, feats: list) -> None:
+    p.write_text(json.dumps({"type": "FeatureCollection", "features": feats}, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    print(p, p.stat().st_size // 1024, "KB")
 
 
 if __name__ == "__main__":

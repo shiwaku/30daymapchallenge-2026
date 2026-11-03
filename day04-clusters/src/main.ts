@@ -21,14 +21,20 @@ const BEARING = -24;
 const TIE = "#6b7080";
 // A5 の解像度と、それを出すズームの範囲（scripts/prepare.py の RES と同じ）。
 // full は「そのセルの店がこの数以上なら最も明るくする」数。セルの面積に合わせて変える
+// 市（川越市・札幌市）にかかる約8km²のセル（r11f）は、ズーム FINE から約2km²のセル（r12、scripts/cities.py）に入れ替える
+const FINE = 9.8;
 const LEVELS = [
-  { r: 9, min: 0, max: 7, full: 30 },
-  { r: 10, min: 7, max: 8.6, full: 10 },
-  { r: 11, min: 8.6, max: 23, full: 4 },
+  { r: 9, src: "r9", min: 0, max: 7, full: 30 },
+  { r: 10, src: "r10", min: 7, max: 8.6, full: 10 },
+  { r: 11, src: "r11", min: 8.6, max: 23, full: 4 },
+  { r: 11, src: "r11f", min: 8.6, max: FINE, full: 4 },
+  { r: 12, src: "r12", min: FINE, max: 23, full: 2 },
 ];
+// A5 の1セルの面積（km²）
+const AREA: Record<number, number> = { 9: 129.7, 10: 32.4, 11: 8.1, 12: 2.0 };
 const FADE = 0.3;
-// 解像度の入れ替わりで2つのセルが重なるズーム。地方ブロックを出すときは、ここを避ける
-const OVERLAP: [number, number][] = LEVELS.slice(1).map((lv) => [lv.min - FADE, lv.min + FADE]);
+// 解像度の入れ替わりで2つのセルが重なるズーム（全国に共通のもの）。地方を出すときは、ここを避ける
+const OVERLAP: [number, number][] = [7, 8.6].map((z) => [z - FADE, z + FADE]);
 
 // 並びは scripts/prepare.py の CHAINS と同じ（番号で引く）
 const COLORS = ["#ff4757", "#2ed47a", "#3d8bff", "#ffd23f", "#ff9f1c", "#c77dff", "#25e0e0", "#ff7ab8"];
@@ -38,9 +44,9 @@ const ALL = COLORS.map((_, i) => i);
 type Chain = { id: string; name: string; count: number; sameNeighbor: number; expected: number };
 type Res = { areaKm2: number; cells: number; top: number[]; ties: number; max: number };
 type Stats = { run: string; total: number; unknownPref: number; chains: Chain[]; prefs: Record<string, number[]>; res: Record<string, Res> };
-type Cells = GeoJSON.FeatureCollection<GeoJSON.Polygon, { k: number[]; n: number; c?: number; m?: number; s?: number }>;
+type Cells = GeoJSON.FeatureCollection<GeoJSON.Polygon, { i: string; k: number[]; n: number; c?: number; m?: number; s?: number }>;
 // 市（scripts/cities.py）。k は市の境界の中にある店の数（チェーン別）
-type Cities = GeoJSON.FeatureCollection<GeoJSON.Polygon | GeoJSON.MultiPolygon, { name: string; k: number[]; bbox: [number, number, number, number] }>;
+type Cities = GeoJSON.FeatureCollection<GeoJSON.Polygon | GeoJSON.MultiPolygon, { name: string; k: number[]; bbox: [number, number, number, number]; fine: string[] }>;
 type Blocks = GeoJSON.FeatureCollection<GeoJSON.Polygon | GeoJSON.MultiPolygon, { name: string; prefs: string[]; bbox: [number, number, number, number] }>;
 
 maplibregl.setWorkerUrl(workerUrl);
@@ -102,7 +108,7 @@ function recount(fc: Cells, on: number[]): Cells {
 // セルのレイヤーを足す（本体の地図と沖縄の小さな地図で同じものを使う）
 function addCells(m: maplibregl.Map, data: Cells[]) {
   LEVELS.forEach((lv, j) => {
-    const src = `r${lv.r}`;
+    const src = lv.src;
     m.addSource(src, { type: "geojson", data: data[j], tolerance: 0 });
     // ズームの境目で、粗いセルと細かいセルを重ねて入れ替える
     const fade = (v: ExpressionSpecification | number): ExpressionSpecification =>
@@ -116,7 +122,7 @@ function addCells(m: maplibregl.Map, data: Cells[]) {
       source: src,
       ...range,
       filter: [">", ["get", "m"], 0],
-      paint: { "fill-color": colorExpr, "fill-opacity": fade(["+", 0.1, ["*", 0.85, light]]), "fill-antialias": false },
+      paint: { "fill-color": colorExpr, "fill-opacity": fade(["+", 0.08, ["*", 0.5, light]]), "fill-antialias": false },
     });
     // 五角形の形が見えるように、セルの縁を背景の色で細く抜く
     m.addLayer({
@@ -126,6 +132,20 @@ function addCells(m: maplibregl.Map, data: Cells[]) {
       ...range,
       filter: [">", ["get", "m"], 0],
       paint: { "line-color": BG, "line-width": ["interpolate", ["linear"], ["zoom"], 4, 0.4, 10, 1.4], "line-opacity": fade(0.9) },
+    });
+    // ネオン管: セルの縁を、チェーンの色の明るい線で内側からなぞる（この線が下の bloom で光る）
+    m.addLayer({
+      id: `${src}-neon`,
+      type: "line",
+      source: src,
+      ...range,
+      filter: [">", ["get", "m"], 0],
+      paint: {
+        "line-color": colorExpr,
+        "line-width": ["interpolate", ["linear"], ["zoom"], 4, 0.6, 8, 1.4, 11, 2.4],
+        "line-offset": ["interpolate", ["linear"], ["zoom"], 4, 0.4, 8, 1, 11, 1.8],
+        "line-opacity": fade(["+", 0.25, ["*", 0.75, light]]),
+      },
     });
   });
 }
@@ -145,10 +165,10 @@ function addBloom(m: maplibregl.Map, holder: HTMLElement) {
     ctx.globalCompositeOperation = "source-over";
     ctx.clearRect(0, 0, w, h);
     // 近いにじみと遠いにじみを足す
-    ctx.filter = "blur(2px)";
+    ctx.filter = "blur(3px)";
     ctx.drawImage(src, 0, 0, w, h);
     ctx.globalCompositeOperation = "lighter";
-    ctx.filter = "blur(7px)";
+    ctx.filter = "blur(10px)";
     ctx.drawImage(src, 0, 0, w, h);
     // 写しに入った背景の色（2回足したぶん）を引いて、背景は光らせない
     ctx.filter = "none";
@@ -170,9 +190,15 @@ function inRing(p: [number, number], ring: number[][]) {
 }
 
 async function main() {
-  const [stats, blocks, prefAreas, cityAreas, ...cells] = (await Promise.all(
-    ["stats.json", "blocks.geojson", "prefs.geojson", "cities.geojson", ...LEVELS.map((lv) => `a5-r${lv.r}.geojson`)].map((f) => fetch(DATA + f).then((r) => r.json())),
-  )) as [Stats, Blocks, Blocks, Cities, ...Cells[]];
+  const [stats, blocks, prefAreas, cityAreas, r9, r10, r11, r12] = (await Promise.all(
+    ["stats.json", "blocks.geojson", "prefs.geojson", "cities.geojson", "a5-r9.geojson", "a5-r10.geojson", "a5-r11.geojson", "a5-r12-cities.geojson"].map((f) =>
+      fetch(DATA + f).then((r) => r.json()),
+    ),
+  )) as [Stats, Blocks, Blocks, Cities, Cells, Cells, Cells, Cells];
+  // 約8km²のセルを、市にかかるもの（r11f）とそれ以外に分ける（並びは LEVELS と同じ）
+  const fine = new Set(cityAreas.features.flatMap((f) => f.properties.fine));
+  const split = (keep: boolean): Cells => ({ type: "FeatureCollection", features: r11.features.filter((f) => fine.has(f.properties.i) === keep) });
+  const cells = [r9, r10, split(false), split(true), r12];
   const chains = stats.chains;
   cells.forEach((fc) => recount(fc, ALL));
   addCells(map, cells);
@@ -264,27 +290,51 @@ async function main() {
         : isPref
           ? `${num(storeCount((f as Blocks["features"][number]).properties.prefs))}店　${shares((f as Blocks["features"][number]).properties.prefs)}`
           : blockSub(f as Blocks["features"][number]);
-    $("#region").innerHTML = `<div class="t">${f ? f.properties.name : "全国"}</div><div class="s">${sub}</div>`;
+    regionHtml = `<div class="t">${f ? f.properties.name : "全国"}</div><div class="s">${sub}</div>`;
+    renderRegion();
     const mask = map.getSource("mask") as maplibregl.GeoJSONSource;
     if (!f) {
       mask.setData({ type: "FeatureCollection", features: [] });
-      fitJapan(cells[0].features.map((x) => x.geometry.coordinates[0][0] as [number, number]).filter(([, y]) => y > 30.5));
+      fitJapan(r9.features.map((x) => x.geometry.coordinates[0][0] as [number, number]).filter(([, y]) => y > 30.5));
       updateInset();
       return;
     }
     const polys = f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;
     const world = [[-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]];
     mask.setData({ type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [world, ...polys.map((p) => p[0])] } });
-    const [w, s, e, n] = f.properties.bbox;
+    // 市は、店のあるセル（約8km²）の範囲に合わせる（約2km²のセルが見えるまで拡大すると、市全体は収まらないことがある）
+    let [w, s, e, n] = f.properties.bbox;
+    if (city) {
+      const ids = new Set(city.properties.fine);
+      const xy = r11.features.filter((x) => ids.has(x.properties.i)).flatMap((x) => x.geometry.coordinates[0]);
+      [w, s, e, n] = [Math.max(w, Math.min(...xy.map((p) => p[0]))), Math.max(s, Math.min(...xy.map((p) => p[1]))), Math.min(e, Math.max(...xy.map((p) => p[0]))), Math.min(n, Math.max(...xy.map((p) => p[1])))];
+    }
     const left = $("#title").getBoundingClientRect().right + 24;
     const padding = window.innerWidth >= 900 ? { left, right: 40, top: 90, bottom: 40 } : { left: 12, right: 12, top: $("#title").getBoundingClientRect().bottom + 12, bottom: 40 };
     const cam = map.cameraForBounds([[w, s], [e, n]], { padding, bearing: 0 })!;
     let z = cam.zoom!;
     // 解像度の入れ替わるズームは、近いほうの端に寄せる（細かいほうに寄せると少しはみ出すが、上下の余白に収まる）
     for (const [a, b] of OVERLAP) if (z > a && z < b) z = z - a < b - z ? a - 0.05 : b + 0.05;
+    // 市は約2km²のセルで見せる（入れ替わりの重なりを越えるところまで寄せる）
+    if (city) z = Math.min(11, Math.max(z, FINE + FADE + 0.05));
     map.jumpTo({ center: cam.center, zoom: z, bearing: 0, padding });
     updateInset();
+    renderRegion();
   }
+  // 右上に、地域の名前と割合と、いま出ているセルの大きさを出す
+  let regionHtml = "";
+  function cellSizeText() {
+    const z = map.getZoom();
+    const r = z < 7 ? 9 : z < 8.6 ? 10 : 11;
+    const base = `A5 解像度 ${r}・1セル約${AREA[r]}km²`;
+    if (z < FINE) return base;
+    if (cityAreas.features.some((x) => x.properties.name === block)) return `A5 解像度 12・1セル約${AREA[12]}km²`;
+    return `${base}（${cityAreas.features.map((x) => x.properties.name).join("・")}の中は 解像度 12・約${AREA[12]}km²）`;
+  }
+  function renderRegion() {
+    $("#region").innerHTML = `${regionHtml}<div class="cs">${cellSizeText()}</div>`;
+  }
+  map.on("zoomend", renderRegion);
   document.querySelectorAll<HTMLButtonElement>("#blocks button").forEach((b) => b.addEventListener("click", () => showBlock(b.dataset.b!)));
   prefSel.addEventListener("change", () => showBlock(prefSel.value || "全国"));
 
@@ -298,16 +348,19 @@ async function main() {
       .join("");
     return `<div class="pop"><div class="pt">${title}</div>${rows || "店なし"}<div class="pn">合計 ${props.n}店</div></div>`;
   };
-  const levelAt = () => LEVELS.find((lv) => map.getZoom() < lv.max) ?? LEVELS[LEVELS.length - 1];
+  // いまのズームで出ているセルのうち、いちばん細かいもの（市の中は約2km²）
   map.on("click", (e) => {
-    const lv = levelAt();
-    const f = map.queryRenderedFeatures(e.point, { layers: [`r${lv.r}-fill`] })[0];
+    const z = map.getZoom();
+    const layers = LEVELS.filter((lv) => z >= lv.min && z < lv.max).map((lv) => `${lv.src}-fill`);
+    const hits = map.queryRenderedFeatures(e.point, { layers });
+    const f = hits.find((h) => h.layer.id.startsWith("r12")) ?? hits[0];
     if (!f) return popup.remove();
-    popup.setLngLat(e.lngLat).setHTML(cellHtml(f.properties as { k: string; n: number }, `このあたり（約${Math.round(stats.res[lv.r].areaKm2)}km²）`)).addTo(map);
+    const r = Number(f.layer.id.slice(1, 3));
+    popup.setLngLat(e.lngLat).setHTML(cellHtml(f.properties as { k: string; n: number }, `このあたり（A5 解像度 ${r}・約${AREA[r]}km²）`)).addTo(map);
   });
   for (const lv of LEVELS) {
-    map.on("mouseenter", `r${lv.r}-fill`, () => (map.getCanvas().style.cursor = "pointer"));
-    map.on("mouseleave", `r${lv.r}-fill`, () => (map.getCanvas().style.cursor = ""));
+    map.on("mouseenter", `${lv.src}-fill`, () => (map.getCanvas().style.cursor = "pointer"));
+    map.on("mouseleave", `${lv.src}-fill`, () => (map.getCanvas().style.cursor = ""));
   }
 
   // 住所で探す。いちばん細かいセル（約8km²）に寄せて、そのセルの店の数を出す
@@ -330,12 +383,15 @@ async function main() {
       (map.getSource("mask") as maplibregl.GeoJSONSource).setData({ type: "FeatureCollection", features: [] });
       document.querySelectorAll<HTMLButtonElement>("#blocks button").forEach((b) => b.classList.remove("on"));
       prefSel.value = "";
-      $("#region").innerHTML = "";
+      regionHtml = "";
+      renderRegion();
       marker.setLngLat(p).addTo(map);
       map.flyTo({ center: p, zoom: 10, bearing: 0, padding: { left: 0, right: 0, top: 0, bottom: 0 } });
-      const lv = LEVELS[LEVELS.length - 1];
-      const cell = cells[LEVELS.length - 1].features.find((f) => inRing(p, f.geometry.coordinates[0]));
-      const title = `${res[0].properties.title} のまわり（約${Math.round(stats.res[lv.r].areaKm2)}km²）`;
+      // 市の中なら約2km²のセル、それ以外は約8km²のセル
+      const c12 = r12.features.find((f) => inRing(p, f.geometry.coordinates[0]));
+      const cell = c12 ?? r11.features.find((f) => inRing(p, f.geometry.coordinates[0]));
+      const r = c12 ? 12 : 11;
+      const title = `${res[0].properties.title} のまわり（A5 解像度 ${r}・約${AREA[r]}km²）`;
       popup.setLngLat(p).setHTML(cell ? cellHtml(cell.properties, title) : `<div class="pop"><div class="pt">${title}</div>このセルに店はありません</div>`).addTo(map);
     } catch {
       msg.textContent = "住所検索につながりませんでした";
@@ -349,14 +405,14 @@ async function main() {
   const km2 = (r: number) => Math.round(stats.res[r].areaKm2);
   $("#note").innerHTML =
     `All the Places（${stats.run.slice(0, 10)} 実行分）が各社のサイトから集めた店舗。各社の公式の店舗数ではない。ローソンはローソンストア100・ナチュラルローソンを含む。` +
-    `五角形は A5（地球を面積の等しい五角形に分ける格子）のセルで、全国では約${km2(9)}km²、拡大すると約${km2(10)}km²・約${km2(11)}km²。` +
+    `五角形は A5（地球を面積の等しい五角形に分ける格子）のセルで、全国では約${km2(9)}km²、拡大すると約${km2(10)}km²・約${km2(11)}km²（${cityAreas.features.map((x) => x.properties.name).join("・")}の中はさらに約${AREA[12]}km²）。` +
     `色はセルのなかで店がいちばん多いチェーン（灰色は同数）、明るさは店の数とそのチェーンの割合。店の位置は出していない。地方の割合は住所の都道府県で集計。`;
 
   let solo = -1;
   function paint(on: number[]) {
     cells.forEach((fc, j) => {
       recount(fc, on);
-      const src = `r${LEVELS[j].r}`;
+      const src = LEVELS[j].src;
       (map.getSource(src) as maplibregl.GeoJSONSource).setData(fc);
       (inset.getSource(src) as maplibregl.GeoJSONSource | undefined)?.setData(fc);
     });

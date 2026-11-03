@@ -7,7 +7,7 @@
 
 入力: data/raw/<spider>.geojson（All the Places 2026-10-24 実行分の出力）
 出力:
-    data-web/a5-r<N>.geojson  解像度 N の A5 セル（五角形）。properties: k = チェーンごとの店の数、n = 合計
+    data-web/a5-r<N>.geojson  解像度 N の A5 セル（五角形）。properties: i = セル ID（16進）、k = チェーンごとの店の数、n = 合計
     data-web/stats.json       店舗数・隣の店が同じチェーンの割合・都道府県ごとの店舗数・セルの集計
 """
 
@@ -96,7 +96,7 @@ def main(raw: Path, out: Path) -> None:
         ties = 0
         for cell, k in cells.items():
             ring = [[round(p[0], 5), round(p[1], 5)] for p in a5.cell_to_boundary(cell)]
-            feats.append({"type": "Feature", "properties": {"k": k, "n": sum(k)}, "geometry": {"type": "Polygon", "coordinates": [ring]}})
+            feats.append({"type": "Feature", "properties": {"i": a5.u64_to_hex(cell), "k": k, "n": sum(k)}, "geometry": {"type": "Polygon", "coordinates": [ring]}})
             m = max(k)
             if k.count(m) > 1:
                 ties += 1
