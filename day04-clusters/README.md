@@ -26,6 +26,11 @@
 - 店の点は出さない。公開するのはセルごとのチェーン別の店の数だけ
 - 沖縄県は離れているので、全国を見るときは左下に同じ縮尺の小さな地図で出す
 
+- 地方ブロック（7つ）のボタンと都道府県の選択: 選ぶとその範囲に合わせて表示し、外側を暗くする。右上に店舗数の上位3チェーンの割合（住所の都道府県で集計）
+- 住所で探す（国土地理院の住所検索）・現在地ボタン: いちばん細かいセル（約8km²）に寄せて、そのセルのチェーン別の店の数を出す。五角形を押しても同じものが出る
+- 地名: 国土地理院の最適化ベクトルタイルの注記（都道府県名・市区町村名）
+- 発光: 描いた画面を縮めてぼかした写しを、明るさを足す合成（screen）で重ねる（A5 は格子で、描き方の機能は持たない）
+
 凡例を押すと、そのチェーンだけで数え直して塗る（もう一度押すと戻る）。都道府県ごとに店がいちばん多いチェーンは、セブン-イレブン25都道府県、ファミリーマート11、ローソン10、セイコーマート1（北海道）。
 
 お題の「things that gather together（集まってくるもの）」を、チェーンごとの店の固まり（縄張り）で満たす。セルの面積がすべて同じなので、セルの明るさ（店の数）をそのまま密度として比べられる。
@@ -85,6 +90,8 @@
 
 - 店舗: [All the Places](https://alltheplaces.xyz/) 2026-10-24 実行分（run 2026-10-24-13-32-37）の spider 出力 `seven_eleven_jp` `familymart_jp` `lawson_jp` `ministop_jp` `seicomart_jp` `daily_yamazaki_jp` `newdays_jp` `poplar_jp`。ライセンス: CC0（サイトの記載「The downloads provided above and the data contained therein are released under Creative Commons' CC-0 waiver.」を2026-11-02に確認）。CC0 だが出典として書く。取得したデータは `data/`（Git 管理外）に置き、リポジトリと公開ページには入れない
 - 格子: [A5](https://a5geo.org/)（Apache-2.0）
+- 地名: [国土地理院 最適化ベクトルタイル](https://github.com/gsi-cyberjapan/optimal_bvmap)（PMTiles をそのまま読む）。住所検索: 国土地理院 住所検索 API
+- 地方ブロック・都道府県の範囲: [Natural Earth](https://www.naturalearthdata.com/) 10m admin-1（パブリックドメイン）を `scripts/blocks.py` でまとめた `data-web/blocks.geojson`・`prefs.geojson`。境界は簡略化してあり、セルは境界をまたぐので、外側を暗くするのは目安
 - 自前でクロールしたデータは使っていない
 
 ### ドラッグストア・ホームセンターをやめた理由
@@ -94,9 +101,9 @@
 ## 使用する技術
 
 - Python（pya5・scipy・pyproj）: A5 のセルへの振り分けと集計、最近傍の店（cKDTree）
-- Vite 8 ＋ MapLibre GL JS 6（TypeScript）。セルの GeoJSON（解像度 9・10・11、合わせて約3.7MB）をタイルにせず、そのまま読む
+- Vite 8 ＋ MapLibre GL JS 6（TypeScript）＋ pmtiles。セルの GeoJSON（解像度 9・10・11、合わせて約3.7MB）をタイルにせず、そのまま読む
 - 解像度ごとにレイヤーを分け、ズームの境目で重ねて入れ替える。凡例でチェーンを選ぶと、そのチェーンだけでセルの色と明るさを計算し直す（`setData`）
-- 発光は A5 ではなく MapLibre の描き方で作る（セルの縁をセルの色のぼかした線でなぞる。`line-blur`）
+- 発光は A5 ではなく描き方で作る: MapLibre の画面を 1/4 に縮めて2段階にぼかした写しを 2D canvas に描き、背景の色を引いてから `mix-blend-mode: screen` で重ねる
 - 横長の画面では、地図を −24° 回して日本の北東を右に向ける（URL に位置があるときは回さない）
 - 公開版は `site/`（`npm run build` の出力）。GitHub Pages では /day04-clusters/site/。データは `data-web/`（`data/` は取得データ置き場で Git 管理外）
 
@@ -109,11 +116,15 @@ for s in seven_eleven_jp familymart_jp lawson_jp ministop_jp seicomart_jp daily_
 done
 pip install pya5==1.0.0 scipy pyproj numpy
 python -I -X utf8 scripts/prepare.py data/raw data-web
+curl -L -o data/ne_10m_admin_1_states_provinces.geojson https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_1_states_provinces.geojson
+python -I -X utf8 scripts/blocks.py data/ne_10m_admin_1_states_provinces.geojson data-web/blocks.geojson data-web/prefs.geojson
 npm install
 npm run dev     # http://localhost:5173/
 npm run build   # site/ に出力
 # 静止画: リポジトリの直下で python -m http.server 4174 を動かしてから
 node scripts/screenshot.mjs   # output/day04-clusters-*.png
+node scripts/capture-x.mjs blocks   # X 用: 全国と地方ブロック output/day04-x-*.png
+node scripts/capture-x.mjs prefs    # X 用: 47都道府県 output/day04-pref-01〜47.png
 ```
 
 ## 状況
@@ -128,7 +139,7 @@ node scripts/screenshot.mjs   # output/day04-clusters-*.png
 
 言いたいこと: 日本全体で見るとセブンが最多だが、地方ブロックで見ると勢力図が変わる（中部・近畿はファミマとセブンがほぼ同数、北海道はセイコーマート、四国はローソン、沖縄はファミマが最多）。
 
-画像は `node scripts/capture-x.mjs` で撮る（16:9、`output/day04-x-*.png`）。右上の割合は `data-web/stats.json` の都道府県ごとの店舗数を地方ブロックで足したもの（住所の都道府県で集計）。
+画像は `node scripts/capture-x.mjs blocks` で撮る（都道府県ごとは `prefs`）（16:9、`output/day04-x-*.png`）。右上の割合は `data-web/stats.json` の都道府県ごとの店舗数を地方ブロックで足したもの（住所の都道府県で集計）。
 
 本文（画像4枚: `1-japan` `2-kanto` `3-chubu` `4-kinki`）:
 

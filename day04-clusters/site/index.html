@@ -4,19 +4,27 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>コンビニの縄張り — #30DayMapChallenge Day 4 Clusters</title>
-  <script type="module" crossorigin src="./assets/index-CFsxuaxZ.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-CbUyLjCB.css">
+  <script type="module" crossorigin src="./assets/index-BLLhj0-7.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-CcpT5zaN.css">
 </head>
 <body>
   <div id="map"></div>
+  <div id="region"></div>
   <div id="inset-box"><div id="inset"></div><div class="label">沖縄県</div></div>
 
   <section id="title" class="panel">
     <h1>コンビニの縄張り</h1>
     <div class="sub">#30DayMapChallenge 2026 Day 4 — Clusters</div>
     <p>
-      コンビニ8チェーンの店がどこに集まっているか。日本を面積の等しい五角形（A5）に分け、五角形ごとに店がいちばん多いチェーンの色で塗った。拡大すると五角形が細かくなる。
+      コンビニ8チェーンの店がどこに集まっているか。日本を面積の等しい五角形（A5）に分け、五角形ごとに店がいちばん多いチェーンの色で塗った。拡大すると五角形が細かくなる。住所で探すか、五角形を押すと、そのあたりの店の数が出る。
     </p>
+    <form id="search" autocomplete="off">
+      <input id="q" type="search" placeholder="住所で探す（例: 札幌市中央区北1条西2）" aria-label="住所で探す">
+      <button type="submit">探す</button>
+    </form>
+    <div id="search-msg"></div>
+    <div class="blocks" id="blocks"></div>
+    <select id="prefsel" aria-label="都道府県を選ぶ"></select>
     <div id="caption"></div>
     <ul class="legend" id="legend"></ul>
     <p class="note" id="note"></p>

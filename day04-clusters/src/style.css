@@ -50,3 +50,35 @@ html, body { height: 100%; overflow: hidden; background: #07080c; color: #e8e8ea
 .maplibregl-ctrl-group { background: rgba(232, 232, 234, 0.85); }
 
 .record .maplibregl-ctrl-group { display: none; }
+
+/* 発光（ブルーム）: 地図の写しをぼかして明るさを足す */
+.bloom { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; mix-blend-mode: screen; opacity: 0.95; }
+
+/* 住所の検索 */
+#search { margin-top: 10px; display: flex; gap: 6px; }
+#search input { flex: 1; min-width: 0; padding: 6px 8px; border: 1px solid #333; border-radius: 8px; background: #111318; color: #e8e8ea; font: inherit; font-size: 13px; }
+#search button { padding: 6px 10px; border: 1px solid #555; border-radius: 8px; background: #1c1f27; color: #e8e8ea; font: inherit; font-size: 13px; cursor: pointer; }
+#search-msg { min-height: 1.2em; margin-top: 2px; font-size: 11px; color: #9a9ca3; }
+
+/* 地方のボタン */
+.blocks { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
+.blocks button { padding: 3px 8px; border: 1px solid #333; border-radius: 999px; background: transparent; color: #9a9ca3; font: inherit; font-size: 12px; cursor: pointer; }
+.blocks button.on { border-color: #e8e8ea; color: #e8e8ea; }
+
+#prefsel { margin-top: 6px; width: 100%; padding: 5px 8px; border: 1px solid #333; border-radius: 8px; background: #111318; color: #e8e8ea; font: inherit; font-size: 12px; }
+
+/* 選んだ地方の名前と割合（右上） */
+#region { position: absolute; right: 28px; top: 20px; z-index: 3; text-align: right; color: #fff; font-weight: 700; text-shadow: 0 0 4px #000, 0 0 8px #000, 0 0 12px #000; pointer-events: none; }
+#region .t { font-size: 30px; font-weight: 900; letter-spacing: 0.08em; }
+#region .s { margin-top: 2px; font-size: 15px; line-height: 1.6; }
+@media (max-width: 899px) { #region { display: none; } }
+
+/* セルを押したときの店の数 */
+.maplibregl-popup-content { background: rgba(7, 8, 12, 0.92); color: #e8e8ea; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 10px; padding: 10px 12px; }
+.maplibregl-popup-tip { display: none; }
+.maplibregl-popup-close-button { color: #9a9ca3; }
+.pop .pt { font-size: 12px; color: #c8c9ce; margin-bottom: 4px; padding-right: 12px; }
+.pop .pr { display: flex; justify-content: space-between; gap: 16px; font-size: 13px; }
+.pop .pn { margin-top: 4px; font-size: 11px; color: #9a9ca3; text-align: right; }
+
+.record #search, .record #search-msg, .record .maplibregl-ctrl-geolocate { display: none; }
