@@ -26,7 +26,8 @@
 - 店の点は出さない。公開するのはセルごとのチェーン別の店の数だけ
 - 沖縄県は離れているので、全国を見るときは左下に同じ縮尺の小さな地図で出す
 
-- 地方ブロック（7つ）のボタンと都道府県の選択: 選ぶとその範囲に合わせて表示し、外側を暗くする。右上に店舗数の上位3チェーンの割合（住所の都道府県で集計）
+- 地方ブロック（7つ）のボタンと都道府県・市の選択: 選ぶとその範囲に合わせて表示し、外側を暗くする。右上に店舗数の上位3チェーンの割合（住所の都道府県で集計）
+- 市（川越市 143店: ファミマ 39.2%・セブン 36.4%・ローソン 21.0%。埼玉県全体ではセブンが最多なので、市で見ると入れ替わる。札幌市 1,103店: セブン 30.9%・セイコーマート 29.6%・ローソン 25.0%）。市の店の数は、市の境界の中にある店を数えたもの
 - 住所で探す（国土地理院の住所検索）・現在地ボタン: いちばん細かいセル（約8km²）に寄せて、そのセルのチェーン別の店の数を出す。五角形を押しても同じものが出る
 - 地名: 国土地理院の最適化ベクトルタイルの注記（都道府県名・市区町村名）
 - 発光: 描いた画面を縮めてぼかした写しを、明るさを足す合成（screen）で重ねる（A5 は格子で、描き方の機能は持たない）
@@ -90,6 +91,7 @@
 
 - 店舗: [All the Places](https://alltheplaces.xyz/) 2026-10-24 実行分（run 2026-10-24-13-32-37）の spider 出力 `seven_eleven_jp` `familymart_jp` `lawson_jp` `ministop_jp` `seicomart_jp` `daily_yamazaki_jp` `newdays_jp` `poplar_jp`。ライセンス: CC0（サイトの記載「The downloads provided above and the data contained therein are released under Creative Commons' CC-0 waiver.」を2026-11-02に確認）。CC0 だが出典として書く。取得したデータは `data/`（Git 管理外）に置き、リポジトリと公開ページには入れない
 - 格子: [A5](https://a5geo.org/)（Apache-2.0）
+- 市の範囲: [国土数値情報 行政区域データ（N03）](https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N03-2025.html) 2025年（国土交通省）を加工。`scripts/cities.py` で市の面（政令市は区をまとめる）と、境界の中にある店の数（チェーン別）を `data-web/cities.geojson` に出す。今は川越市・札幌市
 - 地名: [国土地理院 最適化ベクトルタイル](https://github.com/gsi-cyberjapan/optimal_bvmap)（PMTiles をそのまま読む）。住所検索: 国土地理院 住所検索 API
 - 地方ブロック・都道府県の範囲: [Natural Earth](https://www.naturalearthdata.com/) 10m admin-1（パブリックドメイン）を `scripts/blocks.py` でまとめた `data-web/blocks.geojson`・`prefs.geojson`。境界は簡略化してあり、セルは境界をまたぐので、外側を暗くするのは目安
 - 自前でクロールしたデータは使っていない
@@ -125,6 +127,9 @@ npm run build   # site/ に出力
 node scripts/screenshot.mjs   # output/day04-clusters-*.png
 node scripts/capture-x.mjs blocks   # X 用: 全国と地方ブロック output/day04-x-*.png
 node scripts/capture-x.mjs prefs    # X 用: 47都道府県 output/day04-pref-01〜47.png
+# 市: N03 の都道府県の GeoJSON を data/ に置いてから
+python -I -X utf8 scripts/cities.py data/raw data-web/cities.geojson 川越市=data/N03-20250101_11.geojson 札幌市=data/N03-20250101_01.geojson
+node scripts/capture-x.mjs cities   # output/day04-city-kawagoe.png など
 ```
 
 ## 状況

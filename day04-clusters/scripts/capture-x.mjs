@@ -1,16 +1,21 @@
 // X に投稿する静止画（16:9）を撮る。
 //   blocks: 全国と地方ブロック7つ → output/day04-x-*.png
 //   prefs:  47都道府県 → output/day04-pref-01.png 〜 47（番号は都道府県コード）
+//   cities: data-web/cities.geojson の市 → output/day04-city-*.png
 // 範囲・外側の暗がり・右上の割合は、ページの地方ボタン・都道府県の選択と同じもの（data-web/blocks.geojson・prefs.geojson と stats.json から）。
-// 使い方: リポジトリの直下で python -m http.server 4174 を動かしてから node scripts/capture-x.mjs [blocks|prefs] [URL]
+// 使い方: リポジトリの直下で python -m http.server 4174 を動かしてから node scripts/capture-x.mjs [blocks|prefs|cities] [URL]
 import { chromium } from "playwright-core";
 import { mkdirSync, readFileSync } from "node:fs";
 
 const mode = process.argv[2] ?? "blocks";
 const url = process.argv[3] ?? "http://localhost:4174/day04-clusters/site/";
 mkdirSync("output", { recursive: true });
+// 市のファイル名（ローマ字）。ないときは番号
+const CITY_FILE = { 川越市: "kawagoe", 札幌市: "sapporo" };
 const SHOTS =
-  mode === "prefs"
+  mode === "cities"
+    ? JSON.parse(readFileSync("data-web/cities.geojson", "utf-8")).features.map((f, i) => [`output/day04-city-${CITY_FILE[f.properties.name] ?? i + 1}.png`, f.properties.name])
+    : mode === "prefs"
     ? JSON.parse(readFileSync("data-web/prefs.geojson", "utf-8")).features.map((f, i) => [`output/day04-pref-${String(i + 1).padStart(2, "0")}.png`, f.properties.name])
     : [
         ["1-japan", "全国"],
