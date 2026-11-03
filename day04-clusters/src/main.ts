@@ -98,9 +98,9 @@ function addCells(m: maplibregl.Map, data: Cells[]) {
       filter: [">", ["get", "m"], 0],
       paint: {
         "line-color": colorExpr,
-        "line-width": ["interpolate", ["exponential", 2], ["zoom"], 4, 3, 10, 18],
-        "line-blur": ["interpolate", ["exponential", 2], ["zoom"], 4, 3, 10, 18],
-        "line-opacity": fade(["*", 0.35, light]),
+        "line-width": ["interpolate", ["exponential", 2], ["zoom"], 4, 6, 10, 36],
+        "line-blur": ["interpolate", ["exponential", 2], ["zoom"], 4, 6, 10, 36],
+        "line-opacity": fade(["*", 0.8, light]),
       },
     });
     m.addLayer({
@@ -109,7 +109,7 @@ function addCells(m: maplibregl.Map, data: Cells[]) {
       source: src,
       ...range,
       filter: [">", ["get", "m"], 0],
-      paint: { "fill-color": colorExpr, "fill-opacity": fade(["+", 0.08, ["*", 0.85, light]]), "fill-antialias": false },
+      paint: { "fill-color": colorExpr, "fill-opacity": fade(["+", 0.1, ["*", 0.75, light]]), "fill-antialias": false },
     });
     // 五角形の形が見えるように、セルの縁を背景の色で細く抜く
     m.addLayer({
@@ -119,6 +119,20 @@ function addCells(m: maplibregl.Map, data: Cells[]) {
       ...range,
       filter: [">", ["get", "m"], 0],
       paint: { "line-color": BG, "line-width": ["interpolate", ["linear"], ["zoom"], 4, 0.4, 10, 1.4], "line-opacity": fade(0.9) },
+    });
+    // 発光（A5 には描き方の機能はないので MapLibre の line-blur で作る）: セルの縁を、セルの色のぼかした線でなぞる（縁の暗い線の上に重ねて、五角形の輪郭が光って見えるようにする）
+    m.addLayer({
+      id: `${src}-bloom`,
+      type: "line",
+      source: src,
+      ...range,
+      filter: [">", ["get", "m"], 0],
+      paint: {
+        "line-color": colorExpr,
+        "line-width": ["interpolate", ["exponential", 2], ["zoom"], 4, 1.5, 10, 6],
+        "line-blur": ["interpolate", ["exponential", 2], ["zoom"], 4, 1.5, 10, 6],
+        "line-opacity": fade(["*", 0.5, light]),
+      },
     });
   });
 }
@@ -194,7 +208,11 @@ async function main() {
   // 沖縄・奄美は離れすぎるので、画面に収める範囲からは外す（沖縄は左下の小さな地図で出す）
   if (!START_HASH) fitJapan(cells[0].features.map((f) => f.geometry.coordinates[0][0] as [number, number]).filter(([, y]) => y > 30.5));
   updateInset();
-  if (RECORD) document.body.classList.add("record");
+  if (RECORD) {
+    document.body.classList.add("record");
+    // 静止画を撮るスクリプト（scripts/capture-x.mjs）が都市名を重ねるのに使う
+    (window as unknown as { __map: maplibregl.Map }).__map = map;
+  }
   (window as unknown as { __ready: boolean }).__ready = true;
 }
 
