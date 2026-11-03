@@ -137,7 +137,7 @@ npm run build   # site/ に出力
 # 静止画: リポジトリの直下で python -m http.server 4174 を動かしてから
 node scripts/screenshot.mjs   # output/day04-clusters-*.png
 node scripts/capture-x.mjs blocks   # X 用: 全国と地方ブロック output/day04-x-*.png
-node scripts/capture-x.mjs prefs    # X 用: 47都道府県 output/day04-pref-01〜47.png
+node scripts/capture-x.mjs prefs    # X 用: 46都府県 output/day04-pref-02〜47.png（北海道は blocks の 5-hokkaido）
 # 市: N03 の都道府県の GeoJSON を data/ に置いてから
 python -I -X utf8 scripts/cities.py data/raw data-web/cities.geojson 川越市=data/N03-20250101_11.geojson 札幌市=data/N03-20250101_01.geojson
 node scripts/capture-x.mjs cities   # output/day04-city-kawagoe.png など
