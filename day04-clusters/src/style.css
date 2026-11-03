@@ -31,6 +31,8 @@ html, body { height: 100%; overflow: hidden; background: #07080c; color: #e8e8ea
 .legend button:hover { background: rgba(255, 255, 255, 0.06); }
 .legend button.off { opacity: 0.35; }
 .legend .sw { flex: none; width: 12px; height: 12px; border-radius: 3px; background: var(--c); box-shadow: 0 0 6px var(--c); }
+.legend .tie { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; padding: 2px 4px; font-size: 12px; color: #c8c9ce; }
+.legend .tie .sw.stripe { box-shadow: none; background: repeating-linear-gradient(45deg, #ff4757 0 3px, #2ed47a 3px 6px); }
 .legend .n { margin-left: auto; font-size: 11px; color: #9a9ca3; font-variant-numeric: tabular-nums; }
 
 /* 沖縄の小さな地図 */
