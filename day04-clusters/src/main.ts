@@ -27,9 +27,6 @@ const FADE = 0.3;
 const COLORS = ["#ff4757", "#2ed47a", "#3d8bff", "#ffd23f", "#ff9f1c", "#c77dff", "#25e0e0", "#ff7ab8"];
 const SHORT = ["セブン", "ファミマ", "ローソン", "ミニストップ", "セイコーマート", "デイリーヤマザキ", "NewDays", "ポプラ"];
 const ALL = COLORS.map((_, i) => i);
-const BIG3 = [0, 1, 2];
-// 段階2で出す、固まって店を出しているチェーン（隣の店も同じチェーンである割合が、店の割合よりずっと高い）
-const CLUSTERED = [4, 5, 6, 7];
 
 type Chain = { id: string; name: string; count: number; sameNeighbor: number; expected: number };
 type Res = { areaKm2: number; cells: number; top: number[]; ties: number; max: number };
@@ -61,7 +58,6 @@ map.addControl(
 map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), "bottom-right");
 
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector(sel) as T;
-const pct = (x: number) => `${Math.round(100 * x)}%`;
 const num = (x: number) => x.toLocaleString("ja-JP");
 
 const colorExpr: ExpressionSpecification = ["match", ["get", "c"], ...COLORS.flatMap((c, i) => [i, c]), TIE] as unknown as ExpressionSpecification;
@@ -132,7 +128,6 @@ async function main() {
     ["stats.json", ...LEVELS.map((lv) => `a5-r${lv.r}.geojson`)].map((f) => fetch(DATA + f).then((r) => r.json())),
   )) as [Stats, ...Cells[]];
   const chains = stats.chains;
-  let current = ALL;
   cells.forEach((fc) => recount(fc, ALL));
   addCells(map, cells);
 
@@ -156,7 +151,6 @@ async function main() {
   updateInset();
 
   // 数字はすべて stats.json（scripts/prepare.py がデータから計算した値）から出す
-  const names = chains.map((c) => c.name);
   const top = new Map<number, string[]>();
   for (const [pref, v] of Object.entries(stats.prefs)) {
     const i = v.indexOf(Math.max(...v));
@@ -166,18 +160,7 @@ async function main() {
     .sort((a, b) => b[1].length - a[1].length)
     .map(([i, ps]) => `<span class="c" style="--c:${COLORS[i]}">${SHORT[i]}</span> ${ps.length === 1 ? ps[0] : `${ps.length}都道府県`}`)
     .join("、");
-  const nb = (i: number) =>
-    `<div class="row"><span class="c" style="--c:${COLORS[i]}">${names[i]}</span><span class="v">${pct(chains[i].sameNeighbor)}</span><span class="e">店の割合 ${pct(chains[i].expected)}</span></div>`;
-
-  const CAPTIONS = [
-    "",
-    `8チェーン・<b>${num(stats.total)}</b>店。都道府県ごとに店がいちばん多いチェーンは、${topText}。`,
-    `店の「いちばん近いコンビニ」も同じチェーンである割合。この4チェーンは、全店に占める割合よりずっと高く、固まって店を出している。` +
-      `<div class="rows">${CLUSTERED.map(nb).join("")}</div>`,
-    `大手3社は、いちばん近いコンビニが同じチェーンである割合が、全店に占める割合より低い。隣は他社の店のことが多い。` +
-      `<div class="rows">${BIG3.map(nb).join("")}</div>`,
-  ];
-  const ON = [ALL, ALL, CLUSTERED, BIG3];
+  const CAPTION = `8チェーン・<b>${num(stats.total)}</b>店。都道府県ごとに店がいちばん多いチェーンは、${topText}。`;
 
   $("#legend").innerHTML = chains
     .map((c, i) => `<li><button type="button" data-c="${i}"><span class="sw" style="--c:${COLORS[i]}"></span>${c.name}<span class="n">${num(c.count)}</span></button></li>`)
@@ -188,57 +171,31 @@ async function main() {
     `五角形は A5（地球を面積の等しい五角形に分ける格子）のセルで、全国では約${km2(9)}km²、拡大すると約${km2(10)}km²・約${km2(11)}km²。` +
     `色はセルのなかで店がいちばん多いチェーン（灰色は同数）、明るさは店の数とそのチェーンの割合。店の位置は出していない。`;
 
-  let step = 0;
   let solo = -1;
   function paint(on: number[]) {
-    current = on;
     cells.forEach((fc, j) => {
-      recount(fc, current);
+      recount(fc, on);
       const src = `r${LEVELS[j].r}`;
       (map.getSource(src) as maplibregl.GeoJSONSource).setData(fc);
       (inset.getSource(src) as maplibregl.GeoJSONSource | undefined)?.setData(fc);
     });
     document.querySelectorAll<HTMLButtonElement>("#legend button").forEach((b) => b.classList.toggle("off", !on.includes(Number(b.dataset.c))));
   }
-  function show(s: number) {
-    step = s;
-    solo = -1;
-    document.querySelectorAll<HTMLButtonElement>("#steps button").forEach((b) => b.classList.toggle("on", Number(b.dataset.step) === s));
-    $("#caption").innerHTML = CAPTIONS[s];
-    paint(ON[s]);
-  }
-  document.querySelectorAll<HTMLButtonElement>("#steps button").forEach((b) =>
-    b.addEventListener("click", () => {
-      stopAuto();
-      show(Number(b.dataset.step));
-    }),
-  );
-  // 凡例を押すと、そのチェーンだけを出す。もう一度押すと戻る
+  // 凡例を押すと、そのチェーンだけで数え直す。もう一度押すと戻る
   document.querySelectorAll<HTMLButtonElement>("#legend button").forEach((b) =>
     b.addEventListener("click", () => {
-      stopAuto();
       const c = Number(b.dataset.c);
-      if (solo === c) return show(step);
-      solo = c;
-      paint([c]);
+      solo = solo === c ? -1 : c;
+      paint(solo < 0 ? ALL : [c]);
     }),
   );
 
-  show(1);
+  $("#caption").innerHTML = CAPTION;
   // 沖縄・奄美は離れすぎるので、画面に収める範囲からは外す（沖縄は左下の小さな地図で出す）
   if (!START_HASH) fitJapan(cells[0].features.map((f) => f.geometry.coordinates[0][0] as [number, number]).filter(([, y]) => y > 30.5));
   updateInset();
-  if (RECORD) {
-    document.body.classList.add("record");
-    (window as unknown as { __show: (s: number) => void }).__show = show;
-    return;
-  }
-  // 最初は順に自動で進める。ボタンを押したら止める
-  let timer = window.setInterval(() => (step >= 3 ? stopAuto() : show(step + 1)), 7000);
-  function stopAuto() {
-    clearInterval(timer);
-    timer = 0;
-  }
+  if (RECORD) document.body.classList.add("record");
+  (window as unknown as { __ready: boolean }).__ready = true;
 }
 
 // 日本は南西から北東へのびているので、横長の画面では地図を回して北東を右に向け、説明の右側に収める。
