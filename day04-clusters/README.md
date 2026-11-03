@@ -96,6 +96,7 @@
 - Python（pya5・scipy・pyproj）: A5 のセルへの振り分けと集計、最近傍の店（cKDTree）
 - Vite 8 ＋ MapLibre GL JS 6（TypeScript）。セルの GeoJSON（解像度 9・10・11、合わせて約3.7MB）をタイルにせず、そのまま読む
 - 解像度ごとにレイヤーを分け、ズームの境目で重ねて入れ替える。凡例でチェーンを選ぶと、そのチェーンだけでセルの色と明るさを計算し直す（`setData`）
+- 発光は A5 ではなく MapLibre の描き方で作る（セルの縁をセルの色のぼかした線でなぞる。`line-blur`）
 - 横長の画面では、地図を −24° 回して日本の北東を右に向ける（URL に位置があるときは回さない）
 - 公開版は `site/`（`npm run build` の出力）。GitHub Pages では /day04-clusters/site/。データは `data-web/`（`data/` は取得データ置き場で Git 管理外）
 
@@ -120,23 +121,33 @@ node scripts/screenshot.mjs   # output/day04-clusters-*.png
 - 準備度: ○
 - [x] データ準備
 - [x] 地図作成（index.html）
-- [x] スクリーンショット（`output/day04-clusters.png` ほか。出典は画面右下）
+- [x] スクリーンショット（`output/day04-clusters.png` ほか。X 用は `output/day04-x-*.png`。出典は画面右下）
 - [ ] 投稿（#30DayMapChallenge）
 
 ## 投稿文の下書き
 
-本文（画像 `output/day04-clusters.png` を添付）:
+言いたいこと: 日本全体で見るとセブンが最多だが、地方ブロックで見ると勢力図が変わる（中部・近畿はファミマとセブンがほぼ同数、北海道はセイコーマート、四国はローソン、沖縄はファミマが最多）。
+
+画像は `node scripts/capture-x.mjs` で撮る（16:9、`output/day04-x-*.png`）。右上の割合は `data-web/stats.json` の都道府県ごとの店舗数を地方ブロックで足したもの（住所の都道府県で集計）。
+
+本文（画像4枚: `1-japan` `2-kanto` `3-chubu` `4-kinki`）:
 
 ```text
 #30DayMapChallenge Day 4 - Clusters
 コンビニ8チェーン・57,253店を、面積の等しい五角形のグリッド A5 で数えて、縄張りを塗り分けてみました🗺️
-北海道はセイコーマート、関東はセブン、愛知はファミマが目立ちます📝
+全国ではセブンが最多ですが、地方ブロックで見ると勢力図が変わります。中部・近畿はファミマとセブンがほぼ同数📝
 デモサイトはこちら↓
 https://shiwaku.github.io/30daymapchallenge-2026/day04-clusters/site/
 #A5 #MapLibre #Python
 ```
 
-リプライ:
+リプライ1（画像4枚: `5-hokkaido` `6-tohoku` `7-chugoku-shikoku` `8-kyushu-okinawa`）:
+
+```text
+北海道はセイコーマート、四国はローソン、沖縄はファミマが最多です
+```
+
+リプライ2:
 
 ```text
 出典）店舗: All the Places（2026-10-24 実行分、CC0）を A5 のセル（約8km²以上）ごとに集計。各社の公式の店舗数ではありません
