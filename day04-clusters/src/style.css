@@ -52,7 +52,7 @@ html, body { height: 100%; overflow: hidden; background: #07080c; color: #e8e8ea
 .record .maplibregl-ctrl-group { display: none; }
 
 /* 発光（ブルーム）: 地図の写しをぼかして明るさを足す */
-.bloom { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; mix-blend-mode: screen; opacity: 0.95; }
+.bloom { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; mix-blend-mode: screen; opacity: 0.6; }
 
 /* 住所の検索 */
 #search { margin-top: 10px; display: flex; gap: 6px; }

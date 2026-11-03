@@ -39,6 +39,8 @@ type Chain = { id: string; name: string; count: number; sameNeighbor: number; ex
 type Res = { areaKm2: number; cells: number; top: number[]; ties: number; max: number };
 type Stats = { run: string; total: number; unknownPref: number; chains: Chain[]; prefs: Record<string, number[]>; res: Record<string, Res> };
 type Cells = GeoJSON.FeatureCollection<GeoJSON.Polygon, { k: number[]; n: number; c?: number; m?: number; s?: number }>;
+// 市（scripts/cities.py）。k は市の境界の中にある店の数（チェーン別）
+type Cities = GeoJSON.FeatureCollection<GeoJSON.Polygon | GeoJSON.MultiPolygon, { name: string; k: number[]; bbox: [number, number, number, number] }>;
 type Blocks = GeoJSON.FeatureCollection<GeoJSON.Polygon | GeoJSON.MultiPolygon, { name: string; prefs: string[]; bbox: [number, number, number, number] }>;
 
 maplibregl.setWorkerUrl(workerUrl);
@@ -68,7 +70,7 @@ map.addControl(
   new maplibregl.AttributionControl({
     compact: false,
     customAttribution:
-      '店舗: <a href="https://alltheplaces.xyz/" target="_blank" rel="noopener">All the Places</a>（2026-10-24 実行分、CC0）を A5 のセルごとに集計 / 格子: <a href="https://a5geo.org/" target="_blank" rel="noopener">A5</a> / 地名・住所検索: <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院</a> / 地方の境: <a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener">Natural Earth</a>',
+      '店舗: <a href="https://alltheplaces.xyz/" target="_blank" rel="noopener">All the Places</a>（2026-10-24 実行分、CC0）を A5 のセルごとに集計 / 格子: <a href="https://a5geo.org/" target="_blank" rel="noopener">A5</a> / 地名・住所検索: <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院</a> / 地方の境: <a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener">Natural Earth</a> / 市の境: <a href="https://nlftp.mlit.go.jp/ksj/" target="_blank" rel="noopener">国土数値情報（行政区域）</a>を加工',
   }),
 );
 // 地図を回しているので、北の向きを出す
@@ -168,9 +170,9 @@ function inRing(p: [number, number], ring: number[][]) {
 }
 
 async function main() {
-  const [stats, blocks, prefAreas, ...cells] = (await Promise.all(
-    ["stats.json", "blocks.geojson", "prefs.geojson", ...LEVELS.map((lv) => `a5-r${lv.r}.geojson`)].map((f) => fetch(DATA + f).then((r) => r.json())),
-  )) as [Stats, Blocks, Blocks, ...Cells[]];
+  const [stats, blocks, prefAreas, cityAreas, ...cells] = (await Promise.all(
+    ["stats.json", "blocks.geojson", "prefs.geojson", "cities.geojson", ...LEVELS.map((lv) => `a5-r${lv.r}.geojson`)].map((f) => fetch(DATA + f).then((r) => r.json())),
+  )) as [Stats, Blocks, Blocks, Cities, ...Cells[]];
   const chains = stats.chains;
   cells.forEach((fc) => recount(fc, ALL));
   addCells(map, cells);
@@ -224,8 +226,8 @@ async function main() {
   map.on("zoom", updateInset);
 
   // 地方ごとの店の割合（都道府県ごとの店舗数を足す。住所の都道府県で集計）
-  const shares = (prefs: string[]) => {
-    const v = ALL.map((i) => prefs.reduce((a, p) => a + (stats.prefs[p]?.[i] ?? 0), 0));
+  const shares = (prefs: string[]) => sharesOf(ALL.map((i) => prefs.reduce((a, p) => a + (stats.prefs[p]?.[i] ?? 0), 0)));
+  const sharesOf = (v: number[]) => {
     const t = v.reduce((a, b) => a + b, 0);
     return [...ALL].sort((a, b) => v[b] - v[a])
       .slice(0, 3)
@@ -243,15 +245,25 @@ async function main() {
   // 地方のボタンと都道府県の選択。選ぶとその範囲に合わせて出し、外側を暗くする
   $("#blocks").innerHTML = ["全国", ...blocks.features.map((f) => f.properties.name)].map((n) => `<button type="button" data-b="${n}">${n}</button>`).join("");
   const prefSel = $("#prefsel") as HTMLSelectElement;
-  prefSel.innerHTML = `<option value="">都道府県を選ぶ</option>` + prefAreas.features.map((f) => `<option>${f.properties.name}</option>`).join("");
+  prefSel.innerHTML =
+    `<option value="">都道府県・市を選ぶ</option>` +
+    `<optgroup label="都道府県">${prefAreas.features.map((f) => `<option>${f.properties.name}</option>`).join("")}</optgroup>` +
+    `<optgroup label="市">${cityAreas.features.map((f) => `<option>${f.properties.name}</option>`).join("")}</optgroup>`;
   const storeCount = (prefs: string[]) => prefs.reduce((a, p) => a + (stats.prefs[p] ?? []).reduce((x, y) => x + y, 0), 0);
   function showBlock(name: string) {
     block = name === "全国" ? "" : name;
     document.querySelectorAll<HTMLButtonElement>("#blocks button").forEach((b) => b.classList.toggle("on", b.dataset.b === name));
+    const city = cityAreas.features.find((x) => x.properties.name === block);
     const isPref = prefAreas.features.some((x) => x.properties.name === block);
-    prefSel.value = isPref ? block : "";
-    const f = blocks.features.find((x) => x.properties.name === block) ?? prefAreas.features.find((x) => x.properties.name === block);
-    const sub = !f ? shares(allPrefs) : isPref ? `${num(storeCount(f.properties.prefs))}店　${shares(f.properties.prefs)}` : blockSub(f);
+    prefSel.value = isPref || city ? block : "";
+    const f = blocks.features.find((x) => x.properties.name === block) ?? prefAreas.features.find((x) => x.properties.name === block) ?? city;
+    const sub = city
+      ? `${num(city.properties.k.reduce((a, b) => a + b, 0))}店　${sharesOf(city.properties.k)}`
+      : !f
+        ? shares(allPrefs)
+        : isPref
+          ? `${num(storeCount((f as Blocks["features"][number]).properties.prefs))}店　${shares((f as Blocks["features"][number]).properties.prefs)}`
+          : blockSub(f as Blocks["features"][number]);
     $("#region").innerHTML = `<div class="t">${f ? f.properties.name : "全国"}</div><div class="s">${sub}</div>`;
     const mask = map.getSource("mask") as maplibregl.GeoJSONSource;
     if (!f) {
@@ -268,8 +280,8 @@ async function main() {
     const padding = window.innerWidth >= 900 ? { left, right: 40, top: 90, bottom: 40 } : { left: 12, right: 12, top: $("#title").getBoundingClientRect().bottom + 12, bottom: 40 };
     const cam = map.cameraForBounds([[w, s], [e, n]], { padding, bearing: 0 })!;
     let z = cam.zoom!;
-    // 解像度の入れ替わるズームは、粗いほうに寄せる
-    for (const [a, b] of OVERLAP) if (z > a && z < b) z = a - 0.05;
+    // 解像度の入れ替わるズームは、近いほうの端に寄せる（細かいほうに寄せると少しはみ出すが、上下の余白に収まる）
+    for (const [a, b] of OVERLAP) if (z > a && z < b) z = z - a < b - z ? a - 0.05 : b + 0.05;
     map.jumpTo({ center: cam.center, zoom: z, bearing: 0, padding });
     updateInset();
   }
