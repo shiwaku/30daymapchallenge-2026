@@ -19,7 +19,7 @@ for (const s of [1, 2, 3]) {
   console.log(`output/day04-clusters-step${s}.png`);
 }
 // 拡大した場所（関東、北海道、中国地方）
-for (const [name, hash] of [["kanto", "9/35.75/139.7"], ["hokkaido", "6.6/43.4/142.6"], ["chugoku", "7.4/34.5/133.1"]]) {
+for (const [name, hash] of [["kanto", "9/35.75/139.7"], ["hokkaido", "6.6/43.4/142.6"], ["kansai", "8/34.75/135.4"]]) {
   await page.goto(`${url}?record#${hash}`);
   await page.waitForFunction(() => "__show" in window, null, { timeout: 120000 });
   await page.evaluate(() => window.__show(1));

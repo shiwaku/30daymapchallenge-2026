@@ -12,15 +12,18 @@ const OKINAWA: [number, number] = [127.85, 26.45];
 const JAPAN: [[number, number], [number, number]] = [[127.6, 26.0], [145.9, 45.6]];
 const BG = "#07080c";
 const BEARING = -24;
-const DIM = "#1c1f27";
-// 格子で同数のチェーンが並んだところ（c = -1）の色
+// 同数のチェーンが並んだセル（c = -1）の色
 const TIE = "#6b7080";
-// このズームの間で、格子の点から縄張りの面に切り替える
-const FADE = [6.9, 7.3];
-// 店の点を出すズーム
-const STORE_ZOOM = 10.5;
+// A5 の解像度と、それを出すズームの範囲（scripts/prepare.py の RES と同じ）。
+// full は「そのセルの店がこの数以上なら最も明るくする」数。セルの面積に合わせて変える
+const LEVELS = [
+  { r: 9, min: 0, max: 7, full: 30 },
+  { r: 10, min: 7, max: 8.6, full: 10 },
+  { r: 11, min: 8.6, max: 23, full: 4 },
+];
+const FADE = 0.3;
 
-// 並びは scripts/prepare.py の CHAINS と同じ（番号 c で引く）
+// 並びは scripts/prepare.py の CHAINS と同じ（番号で引く）
 const COLORS = ["#ff4757", "#2ed47a", "#3d8bff", "#ffd23f", "#ff9f1c", "#c77dff", "#25e0e0", "#ff7ab8"];
 const SHORT = ["セブン", "ファミマ", "ローソン", "ミニストップ", "セイコーマート", "デイリーヤマザキ", "NewDays", "ポプラ"];
 const ALL = COLORS.map((_, i) => i);
@@ -28,8 +31,10 @@ const BIG3 = [0, 1, 2];
 // 段階2で出す、固まって店を出しているチェーン（隣の店も同じチェーンである割合が、店の割合よりずっと高い）
 const CLUSTERED = [4, 5, 6, 7];
 
-type Chain = { id: string; name: string; count: number; sameNeighbor: number; expected: number; areaKm2: number };
-type Stats = { run: string; radiusM: number; gridM: number; gridCells: number; gridTop: number[]; total: number; unknownPref: number; chains: Chain[]; prefs: Record<string, number[]> };
+type Chain = { id: string; name: string; count: number; sameNeighbor: number; expected: number };
+type Res = { areaKm2: number; cells: number; top: number[]; ties: number; max: number };
+type Stats = { run: string; total: number; unknownPref: number; chains: Chain[]; prefs: Record<string, number[]>; res: Record<string, Res> };
+type Cells = GeoJSON.FeatureCollection<GeoJSON.Polygon, { k: number[]; n: number; c?: number; m?: number; s?: number }>;
 
 maplibregl.setWorkerUrl(workerUrl);
 
@@ -41,7 +46,7 @@ const map = new maplibregl.Map({
   hash: true,
   bounds: JAPAN,
   minZoom: 3,
-  maxZoom: 15,
+  maxZoom: 11,
   attributionControl: false,
   style: { version: 8, sources: {}, layers: [{ id: "background", type: "background", paint: { "background-color": BG } }] },
 });
@@ -49,7 +54,7 @@ map.addControl(
   new maplibregl.AttributionControl({
     compact: false,
     customAttribution:
-      '店舗: <a href="https://alltheplaces.xyz/" target="_blank" rel="noopener">All the Places</a>（2026-10-24 実行分、CC0）を加工して作成',
+      '店舗: <a href="https://alltheplaces.xyz/" target="_blank" rel="noopener">All the Places</a>（2026-10-24 実行分、CC0）を A5 のセルごとに集計 / 格子: <a href="https://a5geo.org/" target="_blank" rel="noopener">A5</a>',
   }),
 );
 // 地図を回しているので、北の向きを出す
@@ -59,93 +64,78 @@ const $ = <T extends HTMLElement>(sel: string) => document.querySelector(sel) as
 const pct = (x: number) => `${Math.round(100 * x)}%`;
 const num = (x: number) => x.toLocaleString("ja-JP");
 
-// 指定したチェーンだけ色を付け、ほかは暗くする式
-function colorFor(on: number[]): ExpressionSpecification {
-  const m: unknown[] = ["match", ["get", "c"]];
-  COLORS.forEach((c, i) => m.push(i, on.includes(i) ? c : DIM));
-  m.push(on.length === ALL.length ? TIE : DIM);
-  return m as ExpressionSpecification;
+const colorExpr: ExpressionSpecification = ["match", ["get", "c"], ...COLORS.flatMap((c, i) => [i, c]), TIE] as unknown as ExpressionSpecification;
+
+// 選んだチェーンだけで数え直す。c = 選んだなかで店がいちばん多いチェーン（同数は -1）、m = 選んだチェーンの店の数、s = c の割合
+function recount(fc: Cells, on: number[]): Cells {
+  for (const f of fc.features) {
+    const k = f.properties.k;
+    let best = -1;
+    let top = 0;
+    let m = 0;
+    for (const i of on) {
+      m += k[i];
+      if (k[i] > top) [best, top] = [i, k[i]];
+      else if (k[i] === top && top > 0) best = -1;
+    }
+    Object.assign(f.properties, { c: best, m, s: m ? top / m : 0 });
+  }
+  return fc;
 }
 
-// 全国を見るときのレイヤーを足す（本体の地図と沖縄の小さな地図で同じものを使う）。
-// 格子の点（段階1）と、選んだチェーンの店の点（段階2・3と、凡例で選んだとき）
-function addOverview(m: maplibregl.Map, data: GeoJSON.FeatureCollection, stores: GeoJSON.FeatureCollection) {
-  m.addSource("grid", { type: "geojson", data });
-  m.addSource("spots", { type: "geojson", data: stores });
-  // 全国を見るときは格子の点、拡大したら縄張りの面に切り替える（FADE[0]〜FADE[1] で入れ替える）
-  const fadeOut = (v: unknown): ExpressionSpecification => ["interpolate", ["linear"], ["zoom"], FADE[0], v, FADE[1], 0] as ExpressionSpecification;
-  // 格子の点。大きさは店の数（40店で頭打ち）、明るさはいちばん多いチェーンの割合
-  const size: ExpressionSpecification = ["max", 0.3, ["sqrt", ["/", ["min", ["get", "n"], 40], 40]]];
-  const gridRadius = (k: number): ExpressionSpecification => ["interpolate", ["exponential", 2], ["zoom"], 4, ["*", 1.6 * k, size], 8, ["*", 25.6 * k, size]];
-  m.addLayer({
-    id: "grid-glow",
-    type: "circle",
-    source: "grid",
-    maxzoom: FADE[1],
-    paint: {
-      "circle-color": colorFor(ALL),
-      "circle-radius": gridRadius(3),
-      "circle-blur": 1,
-      "circle-opacity": fadeOut(["*", 0.55, ["get", "s"]]),
-      "circle-color-transition": { duration: 900 },
-    },
+// セルのレイヤーを足す（本体の地図と沖縄の小さな地図で同じものを使う）
+function addCells(m: maplibregl.Map, data: Cells[]) {
+  LEVELS.forEach((lv, j) => {
+    const src = `r${lv.r}`;
+    m.addSource(src, { type: "geojson", data: data[j], tolerance: 0 });
+    // ズームの境目で、粗いセルと細かいセルを重ねて入れ替える
+    const fade = (v: ExpressionSpecification | number): ExpressionSpecification =>
+      ["interpolate", ["linear"], ["zoom"], lv.min - FADE, lv.min ? 0 : v, lv.min + FADE, v, lv.max - FADE, v, lv.max + FADE, lv.max < 23 ? 0 : v] as ExpressionSpecification;
+    // 明るさは店の数（full で頭打ち）と、いちばん多いチェーンの割合
+    const light: ExpressionSpecification = ["*", ["sqrt", ["min", 1, ["/", ["get", "m"], lv.full]]], ["+", 0.35, ["*", 0.65, ["get", "s"]]]];
+    const range = { minzoom: Math.max(0, lv.min - FADE), maxzoom: lv.max + FADE };
+    m.addLayer({
+      id: `${src}-glow`,
+      type: "line",
+      source: src,
+      ...range,
+      filter: [">", ["get", "m"], 0],
+      paint: {
+        "line-color": colorExpr,
+        "line-width": ["interpolate", ["exponential", 2], ["zoom"], 4, 3, 10, 18],
+        "line-blur": ["interpolate", ["exponential", 2], ["zoom"], 4, 3, 10, 18],
+        "line-opacity": fade(["*", 0.35, light]),
+      },
+    });
+    m.addLayer({
+      id: `${src}-fill`,
+      type: "fill",
+      source: src,
+      ...range,
+      filter: [">", ["get", "m"], 0],
+      paint: { "fill-color": colorExpr, "fill-opacity": fade(["+", 0.08, ["*", 0.85, light]]), "fill-antialias": false },
+    });
+    // 五角形の形が見えるように、セルの縁を背景の色で細く抜く
+    m.addLayer({
+      id: `${src}-edge`,
+      type: "line",
+      source: src,
+      ...range,
+      filter: [">", ["get", "m"], 0],
+      paint: { "line-color": BG, "line-width": ["interpolate", ["linear"], ["zoom"], 4, 0.4, 10, 1.4], "line-opacity": fade(0.9) },
+    });
   });
-  m.addLayer({
-    id: "grid",
-    type: "circle",
-    source: "grid",
-    maxzoom: FADE[1],
-    paint: {
-      "circle-color": colorFor(ALL),
-      "circle-radius": gridRadius(1),
-      "circle-opacity": fadeOut(["+", 0.25, ["*", 0.75, ["get", "s"]]]),
-      "circle-color-transition": { duration: 900 },
-    },
-  });
-
-  m.addLayer({
-    id: "spots",
-    type: "circle",
-    source: "spots",
-    maxzoom: FADE[1],
-    filter: ["in", ["get", "c"], ["literal", []]],
-    layout: { "circle-sort-key": ["get", "r"] },
-    paint: {
-      "circle-color": colorFor(ALL),
-      "circle-radius": ["interpolate", ["exponential", 2], ["zoom"], 4, 0.8, 8, 4],
-      "circle-blur": 0.4,
-      "circle-opacity": ["interpolate", ["linear"], ["zoom"], FADE[0], 0.9, FADE[1], 0],
-    },
-  });
-
-}
-
-// 全国を見るときの色。すべてのチェーンなら格子の点、一部のチェーンならその店の点を出す（格子は暗くする）
-function paintOverview(m: maplibregl.Map, on: number[]) {
-  const whole = on.length === ALL.length;
-  for (const id of ["grid", "grid-glow"]) m.setPaintProperty(id, "circle-color", whole ? colorFor(ALL) : DIM);
-  m.setFilter("spots", ["in", ["get", "c"], ["literal", whole ? [] : on]]);
 }
 
 async function main() {
-  const [territory, stores, grid, stats] = (await Promise.all(
-    ["territory.geojson", "stores.json", "grid.json", "stats.json"].map((f) => fetch(DATA + f).then((r) => r.json())),
-  )) as [GeoJSON.FeatureCollection, [number, number, number][], [number, number, number, number, number][], Stats];
+  const [stats, ...cells] = (await Promise.all(
+    ["stats.json", ...LEVELS.map((lv) => `a5-r${lv.r}.geojson`)].map((f) => fetch(DATA + f).then((r) => r.json())),
+  )) as [Stats, ...Cells[]];
   const chains = stats.chains;
-  const all = chains.map((_, i) => i);
-
-  map.addSource("territory", { type: "geojson", data: territory, tolerance: 0.3 });
   let current = ALL;
-  const gridFC: GeoJSON.FeatureCollection = {
-    type: "FeatureCollection",
-    features: grid.map(([x, y, c, n, s]) => ({ type: "Feature", properties: { c, n, s }, geometry: { type: "Point", coordinates: [x, y] } })),
-  };
-  const storesFC: GeoJSON.FeatureCollection = {
-    type: "FeatureCollection",
-    // r は描く順。チェーンごとにまとめて描くと後のチェーンが上に重なって多く見えるので、順番を混ぜる
-    features: stores.map(([x, y, c], i) => ({ type: "Feature", properties: { c, r: (i * 0.6180339887) % 1 }, geometry: { type: "Point", coordinates: [x, y] } })),
-  };
-  addOverview(map, gridFC, storesFC);
+  cells.forEach((fc) => recount(fc, ALL));
+  addCells(map, cells);
+
   // 沖縄は本州から離れているので、全国を見るときは左下に別の小さな地図で出す
   const inset = new maplibregl.Map({
     container: "inset",
@@ -155,67 +145,15 @@ async function main() {
     attributionControl: false,
     style: { version: 8, sources: {}, layers: [{ id: "background", type: "background", paint: { "background-color": BG } }] },
   });
-  inset.on("load", () => {
-    addOverview(inset, gridFC, storesFC);
-    paintOverview(inset, current);
-  });
+  inset.on("load", () => addCells(inset, cells));
   // 小さな地図は、全国を見ているときだけ出す
   const updateInset = () => {
-    const on = map.getZoom() < FADE[0] - 0.4;
+    const on = map.getZoom() < 6.5;
     $("#inset-box").classList.toggle("on", on);
     if (on) inset.jumpTo({ center: OKINAWA, zoom: map.getZoom(), bearing: map.getBearing() });
   };
   map.on("zoom", updateInset);
   updateInset();
-  const fadeIn = (to: number): ExpressionSpecification => ["interpolate", ["linear"], ["zoom"], FADE[0], 0, FADE[1], to];
-
-  // 縄張りの面。縁をぼかした線で光らせる
-  map.addLayer({
-    id: "glow",
-    type: "line",
-    source: "territory",
-    minzoom: FADE[0],
-    paint: {
-      "line-color": colorFor(all),
-      "line-width": ["interpolate", ["exponential", 2], ["zoom"], 6, 2, 10, 14],
-      "line-blur": ["interpolate", ["exponential", 2], ["zoom"], 6, 2, 10, 14],
-      "line-opacity": fadeIn(0.4),
-      "line-color-transition": { duration: 900 },
-    },
-  });
-  map.addLayer({
-    id: "fill",
-    type: "fill",
-    source: "territory",
-    minzoom: FADE[0],
-    paint: {
-      "fill-color": colorFor(all),
-      "fill-opacity": ["interpolate", ["linear"], ["zoom"], FADE[0], 0, FADE[1], 0.85, 12, 0.6],
-      "fill-color-transition": { duration: 900 },
-      "fill-antialias": false,
-    },
-  });
-  map.addLayer({
-    id: "edge",
-    type: "line",
-    source: "territory",
-    minzoom: FADE[1],
-    paint: { "line-color": BG, "line-width": ["interpolate", ["linear"], ["zoom"], 7, 0.3, 12, 1.2], "line-opacity": 0.8 },
-  });
-  map.addLayer({
-    id: "stores",
-    type: "circle",
-    source: "spots",
-    minzoom: STORE_ZOOM,
-    paint: {
-      "circle-radius": ["interpolate", ["linear"], ["zoom"], STORE_ZOOM, 1.5, 13, 3.5, 15, 6],
-      "circle-color": "#ffffff",
-      "circle-stroke-color": colorFor(all),
-      "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], STORE_ZOOM, 0.8, 13, 2],
-      "circle-opacity": ["interpolate", ["linear"], ["zoom"], STORE_ZOOM, 0, STORE_ZOOM + 0.5, 0.9],
-      "circle-stroke-opacity": ["interpolate", ["linear"], ["zoom"], STORE_ZOOM, 0, STORE_ZOOM + 0.5, 1],
-    },
-  });
 
   // 数字はすべて stats.json（scripts/prepare.py がデータから計算した値）から出す
   const names = chains.map((c) => c.name);
@@ -235,28 +173,31 @@ async function main() {
     "",
     `8チェーン・<b>${num(stats.total)}</b>店。都道府県ごとに店がいちばん多いチェーンは、${topText}。`,
     `店の「いちばん近いコンビニ」も同じチェーンである割合。この4チェーンは、全店に占める割合よりずっと高く、固まって店を出している。` +
-      `<div class="rows">${[4, 5, 6, 7].map(nb).join("")}</div>`,
+      `<div class="rows">${CLUSTERED.map(nb).join("")}</div>`,
     `大手3社は、いちばん近いコンビニが同じチェーンである割合が、全店に占める割合より低い。隣は他社の店のことが多い。` +
       `<div class="rows">${BIG3.map(nb).join("")}</div>`,
   ];
-  const ON = [all, all, CLUSTERED, BIG3];
+  const ON = [ALL, ALL, CLUSTERED, BIG3];
 
   $("#legend").innerHTML = chains
     .map((c, i) => `<li><button type="button" data-c="${i}"><span class="sw" style="--c:${COLORS[i]}"></span>${c.name}<span class="n">${num(c.count)}</span></button></li>`)
     .join("");
+  const km2 = (r: number) => Math.round(stats.res[r].areaKm2);
   $("#note").innerHTML =
-    `All the Places（${stats.run.slice(0, 10)} 実行分）が各社のサイトから集めた店舗。各社の公式の店舗数ではない。` +
-    `ローソンはローソンストア100・ナチュラルローソンを含む。` +
-    `全国の図の点は${stats.gridM / 1000}km四方の格子で、色は店がいちばん多いチェーン（灰色は同数）、大きさは店の数、明るさはそのチェーンの割合。拡大したときの縄張りは、店から${stats.radiusM / 1000}km以内で、いちばん近い店がそのチェーンになる範囲（ボロノイ図）。`;
+    `All the Places（${stats.run.slice(0, 10)} 実行分）が各社のサイトから集めた店舗。各社の公式の店舗数ではない。ローソンはローソンストア100・ナチュラルローソンを含む。` +
+    `五角形は A5（地球を面積の等しい五角形に分ける格子）のセルで、全国では約${km2(9)}km²、拡大すると約${km2(10)}km²・約${km2(11)}km²。` +
+    `色はセルのなかで店がいちばん多いチェーン（灰色は同数）、明るさは店の数とそのチェーンの割合。店の位置は出していない。`;
 
   let step = 0;
   let solo = -1;
   function paint(on: number[]) {
     current = on;
-    for (const [layer, prop] of [["fill", "fill-color"], ["glow", "line-color"], ["stores", "circle-stroke-color"]] as const)
-      map.setPaintProperty(layer, prop, colorFor(on));
-    paintOverview(map, on);
-    if (inset.getLayer("grid")) paintOverview(inset, on);
+    cells.forEach((fc, j) => {
+      recount(fc, current);
+      const src = `r${LEVELS[j].r}`;
+      (map.getSource(src) as maplibregl.GeoJSONSource).setData(fc);
+      (inset.getSource(src) as maplibregl.GeoJSONSource | undefined)?.setData(fc);
+    });
     document.querySelectorAll<HTMLButtonElement>("#legend button").forEach((b) => b.classList.toggle("off", !on.includes(Number(b.dataset.c))));
   }
   function show(s: number) {
@@ -285,7 +226,7 @@ async function main() {
 
   show(1);
   // 沖縄・奄美は離れすぎるので、画面に収める範囲からは外す（沖縄は左下の小さな地図で出す）
-  if (!START_HASH) fitJapan(grid.filter(([, y]) => y > 30.5).map(([x, y]) => [x, y]));
+  if (!START_HASH) fitJapan(cells[0].features.map((f) => f.geometry.coordinates[0][0] as [number, number]).filter(([, y]) => y > 30.5));
   updateInset();
   if (RECORD) {
     document.body.classList.add("record");
