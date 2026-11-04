@@ -3,6 +3,7 @@
 - DATE: 01-11-2026
 - NAME: Points
 - ビューワ: https://shiwaku.github.io/30daymapchallenge-2026/day01-points/site/
+- 投稿: 2026年11月1日（X）。投稿したのは `output/day01-points.mp4`（約45秒、出典は画面内）
 
 ## Description（公式）
 
@@ -53,7 +54,7 @@ npm run build   # site/ に出力
 - [x] データ準備
 - [x] 地図作成（index.html）
 - [x] 投稿用の動画（`npm run dev` のあと `node scripts/record-live.mjs` で `output/day01-points.mp4`。ふだんの再生を1年/秒でそのまま録る）
-- [ ] 投稿（#30DayMapChallenge）
+- [x] 投稿（2026年11月1日、X）
 
 ## 経緯
 

@@ -3,6 +3,7 @@
 - DATE: 04-11-2026
 - NAME: Clusters
 - ビューワ: https://shiwaku.github.io/30daymapchallenge-2026/day04-clusters/site/
+- 投稿: 2026年11月4日（X）
 
 ## Description（公式）
 
@@ -149,9 +150,9 @@ node scripts/capture-x.mjs cities   # output/day04-city-kawagoe.png など
 - [x] データ準備
 - [x] 地図作成（index.html）
 - [x] スクリーンショット（`output/day04-clusters.png` ほか。X 用は `output/day04-x-*.png`。出典は画面右下）
-- [ ] 投稿（#30DayMapChallenge）
+- [x] 投稿（2026年11月4日、X）
 
-## 投稿文の下書き
+## 投稿文
 
 言いたいこと: 日本全体で見るとセブンが最多だが、地方ブロックで見ると勢力図が変わる（中部・近畿はファミマとセブンがほぼ同数、北海道はセイコーマート、四国はローソン、沖縄はファミマが最多）。
 
