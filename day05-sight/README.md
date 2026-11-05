@@ -3,6 +3,7 @@
 - DATE: 05-11-2026
 - NAME: Senses: Sight
 - ビューワ: https://shiwaku.github.io/30daymapchallenge-2026/day05-sight/site/
+- 投稿: 2026年11月5日（X）
 
 ## Description（公式）
 
@@ -105,7 +106,7 @@ https://shiwaku.github.io/30daymapchallenge-2026/day05-sight/site/
 - [x] 地図作成（index.html。MLT は mlt CLI 0.6.1、MapLibre GL JS 6.16）
 - [x] スクリーンショット（`output/day05-underground.png`）
 - [x] 短い動画（`output/day05-underground.mp4`、画面録画、約15秒、地面を消す場面あり、出典は画面内）
-- [ ] 投稿（#30DayMapChallenge）
+- [x] 投稿（2026年11月5日、X）
 
 ## 別ページ: 森の下の山城（castle.html）
 
