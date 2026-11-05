@@ -1,0 +1,3 @@
+# タイルは改行を変換しない
+*.mlt binary
+*.pmtiles binary
