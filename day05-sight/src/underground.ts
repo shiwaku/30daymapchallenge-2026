@@ -65,26 +65,31 @@ map.on("load", () => {
   if (params.has("tour")) tour();
 });
 
-// 録画用（?tour）: 地面を不透明にして地上だけを見せ、地下を浮かび上がらせてから回る。終わると body に tour-done を付ける
+// 録画用（?tour、約15秒）: 地面を不透明にして地上だけを見せる → 地下が浮かび上がる → 回りながら地面を消す。
+// 終わると body に tour-done を付ける
 function tour() {
   const under = { "under-floor": 0.55, "under-wall": 0.95, "under-twsi": 1 } as const;
   for (const id of Object.keys(under)) map.setPaintProperty(id, "fill-extrusion-opacity", 0);
   map.setPaintProperty("ground", "fill-extrusion-opacity", 0.97);
   const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  const fadeTo = (id: string, o: number, ms: number) => {
+    map.setPaintProperty(id, "fill-extrusion-opacity-transition", { duration: ms, delay: 0 });
+    map.setPaintProperty(id, "fill-extrusion-opacity", o);
+  };
   map.once("idle", async () => {
     document.body.classList.add("tour-start");
-    await wait(3000);
-    const fade = { duration: 3000, delay: 0 };
-    for (const [id, o] of Object.entries(under)) {
-      map.setPaintProperty(id, "fill-extrusion-opacity-transition", fade);
-      map.setPaintProperty(id, "fill-extrusion-opacity", o);
-    }
-    map.setPaintProperty("ground", "fill-extrusion-opacity-transition", fade);
-    map.setPaintProperty("ground", "fill-extrusion-opacity", 0.6);
-    await wait(3500);
-    map.easeTo({ bearing: map.getBearing() + 100, pitch: 70, zoom: 16.6, duration: 16000, easing: (t) => t * (2 - t) });
+    await wait(2000);
+    for (const [id, o] of Object.entries(under)) fadeTo(id, o, 2000);
+    fadeTo("ground", 0.6, 2000);
+    await wait(2200);
+    map.easeTo({ bearing: map.getBearing() + 90, pitch: 70, zoom: 16.6, duration: 10000, easing: (t) => t * (2 - t) });
+    await wait(4500);
+    // 地面と道路を消す（パネルの「地面」ボタンもオフの見た目にする）
+    document.getElementById("t-ground")!.classList.remove("on");
+    fadeTo("ground", 0, 1500);
+    fadeTo("road", 0, 1500);
     await new Promise((r) => map.once("moveend", r));
-    await wait(1500);
+    await wait(800);
     document.body.classList.add("tour-done");
   });
 }
