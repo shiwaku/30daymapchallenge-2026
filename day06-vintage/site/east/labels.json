@@ -1,0 +1,185 @@
+{
+ "_source": "路線名とJCT名・開通年: 国土数値情報 高速道路時系列（N06-24 HighwaySection / Joint）。路線名は各路線の線の上に置いた。川の名前は写真を見て置いた",
+ "labels": [
+  {
+   "kind": "route",
+   "text": "都心環状線",
+   "year": 1962,
+   "lnglat": [
+    139.77012,
+    35.67458
+   ],
+   "maxzoom": 14.5
+  },
+  {
+   "kind": "route",
+   "text": "1号上野線",
+   "year": 1963,
+   "lnglat": [
+    139.77603,
+    35.70506
+   ],
+   "maxzoom": 14.5
+  },
+  {
+   "kind": "route",
+   "text": "1号羽田線",
+   "year": 1962,
+   "lnglat": [
+    139.75665,
+    35.64579
+   ],
+   "maxzoom": 14.5
+  },
+  {
+   "kind": "route",
+   "text": "6号向島線",
+   "year": 1971,
+   "lnglat": [
+    139.80735,
+    35.7165
+   ],
+   "maxzoom": 14.5
+  },
+  {
+   "kind": "route",
+   "text": "7号小松川線",
+   "year": 1971,
+   "lnglat": [
+    139.83499,
+    35.69409
+   ],
+   "maxzoom": 14.5
+  },
+  {
+   "kind": "route",
+   "text": "9号深川線",
+   "year": 1980,
+   "lnglat": [
+    139.7958,
+    35.6735
+   ],
+   "maxzoom": 14.5
+  },
+  {
+   "kind": "jct",
+   "text": "浜崎橋JCT",
+   "year": 1962,
+   "lnglat": [
+    139.76017,
+    35.65261
+   ],
+   "minzoom": 13.2
+  },
+  {
+   "kind": "jct",
+   "text": "江戸橋JCT",
+   "year": 1963,
+   "lnglat": [
+    139.77874,
+    35.68408
+   ],
+   "minzoom": 13.2
+  },
+  {
+   "kind": "jct",
+   "text": "汐留JCT",
+   "year": 1964,
+   "lnglat": [
+    139.76197,
+    35.66232
+   ],
+   "minzoom": 13.2
+  },
+  {
+   "kind": "jct",
+   "text": "京橋JCT",
+   "year": 1966,
+   "lnglat": [
+    139.77267,
+    35.67452
+   ],
+   "minzoom": 13.2
+  },
+  {
+   "kind": "jct",
+   "text": "両国JCT",
+   "year": 1971,
+   "lnglat": [
+    139.78973,
+    35.69109
+   ],
+   "minzoom": 13.2
+  },
+  {
+   "kind": "jct",
+   "text": "箱崎JCT",
+   "year": 1980,
+   "lnglat": [
+    139.78637,
+    35.68152
+   ],
+   "minzoom": 13.2
+  },
+  {
+   "kind": "jct",
+   "text": "辰巳JCT",
+   "year": 1980,
+   "lnglat": [
+    139.81277,
+    35.64426
+   ],
+   "minzoom": 13.2
+  },
+  {
+   "kind": "jct",
+   "text": "堀切JCT",
+   "year": 1982,
+   "lnglat": [
+    139.8236,
+    35.7444
+   ],
+   "minzoom": 13.2
+  },
+  {
+   "kind": "place",
+   "text": "隅田川",
+   "year": 0,
+   "lnglat": [
+    139.7975,
+    35.7005
+   ],
+   "maxzoom": 14.5
+  },
+  {
+   "kind": "place",
+   "text": "荒川",
+   "year": 0,
+   "lnglat": [
+    139.856,
+    35.702
+   ],
+   "maxzoom": 14.5
+  },
+  {
+   "kind": "place",
+   "text": "日本橋川",
+   "year": 0,
+   "lnglat": [
+    139.7826,
+    35.68
+   ],
+   "minzoom": 15
+  },
+  {
+   "kind": "place",
+   "text": "隅田川",
+   "year": 0,
+   "lnglat": [
+    139.7903,
+    35.6787
+   ],
+   "minzoom": 15
+  }
+ ]
+}

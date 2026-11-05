@@ -1,0 +1,18 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; background: #0b0f1a; color: #eef0f5; font-family: "Noto Sans JP", "Yu Gothic UI", sans-serif; }
+#map, #glow { position: absolute; inset: 0; }
+#glow { pointer-events: none; mix-blend-mode: screen; filter: blur(7px) brightness(1.6) saturate(1.3); opacity: 0.85; }
+#glow .maplibregl-canvas { background: transparent; }
+#year { position: absolute; z-index: 2; top: 22px; left: 28px; text-shadow: 0 0 10px #000; }
+#y { display: block; font-family: "Noto Serif JP", "Yu Mincho", serif; font-size: 76px; font-weight: 700; letter-spacing: 0.04em; line-height: 1; }
+#era { font-size: 13px; color: #c3c8d4; letter-spacing: 0.05em; }
+#caption { position: absolute; z-index: 2; left: 0; right: 0; bottom: 64px; text-align: center; font-size: 26px; font-weight: 700; letter-spacing: 0.08em; text-shadow: 0 0 12px #000, 0 0 3px #000; opacity: 0; transform: translateY(8px); transition: opacity 0.5s, transform 0.5s; }
+#caption.on { opacity: 1; transform: none; }
+#legend { position: absolute; z-index: 2; top: 30px; right: 28px; font-size: 13px; display: flex; flex-direction: column; gap: 5px; padding: 10px 14px; background: rgba(8, 12, 22, 0.6); border-radius: 4px; }
+#legend b { font-size: 12px; color: #c3c8d4; font-weight: 400; }
+#legend i { display: inline-block; width: 18px; height: 6px; margin-right: 8px; vertical-align: middle; border-radius: 3px; box-shadow: 0 0 6px currentColor; }
+#credit { position: absolute; z-index: 2; left: 16px; right: 16px; bottom: 10px; font-size: 11px; color: #aeb4c2; text-shadow: 0 0 4px #000; }
+.lbl { display: block; pointer-events: none; white-space: nowrap; transition: opacity 0.5s; text-shadow: 0 0 5px #000, 0 0 2px #000; }
+.lbl.route { font-size: 16px; font-weight: 700; padding: 3px 10px; border-left: 4px solid var(--c); background: rgba(8, 12, 22, 0.72); color: #fff; text-shadow: none; }
+.lbl.jct { font-size: 13px; font-weight: 700; color: #fff; }
+.lbl.place { font-size: 14px; color: #9cc8ff; letter-spacing: 0.3em; }
