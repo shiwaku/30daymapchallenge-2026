@@ -55,7 +55,7 @@ https://shiwaku.github.io/30daymapchallenge-2026/day01-points/site/
 
 ### Day 2 — Lines
 
-投稿済み（2026-11-02）。投稿したのは鉄道の地図ではなく、overture-road-route-search の到達圏の図（day02-lines/README.md の「投稿したもの」）。
+投稿済み（2026-11-02）。overture-road-route-search の到達圏の図（day02-lines/README.md）。
 
 投稿した本文:
 
@@ -75,31 +75,6 @@ Overture Mapsの道路データから作成した全球の道路ネットワー�
 https://github.com/shiwaku/overture-road-route-search
 ```
 
-以下は鉄道の地図の下書き（未投稿。別の日に回すときに使う）。
-
-本文:
-
-```text
-#30DayMapChallenge Day 2 - Lines
-全国の鉄道を、平日1日に走る列車の本数で描いてみました🗺️
-
-📝線はつながっていても、営業キロの約4割は1時間に1本より少ない。最後に、2026年春に列車が走っていなかった区間も出しています。
-
-デモサイトはこちら↓
-https://shiwaku.github.io/30daymapchallenge-2026/day02-lines/site/
-
-#MapLibre #GTFS
-```
-
-（動画 day02-lines/output/day02-lines.mp4 を添付する）
-
-リプライ:
-
-```text
-出典）gtfs-gis.jp 全国鉄道運行本数データ 2026年版（西澤明、CC BY 4.0 / ODbL）を加工して作成
-制作に生成AI（Claude Code）を使用（コードの作成）
-```
-
 ### Day 3 — Polygons
 
-本文とリプライは day03-polygons/README.md の「投稿文の下書き」。添付は day03-polygons/output/urban_rings.mp4（X には GIF より MP4 がよい。GIF は day03-polygons/urban_rings.gif）。
+投稿済み（2026-11-03）。本文とリプライは day03-polygons/README.md の「投稿文」。
