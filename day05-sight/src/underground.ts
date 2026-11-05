@@ -12,10 +12,15 @@ const params = new URLSearchParams(location.search);
 const TILES = new URL("tiles/{z}/{x}/{y}.mlt", location.href).href.replace("%7Bz%7D", "{z}").replace("%7Bx%7D", "{x}").replace("%7By%7D", "{y}");
 
 if (params.has("bare")) document.body.classList.add("bare");
+// 録画では始めに地上だけを見せるので、発光は最初から消しておく（あとで消すと、消えていく途中が映る）
+if (params.has("tour")) document.body.classList.add("glow-off");
 
-// 階の色。地下は深いほど青紫、地上は灰色
-const FLOOR_COLOR: ExpressionSpecification = ["match", ["get", "fl"],
-  "B1", "#33d6ff", "B2", "#4f7dff", "B3", "#9b5cff", "#8a8f99"];
+// 階の色。地下は深いほど青紫（寒色）、地上は上ほど赤みの暖色
+const COLORS: Record<string, string> = {
+  B1: "#33d6ff", B2: "#4f7dff", B3: "#9b5cff",
+  GL: "#ffc98a", "2F": "#ffab73", "3F": "#ff8c6b", "4F": "#f2707a",
+};
+const FLOOR_COLOR: ExpressionSpecification = ["match", ["get", "fl"], ...Object.entries(COLORS).flat(), "#8a8f99"] as unknown as ExpressionSpecification;
 
 const map = new maplibregl.Map({
   container: "map",
@@ -37,6 +42,22 @@ const map = new maplibregl.Map({
 map.on("error", (e) => console.error("map error:", e.error?.message ?? e));
 map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");
 
+// 発光: 地下の階だけを描いた2枚目の地図を同じカメラで重ね、CSS でぼかして明るさを足す合成（screen）で乗せる。
+// fill-extrusion には発光の描き方がないため。地上の階・地面・道路は光らせない
+const glow = new maplibregl.Map({
+  container: "glow",
+  style: {
+    version: 8,
+    sources: { indoor: map.getStyle()?.sources?.indoor ?? { type: "vector", tiles: [TILES], encoding: "mlt", minzoom: 14, maxzoom: 18 } as maplibregl.VectorSourceSpecification },
+    layers: [],
+  },
+  center: map.getCenter(), zoom: map.getZoom(), pitch: map.getPitch(), bearing: map.getBearing(), maxPitch: 85,
+  interactive: false,
+  attributionControl: false,
+});
+const sync = () => glow.jumpTo({ center: map.getCenter(), zoom: map.getZoom(), pitch: map.getPitch(), bearing: map.getBearing() });
+map.on("move", sync);
+
 const H = (k: "b" | "t"): ExpressionSpecification => ["/", ["get", k], 100];
 const kind = (k: string): ExpressionSpecification => ["==", ["get", "kind"], k];
 const ug = (v: 0 | 1): ExpressionSpecification => ["==", ["get", "ug"], v];
@@ -53,9 +74,16 @@ map.on("load", () => {
   add("under-twsi", ["all", kind("twsi"), ug(1)], "#ffd400", 1);
   add("ground", kind("ground"), "#1c1f26", 0.6);
   add("road", kind("road"), "#d8d2c4", 0.16);
-  add("above-floor", ["all", kind("floor"), ug(0)], FLOOR_COLOR, 0.18);
-  add("above-wall", ["all", kind("wall"), ug(0)], FLOOR_COLOR, 0.3);
+  add("above-floor", ["all", kind("floor"), ug(0)], FLOOR_COLOR, 0.22);
+  add("above-wall", ["all", kind("wall"), ug(0)], FLOOR_COLOR, 0.42);
   add("above-twsi", ["all", kind("twsi"), ug(0)], "#ffd400", 0.5);
+
+  for (const [id, f] of [["glow-floor", "floor"], ["glow-wall", "wall"]] as const)
+    glow.addLayer({
+      id, type: "fill-extrusion", source: "indoor", "source-layer": "indoor", filter: ["all", kind(f), ug(1)],
+      paint: { "fill-extrusion-color": FLOOR_COLOR, "fill-extrusion-base": H("b"), "fill-extrusion-height": H("t"), "fill-extrusion-opacity": f === "floor" ? 0.8 : 1 },
+    });
+  sync();
 
   if (params.has("rotate")) {
     const spin = () => { map.rotateTo(map.getBearing() + 120, { duration: 24000, easing: (t) => t }); };
@@ -71,6 +99,7 @@ function tour() {
   const under = { "under-floor": 0.55, "under-wall": 0.95, "under-twsi": 1 } as const;
   for (const id of Object.keys(under)) map.setPaintProperty(id, "fill-extrusion-opacity", 0);
   map.setPaintProperty("ground", "fill-extrusion-opacity", 0.97);
+  document.body.classList.add("glow-off");
   const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
   const fadeTo = (id: string, o: number, ms: number) => {
     map.setPaintProperty(id, "fill-extrusion-opacity-transition", { duration: ms, delay: 0 });
@@ -81,6 +110,7 @@ function tour() {
     await wait(2000);
     for (const [id, o] of Object.entries(under)) fadeTo(id, o, 2000);
     fadeTo("ground", 0.6, 2000);
+    document.body.classList.remove("glow-off");
     await wait(2200);
     map.easeTo({ bearing: map.getBearing() + 90, pitch: 70, zoom: 16.6, duration: 10000, easing: (t) => t * (2 - t) });
     await wait(4500);
@@ -113,10 +143,9 @@ fetch(new URL("stats.json", location.href)).then((r) => r.json()).then((s: Stats
     `この屋内地図にある床のうち <b>${Math.round(s.underground_share * 100)}%</b> は地下にある（地下 ${man(s.underground_m2)}、地上 ${man(s.above_m2)}）。地上を歩いていても、足の下に駅の大部分が広がっている。黄色は点字ブロック（線状 約${(s.twsi_line_m / 1000).toFixed(1)}km）。`;
   const order = ["4F", "3F", "2F", "GL", "B1", "B2", "B3"];
   const max = Math.max(...Object.values(s.floor_m2));
-  const color: Record<string, string> = { B1: "#33d6ff", B2: "#4f7dff", B3: "#9b5cff" };
   document.getElementById("floors")!.innerHTML = order.map((k) => {
     const v = s.floor_m2[k] ?? 0;
-    const c = color[k] ?? "#8a8f99";
+    const c = COLORS[k] ?? "#8a8f99";
     return `<li><span class="k">${k === "GL" ? "地上1階" : k}</span><span class="bar"><i style="width:${(v / max) * 100}%;background:${c}"></i></span><span class="v">${v.toLocaleString()} m²</span></li>`;
   }).join("");
 });
