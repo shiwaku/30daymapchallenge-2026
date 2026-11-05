@@ -24,7 +24,7 @@
 - 地面には OSM の道路（歩道を除く）を薄く敷く。地面がないと、地下の階が地面の上に浮いて見えるため
 - パネルの数字: この屋内地図にある床のうち **63%** が地下（地下 約11.2万m²、地上 約6.6万m²）。階ごとの床の面積は棒で示す
 - ボタンで「地上の階」「地面」「点字ブロック」を消せる
-- `?tour` で開くと、地面を不透明にして地上だけを見せ、3秒後に地下が浮かび上がり、ゆっくり回る（投稿用の録画に使う）
+- `?tour` で開くと（約15秒）、地面を不透明にして地上だけを見せ、2秒後に地下が浮かび上がり、回りながら途中で地面と道路を消す（投稿用の録画に使う）
 
 城跡の CS立体図（はじめに作った版）は `castle.html` に残した（下の「別ページ: 森の下の山城」）。
 
@@ -68,7 +68,7 @@ npm run build                                        # site/ に出力（web/ �
 npx vite preview --port 4173
 node scripts/underground/shot.mjs http://localhost:4173/ output/day05-underground.png
 node scripts/underground/shot-tour.mjs http://localhost:4173/?tour      # 録画前の確認（始めと終わりの静止画）
-node scripts/underground/record-live.mjs http://localhost:4173/?tour    # output/day05-underground.mp4（約24秒）
+node scripts/underground/record-live.mjs http://localhost:4173/?tour    # output/day05-underground.mp4（約15秒）
 ```
 
 URL に `?bare` を付けるとパネルを消す。`?hash` で地図の位置を URL に出す。
@@ -103,7 +103,7 @@ https://shiwaku.github.io/30daymapchallenge-2026/day05-sight/site/
 - [x] データ準備（屋内地図 Shapefile、OSM の道路）
 - [x] 地図作成（index.html。MLT は mlt CLI 0.6.1、MapLibre GL JS 6.16）
 - [x] スクリーンショット（`output/day05-underground.png`）
-- [x] 短い動画（`output/day05-underground.mp4`、画面録画、約24秒、出典は画面内）
+- [x] 短い動画（`output/day05-underground.mp4`、画面録画、約15秒、地面を消す場面あり、出典は画面内）
 - [ ] 投稿（#30DayMapChallenge）
 
 ## 別ページ: 森の下の山城（castle.html）
