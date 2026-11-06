@@ -111,9 +111,34 @@ node scripts/record.mjs "http://localhost:4174/?play" output/day06-shutoko.mp4 1
 
 データの調査、スクリプト・ページのコード、README の下書きに Claude（Anthropic）を使った。
 
+## 投稿文
+
+本文:
+
+```text
+#30DayMapChallenge Day 6 - Vintage
+首都高の東側の路線が、開通した年にその年代の空中写真の上に立ち上がっていく様子を、アニメーションにしてみました🗺️
+
+📝背景は国土地理院の空中写真で、1945〜50年の米軍撮影から現在まで、年代ごとに切り替えています。高架の高さは東京都の点群データで測りました
+
+デモサイトはこちら↓
+https://shiwaku.github.io/30daymapchallenge-2026/day06-vintage/site/
+
+#MapLibre #首都高
+```
+
+（動画 `output/anim_east.mp4` を添付する。出典は画面内にある）
+
+リプライ:
+
+```text
+出典）国土地理院 地理院タイル（空中写真）・過去の地形データ・地理院ベクトルタイル、国土数値情報 高速道路時系列（国土交通省）、東京都 区部点群データ（CC BY）を加工して作成、開通日は首都高速道路株式会社「沿革・歴史」
+制作に生成AI（Claude Code）を使用（データの調査、コードの作成）
+```
+
 ## 状況
 
 - [x] データ準備
 - [x] 地図作成
 - [x] 動画（`output/` は Git 管理外）
-- [ ] 投稿（#30DayMapChallenge）
+- [x] 投稿（2026年11月6日、X）
