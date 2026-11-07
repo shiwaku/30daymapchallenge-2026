@@ -1,0 +1,329 @@
+{
+ "years": [
+  2014,
+  2024
+ ],
+ "dc_years": [
+  2024,
+  2030
+ ],
+ "series_from": 2000,
+ "n_countries": 194,
+ "world": {
+  "g0": 23804.5,
+  "g1": 31070.7,
+  "d": 7266.3,
+  "r": 2.7,
+  "per_year": 726.6,
+  "p30": 36455.9,
+  "s": [
+   15325.3,
+   15547.6,
+   16098.0,
+   16676.3,
+   17464.0,
+   18183.6,
+   18889.7,
+   19766.9,
+   20157.0,
+   19997.8,
+   21327.3,
+   22037.0,
+   22584.9,
+   23236.4,
+   23804.5,
+   24063.5,
+   24739.2,
+   25486.1,
+   26507.4,
+   26902.1,
+   26803.0,
+   28345.7,
+   29001.4,
+   29788.6,
+   31070.7
+  ]
+ },
+ "compare": [
+  {
+   "key": "USA",
+   "name": "米国",
+   "inc": 240,
+   "pct": 130,
+   "note": null,
+   "g1": 4391.0,
+   "d": 295.0,
+   "per_year": 29.5,
+   "r": 0.7,
+   "dc_per_year": 40.0,
+   "ratio": 1.356
+  },
+  {
+   "key": "CHN",
+   "name": "中国",
+   "inc": 175,
+   "pct": 170,
+   "note": null,
+   "g1": 10025.0,
+   "d": 4243.7,
+   "per_year": 424.4,
+   "r": 5.66,
+   "dc_per_year": 29.2,
+   "ratio": 0.069
+  },
+  {
+   "key": "EUR",
+   "name": "欧州",
+   "inc": 45,
+   "pct": 70,
+   "note": "IEA の「欧州」の範囲は本文にない。発電量は Ember の Europe（欧州全体）",
+   "g1": 5092.5,
+   "d": 93.0,
+   "per_year": 9.3,
+   "r": 0.18,
+   "dc_per_year": 7.5,
+   "ratio": 0.806
+  },
+  {
+   "key": "JPN",
+   "name": "日本",
+   "inc": 15,
+   "pct": 80,
+   "note": null,
+   "g1": 1015.0,
+   "d": -47.8,
+   "per_year": -4.8,
+   "r": -0.46,
+   "dc_per_year": 2.5,
+   "ratio": null
+  },
+  {
+   "key": "WLD",
+   "name": "世界",
+   "inc": 530,
+   "pct": null,
+   "note": null,
+   "g1": 31070.7,
+   "d": 7266.3,
+   "per_year": 726.6,
+   "r": 2.7,
+   "dc_per_year": 88.3,
+   "ratio": 0.122
+  }
+ ],
+ "sensitivity": {
+  "USA": [
+   {
+    "y0": 2014,
+    "y1": 2024,
+    "per_year": 29.5,
+    "ratio": 1.356
+   },
+   {
+    "y0": 2015,
+    "y1": 2025,
+    "per_year": 43.6,
+    "ratio": 0.918
+   },
+   {
+    "y0": 2019,
+    "y1": 2024,
+    "per_year": 46.5,
+    "ratio": 0.86
+   },
+   {
+    "y0": 2009,
+    "y1": 2024,
+    "per_year": 30.1,
+    "ratio": 1.33
+   }
+  ],
+  "CHN": [
+   {
+    "y0": 2014,
+    "y1": 2024,
+    "per_year": 424.4,
+    "ratio": 0.069
+   },
+   {
+    "y0": 2015,
+    "y1": 2025,
+    "per_year": 470.7,
+    "ratio": 0.062
+   },
+   {
+    "y0": 2019,
+    "y1": 2024,
+    "per_year": 510.7,
+    "ratio": 0.057
+   },
+   {
+    "y0": 2009,
+    "y1": 2024,
+    "per_year": 420.7,
+    "ratio": 0.069
+   }
+  ],
+  "EUR": [
+   {
+    "y0": 2014,
+    "y1": 2024,
+    "per_year": 9.3,
+    "ratio": 0.806
+   },
+   {
+    "y0": 2015,
+    "y1": 2025,
+    "per_year": 6.9,
+    "ratio": 1.082
+   },
+   {
+    "y0": 2019,
+    "y1": 2024,
+    "per_year": -5.5,
+    "ratio": null
+   },
+   {
+    "y0": 2009,
+    "y1": 2024,
+    "per_year": 14.8,
+    "ratio": 0.508
+   }
+  ],
+  "JPN": [
+   {
+    "y0": 2014,
+    "y1": 2024,
+    "per_year": -4.8,
+    "ratio": null
+   },
+   {
+    "y0": 2015,
+    "y1": 2025,
+    "per_year": -0.3,
+    "ratio": null
+   },
+   {
+    "y0": 2019,
+    "y1": 2024,
+    "per_year": -6.5,
+    "ratio": null
+   },
+   {
+    "y0": 2009,
+    "y1": 2024,
+    "per_year": -6.6,
+    "ratio": null
+   }
+  ]
+ },
+ "top_increase": [
+  {
+   "iso": "CHN",
+   "name_en": "China",
+   "d": 4243.7
+  },
+  {
+   "iso": "IND",
+   "name_en": "India",
+   "d": 776.4
+  },
+  {
+   "iso": "USA",
+   "name_en": "United States",
+   "d": 295.0
+  },
+  {
+   "iso": "IDN",
+   "name_en": "Indonesia",
+   "d": 212.0
+  },
+  {
+   "iso": "VNM",
+   "name_en": "Viet Nam",
+   "d": 169.4
+  },
+  {
+   "iso": "BRA",
+   "name_en": "Brazil",
+   "d": 160.8
+  },
+  {
+   "iso": "RUS",
+   "name_en": "Russia",
+   "d": 145.1
+  },
+  {
+   "iso": "SAU",
+   "name_en": "Saudi Arabia",
+   "d": 130.2
+  },
+  {
+   "iso": "IRN",
+   "name_en": "Iran",
+   "d": 120.2
+  },
+  {
+   "iso": "TUR",
+   "name_en": "Türkiye",
+   "d": 89.3
+  },
+  {
+   "iso": "KOR",
+   "name_en": "South Korea",
+   "d": 87.4
+  },
+  {
+   "iso": "IRQ",
+   "name_en": "Iraq",
+   "d": 80.7
+  }
+ ],
+ "top_decrease": [
+  {
+   "iso": "DEU",
+   "name_en": "Germany",
+   "d": -126.9
+  },
+  {
+   "iso": "GBR",
+   "name_en": "United Kingdom",
+   "d": -53.6
+  },
+  {
+   "iso": "JPN",
+   "name_en": "Japan",
+   "d": -47.8
+  },
+  {
+   "iso": "VEN",
+   "name_en": "Venezuela",
+   "d": -35.1
+  },
+  {
+   "iso": "PRY",
+   "name_en": "Paraguay",
+   "d": -13.0
+  },
+  {
+   "iso": "LBN",
+   "name_en": "Lebanon",
+   "d": -12.6
+  },
+  {
+   "iso": "ROU",
+   "name_en": "Romania",
+   "d": -12.2
+  },
+  {
+   "iso": "CZE",
+   "name_en": "Czechia",
+   "d": -12.2
+  }
+ ],
+ "sources": {
+  "ember": "Ember Yearly Electricity Data（release_generation_yearly_global.csv、2026-11-07 取得）",
+  "iea": "IEA (2025) Energy and AI, Energy demand from AI（Base Case）",
+  "ne": "Natural Earth 1:50m Admin 0 Countries"
+ }
+}
