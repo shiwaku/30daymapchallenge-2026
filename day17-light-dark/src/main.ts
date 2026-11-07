@@ -5,7 +5,7 @@ import { Protocol } from "pmtiles";
 import type { FeatureCollection } from "geojson";
 import "./style.css";
 
-// 開発時は day12-power/web、公開時（day12-power/site/）は ../web を読む
+// 開発時は day17-light-dark/web、公開時（day17-light-dark/site/）は ../web を読む
 const DATA = import.meta.env.DEV ? "./web/" : "../web/";
 // 背景（海岸線・水部・都府県界）は国土地理院最適化ベクトルタイルの PMTiles を配信元から直接読む
 const GSI_PMTILES = "https://cyberjapandata.gsi.go.jp/xyz/optimal_bvmap-v1/optimal_bvmap-v1.pmtiles";
@@ -206,6 +206,6 @@ map.on("load", () => {
 });
 
 declare global {
-  interface Window { __day12: maplibregl.Map }
+  interface Window { __day17: maplibregl.Map }
 }
-window.__day12 = map;
+window.__day17 = map;
