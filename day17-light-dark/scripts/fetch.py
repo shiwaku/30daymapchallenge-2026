@@ -25,7 +25,7 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(HERE, "data")
 OUT = os.path.join(DATA, "pwr")
 Z = 14
-UA = {"User-Agent": "30daymapchallenge-day12 (one-time z14 read)"}
+UA = {"User-Agent": "30daymapchallenge-day17 (one-time z14 read)"}
 SUFFIX = ("発電所", "変電所", "開閉所", "変換所")
 
 
