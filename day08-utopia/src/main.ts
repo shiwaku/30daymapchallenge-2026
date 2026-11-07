@@ -6,7 +6,7 @@ import "./style.css";
 
 // 開発時は day08-utopia/web、公開時（day08-utopia/site/）は ../web を読む
 const DATA = import.meta.env.DEV ? "./web/" : "../web/";
-const AREA: [[number, number], [number, number]] = [[138.7, 35.5], [139.92, 36.29]];
+const AREA: [[number, number], [number, number]] = [[138.9, 34.89], [140.88, 36.29]];
 const BG = "#0b0d12";
 const GAP_COLOR = "#ff4fa3";
 const TOP_COLOR = "#ffd75e";
@@ -174,7 +174,7 @@ async function main() {
     `<span class="item"><i class="bar gap"></i>埋めると仮定したすき間（直線）</span>`;
 
   $("#lead").textContent =
-    `OpenStreetMap で、東京都（島しょ部を除く）と埼玉県の自転車に適した道を集めると約${fmt(stats.total_km, 0)}km。` +
+    `OpenStreetMap で、1都3県（東京都〈島しょ部を除く〉・神奈川県・埼玉県・千葉県）の自転車に適した道を集めると約${fmt(stats.total_km, 0)}km。` +
     `でも、ひと続きに走れるのはいちばん長いところでも約${fmt(stats.largest_km, 0)}km。短いすき間を埋めたら、どこまでつながるかを計算した。`;
 
   const captions = [

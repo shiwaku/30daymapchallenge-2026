@@ -1,11 +1,11 @@
-"""Geofabrik の関東の .osm.pbf から、東京都・埼玉県の道を取り出す（DuckDB spatial の ST_ReadOSM）。
+"""Geofabrik の関東の .osm.pbf から、東京都・神奈川県・埼玉県・千葉県（1都3県）の道を取り出す（DuckDB spatial の ST_ReadOSM）。
 
 python -I -X utf8 scripts/extract.py data/geofabrik/kanto-261101.osm.pbf data/work
 
 出力（data/work/、どれも © OpenStreetMap contributors, ODbL）
 - ways.parquet   自転車に関係しうるタグを持つ道（判定は analyze.py）と背景の幹線道路・川。
                  列: id, tags(JSON), refs(ノード ID の列), wkt
-- pref.parquet   東京都・埼玉県の境界を作るための relation の外周の way（wkt）
+- pref.parquet   1都3県の境界を作るための relation の外周の way（wkt）
 - places.parquet 市・区の名前（place=city / town）
 """
 import pathlib
@@ -44,7 +44,7 @@ def main() -> None:
       CREATE OR REPLACE TABLE rel AS
       SELECT id, tags['ISO3166-2'] AS iso, tags['name'] AS name,
              unnest(refs) AS ref, unnest(ref_roles) AS role, unnest(ref_types) AS rtype
-      FROM raw WHERE kind='relation' AND tags['ISO3166-2'] IN ('JP-13','JP-11')
+      FROM raw WHERE kind='relation' AND tags['ISO3166-2'] IN ('JP-13','JP-14','JP-11','JP-12')
         AND tags['boundary']='administrative'
     """)
     print("rel members", con.sql("SELECT iso, count(*) FROM rel GROUP BY 1").fetchall(), flush=True)

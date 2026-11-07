@@ -2,7 +2,8 @@
 
 python -I -X utf8 scripts/analyze.py data/work web
 
-入力: extract.py の出力（data/work/ways.parquet, pref.parquet, places.parquet）
+入力: extract.py の出力（data/work/ways.parquet, pref.parquet, places.parquet）と、
+      国土数値情報 行政区域（N03、2026年。data/n03/<都県コード>/N03-20260101_<都県コード>.geojson）
 出力（web/、ビューワが読む。© OpenStreetMap contributors, ODbL）
 - bike.geojson   自転車に適した道。c=つながりの番号（長い順に0,1,2…）、ckm=そのつながりの長さ(km)、
                  k=道の種類（0 自転車道 / 1 車道の自転車レーン / 2 歩行者と共用）、
@@ -27,7 +28,7 @@ from shapely.geometry import LineString, MultiLineString, mapping
 from shapely.ops import polygonize, unary_union
 
 CRS = "EPSG:6677"
-SOUTH = 35.48  # これより南（島しょ部）は使わない
+SOUTH = 35.48  # 東京都はこれより南（島しょ部）を使わない
 # 端点からこの距離以内に別の道があれば、つながっているとみなす（道路の横断や、データ上の小さな切れ目）
 SNAP_M = 20
 # すき間を探す対象の、つながりの長さの下限（km）
@@ -94,17 +95,31 @@ def study_area() -> tuple[gpd.GeoDataFrame, object]:
     for iso, g in pref.groupby("iso"):
         lines = [shapely.from_wkt(w) for w in g.wkt]
         poly = unary_union(list(polygonize(lines)))
-        # 島しょ部を外す
-        poly = poly.intersection(shapely.box(138.0, SOUTH, 141.0, 37.0))
+        # 東京都の島しょ部を外す（神奈川・千葉はそのまま）
+        if iso == "JP-13":
+            poly = poly.intersection(shapely.box(138.0, SOUTH, 141.0, 37.0))
         polys.append({"iso": iso, "geometry": poly})
     gdf = gpd.GeoDataFrame(polys, crs="EPSG:4326")
     return gdf, unary_union(gdf.geometry)
 
 
+def land_area() -> gpd.GeoDataFrame:
+    """陸地の形（表示・都県の境界線・面積に使う）。OSM の都県の境界は海の上まで入るので、国土数値情報の行政区域を使う。"""
+    rows = []
+    for code, iso in (("11", "JP-11"), ("12", "JP-12"), ("13", "JP-13"), ("14", "JP-14")):
+        g = gpd.read_file(N03 / code / f"N03-20260101_{code}.geojson").to_crs("EPSG:4326")
+        poly = unary_union(shapely.make_valid(g.geometry.values))
+        if iso == "JP-13":
+            poly = poly.intersection(shapely.box(138.0, SOUTH, 141.0, 37.0))
+        rows.append({"iso": iso, "geometry": poly})
+    return gpd.GeoDataFrame(rows, crs="EPSG:4326")
+
+
 def main() -> None:
     out = pathlib.Path(sys.argv[2])
     out.mkdir(parents=True, exist_ok=True)
-    pref, area = study_area()
+    _, area = study_area()  # 道を選ぶ範囲（OSM の都県の境界、海の上を含む）
+    pref = land_area()
     print("area km2", pref.to_crs(CRS).area.sum() / 1e6)
 
     ways = duckdb.sql(f"SELECT * FROM '{WORK / 'ways.parquet'}'").df()
@@ -271,7 +286,7 @@ def main() -> None:
         g = gdf.copy()
         g["geometry"] = g.geometry.simplify(tol) if tol else g.geometry
         g = g.to_crs("EPSG:4326")
-        g["geometry"] = shapely.set_precision(g.geometry.values, prec)
+        g["geometry"] = shapely.set_precision(shapely.make_valid(g.geometry.values), prec)
         g = g[~g.geometry.is_empty]
         feats = [{"type": "Feature", "properties": {c: (v.item() if hasattr(v, "item") else v) for c, v in zip(cols, row[:-1])},
                   "geometry": mapping(row[-1])} for row in g[cols + ["geometry"]].itertuples(index=False, name=None)]
@@ -316,6 +331,7 @@ def pd_concat(frames):
 
 
 WORK = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else pathlib.Path("data/work")
+N03 = WORK.parent / "n03"
 
 if __name__ == "__main__":
     main()
