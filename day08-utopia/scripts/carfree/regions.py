@@ -82,7 +82,7 @@ for key, name, prefs, pref_note, (a, b, c, e), cities in REGIONS:
     sh = share(pref[pref["pref"].isin(prefs)])
     tx = 70 + d.textlength(name, font=font(84, True)) + 36
     d.text((tx, 128), f"{pref_note}で {sh * 100:.0f}%", font=font(48, True), fill=GOLD)
-    d.text((70, 210), "1時間に6本以上の駅まで500m以内、学校と医療機関の両方まで1km以内に住んでいる所（250mメッシュ）",
+    d.text((70, 210), "1時間に6本以上の駅まで500m以内、学校・医療機関・食料品店のどれも1km以内に住んでいる所（250mメッシュ）",
            font=font(30), fill=SUB)
     k = __import__("math").cos(__import__("math").radians((c + e) / 2))
     for p_, cname, label, lo, la in cities:
@@ -96,14 +96,14 @@ for key, name, prefs, pref_note, (a, b, c, e), cities in REGIONS:
         d.text((x + 14, y - 2), f"{v * 100:.0f}%", font=font(34, True), fill=GOLD, stroke_width=5, stroke_fill=(10, 12, 20))
     ly = MY + MH + 24
     lx = 70
-    for col, t in [(C_BOTH, "両方を満たす"), (C_SERV, "学校・医療機関だけ近い"), (C_NONE, "どちらも遠い")]:
+    for col, t in [(C_BOTH, "すべて満たす"), (C_SERV, "生活施設は近い（駅が遠い）"), (C_NONE, "それ以外")]:
         d.rectangle([lx, ly + 6, lx + 30, ly + 36], fill=tuple(col.astype(int)))
         d.text((lx + 42, ly + 4), t, font=font(30), fill=TXT)
         lx += 42 + d.textlength(t, font=font(30)) + 50
-    d.text((lx, ly + 8), "明るさは人口。市の割合は市内に住む人のうち両方を満たす人の割合", font=font(26), fill=SUB)
+    d.text((lx, ly + 8), "明るさは人口。市の割合は市内に住む人のうちすべて満たす人の割合", font=font(26), fill=SUB)
     for i, t in enumerate([
         "鉄道（路面電車・モノレールを含む）だけでバスは含まない。1時間6本は上りと下りを合わせた本数（ITDP に倣う）。距離は直線距離",
-        "出典）国勢調査2020 250mメッシュ人口（総務省統計局 e-Stat）、gtfs-gis.jp 全国鉄道運行本数データ 2026年版（西澤明、CC BY 4.0・ODbL）、",
+        "出典）国勢調査2020 250mメッシュ人口・経済センサス‐活動調査2021 500mメッシュ（e-Stat）、gtfs-gis.jp 全国鉄道運行本数データ 2026年版（西澤明、CC BY 4.0・ODbL）、",
         "国土数値情報（学校 2023年度・医療機関 2020年度・行政区域 2026年、CC BY 4.0）を加工して作成",
     ]):
         d.text((70, ly + 70 + i * 38), t, font=font(25), fill=SUB)

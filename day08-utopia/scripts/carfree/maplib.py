@@ -56,7 +56,7 @@ def render(lon0, lon1, lat0, lat1, w, ref):
 
 
 def glow(arr, radii, gains):
-    """金色の所（両方を満たす所）だけをぼかして足し、光らせる。radii は等倍のときの画素数。"""
+    """金色の所（すべて満たす所）だけをぼかして足し、光らせる。radii は等倍のときの画素数。"""
     rgb = arr.astype(float)
     mask = np.clip((rgb[..., 0] - rgb[..., 2]) / (C_BOTH[0] - C_BOTH[2]), 0, 1)
     mk = Image.fromarray((mask * 255).astype(np.uint8))
