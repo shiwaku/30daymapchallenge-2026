@@ -43,7 +43,7 @@ SUB = (150, 156, 175)
 # ---- 題 ----
 d.text((70, 60), "#30DayMapChallenge Day 8 — Utopia", font=font(34), fill=SUB)
 d.text((70, 112), "車に頼らず暮らせる場所", font=font(92, True), fill=TXT)
-d.text((70, 232), "1時間に6本以上の駅まで500m以内、学校と医療機関の両方まで1km以内に住んでいる所（ITDP の指標を国内のデータで計算）",
+d.text((70, 232), "1時間に6本以上の駅まで500m以内、学校・医療機関・食料品店のどれも1km以内に住んでいる所（ITDP の指標に食料品店を足した）",
        font=font(30), fill=SUB)
 
 # ---- 全国 ----
@@ -69,7 +69,7 @@ d.text((nx, ny), "全国", font=font(40, True), fill=TXT)
 d.text((nx, ny + 52), f"{nat['both'] * 100:.1f}%", font=font(130, True), fill=GOLD)
 d.text((nx, ny + 200), f"約{nat['both'] * nat['pop'] / 1e4:,.0f}万人", font=font(40), fill=TXT)
 d.text((nx, ny + 262), f"駅だけなら {nat['transit'] * 100:.1f}%", font=font(30), fill=SUB)
-d.text((nx, ny + 302), f"学校・医療機関だけなら {nat['service'] * 100:.1f}%", font=font(30), fill=SUB)
+d.text((nx, ny + 302), f"学校・医療機関・食料品店だけなら {nat['service'] * 100:.1f}%", font=font(30), fill=SUB)
 
 
 # ---- 地方の4市の拡大 ----
@@ -105,7 +105,7 @@ for name, tag, sh, (a, b, c_, e) in insets:
 
 # ---- 凡例 ----
 ly = max(MY + MH, iy) + 20
-items = [(C_BOTH, "両方を満たす（車に頼らず暮らせる）"), (C_SERV, "学校・医療機関だけ近い"), (C_NONE, "どちらも遠い")]
+items = [(C_BOTH, "すべて満たす（車に頼らず暮らせる）"), (C_SERV, "学校・医療機関・食料品店は近い（駅が遠い）"), (C_NONE, "それ以外")]
 lx = 70
 for c_, t in items:
     d.rectangle([lx, ly + 6, lx + 34, ly + 40], fill=tuple(c_.astype(int)))
@@ -119,7 +119,7 @@ d.text((70, ly + 100), "鉄道（路面電車・モノレールを含む）だ�
 # ---- 出典 ----
 cy = ly + 160
 for t in [
-    "出典）国勢調査2020 250mメッシュ人口（総務省統計局 e-Stat）、gtfs-gis.jp 全国鉄道運行本数データ 2026年版（西澤明、CC BY 4.0・ODbL）、",
+    "出典）国勢調査2020 250mメッシュ人口・経済センサス‐活動調査2021 500mメッシュ（e-Stat）、gtfs-gis.jp 全国鉄道運行本数データ 2026年版（西澤明、CC BY 4.0・ODbL）、",
     "国土数値情報（学校 2023年度・医療機関 2020年度、CC BY 4.0）を加工して作成。指標は ITDP「Atlas of Sustainable City Transport」に倣った",
 ]:
     d.text((70, cy), t, font=font(26), fill=SUB)
