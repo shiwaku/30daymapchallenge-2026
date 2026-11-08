@@ -11,18 +11,12 @@ header p { margin-top: 8px; font-size: 14px; color: #c8c9ce; }
 .sw { display: inline-block; width: 16px; height: 16px; }
 .sw.old { background: #c7ccd6; }
 .sw.new { background: #ff8c26; }
-.sw.donut { border: 3px solid #ff5a5f; }
-.legend .gl { display: inline-flex; width: 24px; height: 24px; }
-.legend .gl .glyph { position: static; width: 24px; }
 
 #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px 14px; margin-top: 22px; }
 .tile { display: block; padding: 0; border: none; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .pic { position: relative; outline: 3px solid transparent; outline-offset: 2px; }
 .pic img { display: block; width: 100%; aspect-ratio: 1; image-rendering: pixelated; }
-.tile.donut .pic { outline-color: #ff5a5f; }
 .tile.sel .pic, .tile:hover .pic { outline-color: #e8e8ea; }
-.glyph { position: absolute; right: 6px; bottom: 6px; width: 26%; height: auto; }
-.badge { position: absolute; left: 5px; top: 5px; padding: 0 8px; border-radius: 999px; background: #ff5a5f; color: #0b0d12; font-size: 11px; font-weight: 700; }
 .tile .name { margin-top: 5px; font-size: 14px; font-weight: 700; }
 .tile .num { font-size: 12px; color: #9a9ca3; font-variant-numeric: tabular-nums; }
 
@@ -39,8 +33,6 @@ header p { margin-top: 8px; font-size: 14px; color: #c8c9ce; }
 #city h2 { font-size: 22px; font-weight: 700; padding-right: 24px; }
 #city h3 { margin-top: 14px; font-size: 12px; font-weight: 500; color: #9a9ca3; }
 #close { position: absolute; top: 8px; right: 10px; border: none; background: none; color: #9a9ca3; font-size: 22px; cursor: pointer; }
-.tag { display: inline-block; margin: 4px 6px 0 0; padding: 1px 10px; border-radius: 999px; color: #0b0d12; font-size: 12px; font-weight: 700; }
-.tag.donut { background: #ff5a5f; }
 #c-table { width: 100%; margin-top: 10px; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
 #c-table th { font-weight: 500; color: #9a9ca3; text-align: right; }
 #c-table td { padding: 2px 0; text-align: right; }

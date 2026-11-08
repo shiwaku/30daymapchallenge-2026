@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>都市はどう広がったか — #30DayMapChallenge Day 9 Urban-rural</title>
+  <script type="module" crossorigin src="./assets/index-BiQdxu-j.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-hGvMeW16.css">
+</head>
+<body>
+  <header>
+    <h1>都市はどう広がったか（2000→2020）</h1>
+    <div class="sub">#30DayMapChallenge 2026 Day 9 — Urban-rural</div>
+    <p>世界の人口上位の都市圏97、中心から上下左右40km（80km四方）の建物。左上から、建物の面積が大きく伸びた順。都市をクリックすると数字が出る。</p>
+    <ul class="legend">
+      <li><span class="sw old"></span>2000年にあった建物</li>
+      <li><span class="sw new"></span>その後20年で増えた建物</li>
+    </ul>
+  </header>
+
+  <main id="grid"></main>
+
+  <section id="city" class="panel" hidden>
+    <button id="close" type="button" aria-label="閉じる">×</button>
+    <h2 id="c-name"></h2>
+    <div id="c-type"></div>
+    <table id="c-table"></table>
+    <img id="c-img" alt="">
+  </section>
+
+  <footer>
+    出典: <a href="https://human-settlement.emergency.copernicus.eu/" target="_blank" rel="noopener">GHSL（European Commission, JRC）GHS-BUILT-S R2023A</a>（1kmマス、CC BY 4.0）を加工して作成。
+    都市と順位: <a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener">Natural Earth</a> Populated Places の POP_MAX 上位100（データに疑問のあるアマラーヴァティー・ルアンダ・河池を除く）。
+    建物の面積は、Natural Earth の都市の点から半径40kmの合計。人口（GHS-POP）は、日本の2都市で国勢調査と増減の向きが逆だったので載せていない。コードの作成に生成AI（Claude Code）を使用。
+  </footer>
+
+</body>
+</html>

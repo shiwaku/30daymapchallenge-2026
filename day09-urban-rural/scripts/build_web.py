@@ -2,15 +2,11 @@
 
 入力: data/sprawl_donut.csv（sprawl_donut.py の出力）、GHS-BUILT-S 2000/2020、Natural Earth
 出力: data/web/
-  - cities.geojson  都市ごとの型と数字（2000→2020）
+  - cities.geojson  都市ごとの建物の面積（2000・2020）
   - countries.geojson  背景の国境（Natural Earth 1:50m）
   - built/{rank}.png  中心から 40km 四方の建物：2000年にあった分（灰）と 2000→2020年に増えた分（橙）
 
-型（2000→2020、半径 40km）:
-  shrink: 人口が減ったのに建物は増えた
-  sprawl: 建物の伸び率 > 人口の伸び率（SDG 11.3.1 の比 > 1）
-  dense:  人口の伸び率 >= 建物の伸び率（比 <= 1）
-  donut:  中心 0-5km の人口が 5% 以上減り、20-40km は増えた（型とは別に付ける印）
+人口（GHS-POP）は載せない。日本の2都市で国勢調査と増減の向きが逆だったため（scripts/check_census.py）。
 """
 from pathlib import Path
 import json
@@ -33,7 +29,6 @@ OUT = ROOT / "data/web"
 #   52 ルアンダ（GHS-POP 1975 が 5万人で、伸びが極端）
 #   80 河池（POP_MAX が広い行政区の人口）
 EXCLUDE = {42, 52, 80}
-RINGS = [(0, 5), (5, 10), (10, 20), (20, 40)]
 
 d = pd.read_csv(ROOT / "data/sprawl_donut.csv")
 d = d[~d["rank"].isin(EXCLUDE)]
@@ -51,34 +46,16 @@ for rank, g in d.groupby("rank"):
     a = g[g.year == 2000].iloc[0]
     b = g[g.year == 2020].iloc[0]
     c = ne[ne["rank"] == rank].iloc[0]
-    p = b["pop"] / a["pop"]
-    bl = b["built_km2"] / a["built_km2"]
-    lcr = np.log(bl) / np.log(p) if p != 1 else None
-    if p < 1 and bl > 1:
-        typ = "shrink"
-    elif lcr is not None and lcr > 1:
-        typ = "sprawl"
-    else:
-        typ = "dense"
-    rings = [{"r": f"{lo}-{hi}", "p00": round(a[f"pop_{lo}_{hi}"]), "p20": round(b[f"pop_{lo}_{hi}"])} for lo, hi in RINGS]
-    # 1km マスの推計値なので、数% の増減は誤差とみなす
-    donut = rings[0]["p20"] < rings[0]["p00"] * 0.95 and rings[-1]["p20"] > rings[-1]["p00"]
     feats.append({
         "type": "Feature",
         "geometry": {"type": "Point", "coordinates": [round(c.geometry.x, 4), round(c.geometry.y, 4)]},
         "properties": {
             "rank": int(rank), "name": short(c.NAME_JA), "name_en": c.NAME, "country": c.ADM0NAME,
-            "type": typ, "donut": bool(donut),
-            "pop00": round(a["pop"]), "pop20": round(b["pop"]),
             "built00": round(a["built_km2"], 1), "built20": round(b["built_km2"], 1),
-            "lcr": None if lcr is None else round(float(lcr), 2),
-            "m2pp00": round(a["built_km2"] * 1e6 / a["pop"], 1), "m2pp20": round(b["built_km2"] * 1e6 / b["pop"], 1),
-            "rings": json.dumps(rings),
         },
     })
 (OUT / "cities.geojson").write_text(json.dumps({"type": "FeatureCollection", "features": feats}, ensure_ascii=False), encoding="utf-8")
-print(pd.Series([f["properties"]["type"] for f in feats]).value_counts().to_dict(),
-      "donut:", [f["properties"]["name"] for f in feats if f["properties"]["donut"]])
+print("cities:", len(feats))
 
 # 背景の国境
 co = gpd.read_file(ROOT / "data/ne/ne_50m_admin_0_countries.shp")[["geometry"]]

@@ -13,24 +13,101 @@
 
 ## 地図のテーマ
 
-都市はどこまで広がったか
+都市はどう広がったか（2000→2020）
 
 ## 内容
 
-人口集中地区（DID）の広がりを 1960→2020年で重ねる
+世界の人口上位の都市圏97について、中心から上下左右40km（80km四方）の建物を、同じ縮尺で並べた。2000年にあった建物を灰色、その後20年で増えた建物を橙で塗り、建物の面積の伸び率が大きい順に並べている。都市が田園を食べていく速さを比べる地図。
 
-## 使用する技術
+- 投稿用の画像: [day09-urban-rural.png](day09-urban-rural.png)
+- ビューア: [site/](site/)（都市をクリックすると数字が出る。`data/web/` を読む）
 
-- GeoPandas → PMTiles → MapLibre GL JS（年次スライダー）
+### 主な数字
+
+建物の面積は、都市の点から半径40kmの円の中の合計（2000→2020）。
+
+| | 都市の数 | 伸び率（中央値） |
+|---|---|---|
+| 97都市 | 97 | +28% |
+| 中国 | 16 | +69% |
+| インド | 10 | +62% |
+| アメリカ | 13 | +12% |
+| 日本（東京・大阪・横浜） | 3 | +9% |
+
+- 2倍以上になったのは6都市（重慶 +151%、貴陽 +110%、成都・バンガロール +109%、天津 +105%、プネー +104%）。50%以上は30都市
+- 10%未満は7都市（ロサンゼルス +4%、シカゴ +5%、サンフランシスコ・ニューヨーク・ロンドン +8%、横浜・大阪 +9%）
+
+### 人口を載せなかった理由
+
+はじめは人口（GHS-POP）も重ね、中心からの距離帯ごとの増減と「ドーナツ化（中心5kmの人口が5%以上減った都市）」を示す予定だった。日本の2都市で国勢調査の地域メッシュと突き合わせたところ、増減の向きが逆だった（`scripts/check_census.py`）。
+
+| 2000→2020 | 国勢調査 | GHS-POP |
+|---|---|---|
+| 大阪 半径40km | +0.8% | −7.9% |
+| 大阪 中心5km | +8.0% | −6.7% |
+| 東京 半径40km | +14.4% | +10.0% |
+| 東京 中心5km | +45.8% | +13.3% |
+
+GHS-POP は都心回帰をとらえておらず、ほかの国の都市でも同じくらいずれている恐れがある。そこで人口は載せず、衛星画像から作られた建物の面積（GHS-BUILT-S）だけにした。
+
+### 言える範囲
+
+- 言えること: 97都市の中心まわりで、GHS-BUILT-S の建物の面積が2000→2020年にどれだけ増えたか。都市どうしの伸び率の比べ合い
+- 言えないこと: 人口の増減、スプロール（人口の伸びより建物の広がりが速いか）、ドーナツ化。人口は上の理由で使っていない
+- 建物の面積は 1km マスの推計値（衛星画像からのモデル）。マスの中の建物の割合なので、小さな建物の増減や建て替え（高層化）は表れにくい。画像では、マスの3%未満の増加は塗っていない
+- 「都市圏」は行政の境界ではなく、Natural Earth の都市の点から半径40km の円。海や隣の都市も入る
+- 都市と順位は Natural Earth Populated Places の POP_MAX 上位100。データに疑問のある3都市（アマラーヴァティー: 建設中の州都なのに580万人、ルアンダ: GHS-POP 1975年が5万人、河池: 広い行政区の人口）を除いた
 
 ## データ
 
-- 国土数値情報 人口集中地区（A16）
+| データ | 提供元 | 用途 | ライセンス |
+|---|---|---|---|
+| [GHS-BUILT-S R2023A](https://human-settlement.emergency.copernicus.eu/download.php?ds=bu)（2000・2020年、1km、Mollweide） | European Commission, JRC | 建物の面積 | CC BY 4.0 |
+| [GHS-POP R2023A](https://human-settlement.emergency.copernicus.eu/download.php?ds=pop)（2000・2020年、1km） | European Commission, JRC | 国勢調査との突き合わせだけ（地図には使っていない） | CC BY 4.0 |
+| [Natural Earth](https://www.naturalearthdata.com/) Populated Places（1:10m） | Natural Earth | 都市の点と順位 | パブリックドメイン |
+| [国勢調査 地域メッシュ統計](https://www.e-stat.go.jp/gis)（2000年 500m・2020年 250m） | 総務省統計局（e-Stat） | GHS-POP の確かめ | 政府標準利用規約（第2.0版）準拠 |
+
+## 使用する技術
+
+- Python（rasterio・GeoPandas・Pillow）→ 都市ごとの PNG と GeoJSON
+- Vite ＋ TypeScript（ビューア）
+
+## 作り方
+
+```bash
+# data/ghsl/ に GHS-BUILT-S・GHS-POP（2000・2020）、data/ne/ に Natural Earth を置く
+python scripts/sprawl_donut.py   # 都市ごとの人口・建物の面積 → data/sprawl_donut.csv
+python scripts/build_web.py      # data/web/（cities.geojson・built/*.png）
+python scripts/build_poster.py   # output/day09-urban-rural.png
+npm install && npm run build     # site/
+# 確かめ: data/census2000/ に e-Stat の T000386（500m）、2020年は Day 8 の250mメッシュ
+python scripts/check_census.py
+```
+
+`ghsl_anim.py`・`ghsl_top100.py`・`smod_by_country.py` と GIF 2枚は、GHS-SMOD（都市・農村の区分）を試した下書き。投稿には使っていない。
+
+## 投稿文
+
+本文:
+
+```text
+#30DayMapChallenge Day 9 - Urban-rural
+世界の大都市97の、2000→2020年に増えた建物を同じ縮尺で並べてみました🏙️
+📝建物の面積は中央値で+28%。中国16都市は+69%、インド10都市は+62%、アメリカ13都市は+12%、東京・大阪・横浜は+9〜10%。重慶は2.5倍
+#OpenData #Python
+```
+
+リプライ:
+
+```text
+出典）GHSL（European Commission, JRC）GHS-BUILT-S R2023A、Natural Earth を加工して作成
+人口（GHS-POP）は、大阪で国勢調査と増減の向きが逆だったので載せていません
+制作に生成AI（Claude Code）を使用（データの加工とコードの作成）
+```
 
 ## 状況
 
-- 準備度: ○
-- [ ] データ準備
-- [ ] 地図作成
-- [ ] スクリーンショット / 短い動画（chiitiler）
+- [x] データ準備
+- [x] 地図作成
+- [x] 画像・ビューア
 - [ ] 投稿（#30DayMapChallenge）
