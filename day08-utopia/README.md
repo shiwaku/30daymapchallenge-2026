@@ -42,6 +42,8 @@
 - 三大都市圏の外で、政令指定都市・中核市以外の人口10万人以上の市（80市）: 上位は大野城市31%、廿日市市30%、筑紫野市29%。44市が0%
 - 東京23区は52%（区ごとでは千代田区97%、新宿区84%、品川区82%、荒川区80%）
 
+高解像度版: [全国と地方の4市（14400×14478px、約7.8MB）](carfree/day08-carfree-map-hires.png)は、250mメッシュ1つが約1.7×1.4画素になる大きさで、市区町村まで拡大してもメッシュの粒が見える。[市ごとの順位（4800px 幅）](carfree/day08-carfree-cities-hires.png)。
+
 数字は `carfree/city_carfree.csv`（市区町村。政令指定都市は市でまとめ、東京23区は区ごと）と `carfree/pref_carfree.csv`（都道府県）。`transit` は駅の条件、`service` は学校・医療機関の条件、`both` は両方を満たす人の割合。
 
 ### 計算の方法
@@ -75,7 +77,7 @@
 ## 使用する技術
 
 - Python（GeoPandas・pyogrio・SciPy の cKDTree で最も近い駅・施設までの距離を出す。緯度経度を3次元の単位ベクトルにし、弦の長さから大圏距離に直す）
-- 画像は Pillow で描く（全国図は1画素に入るメッシュの人口を色ごとに足して混ぜる。拡大図はメッシュをそのまま四角で塗る）。フォントは BIZ UDゴシック
+- 画像は Pillow で描く（等倍・2倍の全国図は1画素に入るメッシュの人口を色ごとに足して混ぜる。6倍の全国図と拡大図はメッシュをそのまま四角で塗る）。3つ目の引数で倍率を指定する（座標はそのままで文字・線・地図を描き直す。`scripts/carfree/scaledraw.py`）。フォントは BIZ UDゴシック
 
 ## 作り方
 
@@ -89,6 +91,8 @@ python -I -X utf8 scripts/carfree/fetch_mesh.py data            # e-Stat から1
 python -I -X utf8 scripts/carfree/analyze.py data data/carfree  # 約2分
 python -I -X utf8 scripts/carfree/poster.py data/carfree output/carfree/poster.png
 python -I -X utf8 scripts/carfree/ranking.py data/carfree output/carfree/ranking.png
+python -I -X utf8 scripts/carfree/poster.py data/carfree output/carfree/poster_x6.png 6    # 高解像度版（全国の図もメッシュを四角で塗る）
+python -I -X utf8 scripts/carfree/ranking.py data/carfree output/carfree/ranking_x2.png 2
 ```
 
 ## 投稿文の下書き

@@ -1,6 +1,6 @@
-"""投稿用の1枚: 車に頼らず暮らせる場所（全国の250mメッシュ＋3都市の拡大）。
+"""投稿用の1枚: 車に頼らず暮らせる場所（全国の250mメッシュ＋地方の4市の拡大）。
 
-使い方: python -I -X utf8 poster.py <data/carfree> <出力png>
+使い方: python -I -X utf8 poster.py <data/carfree> <出力png> [倍率（既定1。2で4800px幅）]
 """
 import json
 import sys
@@ -8,7 +8,13 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageFont
+
+sys.path.insert(0, str(Path(__file__).parent))
+from scaledraw import SDraw  # noqa: E402
+
+S = int(sys.argv[3]) if len(sys.argv) > 3 else 1
+Image.MAX_IMAGE_PIXELS = None  # 自分で描く大きな画像なので上限を外す
 
 src = Path(sys.argv[1])
 m = pd.read_parquet(src / "mesh_carfree.parquet")
@@ -20,7 +26,7 @@ FONT_B = "C:/Windows/Fonts/BIZ-UDGothicB.ttc"
 
 
 def font(size, bold=False):
-    return ImageFont.truetype(FONT_B if bold else FONT_R, size)
+    return ImageFont.truetype(FONT_B if bold else FONT_R, size * S)
 
 
 BG = np.array([10, 12, 20], float)
@@ -70,8 +76,8 @@ def render(lon0, lon1, lat0, lat1, w, ref):
 
 
 W, H = 2400, 2560
-img = Image.new("RGB", (W, H), tuple(BG.astype(int)))
-d = ImageDraw.Draw(img)
+img = Image.new("RGB", (W * S, H * S), tuple(BG.astype(int)))
+d = SDraw(img, S)
 GOLD = (255, 200, 80)
 TXT = (225, 228, 238)
 SUB = (150, 156, 175)
@@ -84,13 +90,17 @@ d.text((70, 232), "1時間に6本以上の駅まで500m以内、学校と医療�
 
 # ---- 全国 ----
 MX, MY, MW = 40, 330, 1620
-main = render(128.4, 146.0, 30.9, 45.6, MW, 6000)
-img.paste(Image.fromarray(main), (MX, MY))
+# 1画素にメッシュが入りきらない倍率では人口を足して混ぜる（ref は1画素あたり）。
+# 6倍以上ではメッシュ1つが1.4画素以上になるので、メッシュを四角で塗る（ref は1メッシュあたり）
+main = render(128.4, 146.0, 30.9, 45.6, MW * S, 6000 / S**2 if S < 4 else 1500)
+MH = main.shape[0] // S
+img.paste(Image.fromarray(main), (MX * S, MY * S))
 # 沖縄本島（左上の空いた所に）
-oki = render(127.62, 128.05, 26.08, 26.75, 250, 1500)
-OX, OY = MX + MW - 330, MY + main.shape[0] - oki.shape[0] - 60
-img.paste(Image.fromarray(oki), (OX, OY))
-d.rectangle([OX - 1, OY - 1, OX + oki.shape[1], OY + oki.shape[0]], outline=(60, 64, 82), width=2)
+oki = render(127.62, 128.05, 26.08, 26.75, 250 * S, 1500)
+OH, OW = oki.shape[0] // S, oki.shape[1] // S
+OX, OY = MX + MW - 330, MY + MH - OH - 60
+img.paste(Image.fromarray(oki), (OX * S, OY * S))
+d.rectangle([OX - 1, OY - 1, OX + OW, OY + OH], outline=(60, 64, 82), width=2)
 d.text((OX, OY - 40), "沖縄本島", font=font(26), fill=SUB)
 
 # 全国の数字
@@ -102,7 +112,7 @@ d.text((nx, ny + 262), f"駅だけなら {nat['transit'] * 100:.1f}%", font=font
 d.text((nx, ny + 302), f"学校・医療機関だけなら {nat['service'] * 100:.1f}%", font=font(30), fill=SUB)
 
 
-# ---- 3都市の拡大 ----
+# ---- 地方の4市の拡大 ----
 def city_share(pref, names):
     c = city[(city["pref"] == pref) & city["city"].isin(names)]
     return (c["both"] * c["pop"]).sum() / c["pop"].sum()
@@ -121,18 +131,19 @@ insets = [
 IX, IW = 1700, 660
 iy = MY
 for name, tag, sh, (a, b, c_, e) in insets:
-    arr = render(a, b, c_, e, IW, 800)
-    img.paste(Image.fromarray(arr), (IX, iy + 56))
-    d.rectangle([IX - 1, iy + 55, IX + IW, iy + 56 + arr.shape[0]], outline=(60, 64, 82), width=2)
+    arr = render(a, b, c_, e, IW * S, 800)
+    AH = arr.shape[0] // S
+    img.paste(Image.fromarray(arr), (IX * S, (iy + 56) * S))
+    d.rectangle([IX - 1, iy + 55, IX + IW, iy + 56 + AH], outline=(60, 64, 82), width=2)
     d.text((IX, iy), name, font=font(40, True), fill=TXT)
     d.text((IX + d.textlength(name, font=font(40, True)) + 18, iy + 12), tag, font=font(26), fill=SUB)
     t = f"{sh * 100:.0f}%" if sh >= 0.005 else "<1%"
     tw = d.textlength(t, font=font(44, True))
     d.text((IX + IW - tw, iy - 4), t, font=font(44, True), fill=GOLD)
-    iy += 56 + arr.shape[0] + 34
+    iy += 56 + AH + 34
 
 # ---- 凡例 ----
-ly = max(MY + main.shape[0], iy) + 20
+ly = max(MY + MH, iy) + 20
 items = [(C_BOTH, "両方を満たす（車に頼らず暮らせる）"), (C_SERV, "学校・医療機関だけ近い"), (C_NONE, "どちらも遠い")]
 lx = 70
 for c_, t in items:
@@ -153,6 +164,6 @@ for t in [
     d.text((70, cy), t, font=font(26), fill=SUB)
     cy += 38
 
-img = img.crop((0, 0, W, cy + 40))
+img = img.crop((0, 0, W * S, (cy + 40) * S))
 img.save(sys.argv[2])
 print(img.size)

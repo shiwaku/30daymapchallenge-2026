@@ -1,15 +1,18 @@
 """投稿用の2枚目: 政令指定都市・中核市・その他の市（人口10万人以上）の順位。
 
-使い方: python -I -X utf8 ranking.py <data/carfree> <出力png>
+使い方: python -I -X utf8 ranking.py <data/carfree> <出力png> [倍率（既定1。2で4800px幅）]
 """
 import sys
 from pathlib import Path
 
 import pandas as pd
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageFont
 
 sys.path.insert(0, str(Path(__file__).parent))
 from city_class import CHUKAKU, SEIREI  # noqa: E402
+from scaledraw import SDraw  # noqa: E402
+
+S = int(sys.argv[3]) if len(sys.argv) > 3 else 1
 
 src = Path(sys.argv[1])
 c = pd.read_csv(src / "city_carfree.csv")
@@ -24,13 +27,13 @@ other = other_all[other_all["pop"] >= 100000].sort_values("both", ascending=Fals
 
 FONT_R = "C:/Windows/Fonts/BIZ-UDGothicR.ttc"
 FONT_B = "C:/Windows/Fonts/BIZ-UDGothicB.ttc"
-f = lambda s, b=False: ImageFont.truetype(FONT_B if b else FONT_R, s)  # noqa: E731
+f = lambda s, b=False: ImageFont.truetype(FONT_B if b else FONT_R, s * S)  # noqa: E731
 BG, TXT, SUB, GOLD, ZERO, GRID = (10, 12, 20), (225, 228, 238), (150, 156, 175), (255, 200, 80), (120, 100, 128), (40, 44, 60)
 
 ROW = 40
 W = 2400
-img = Image.new("RGB", (W, 2200), BG)
-d = ImageDraw.Draw(img)
+img = Image.new("RGB", (W * S, 2200 * S), BG)
+d = SDraw(img, S)
 d.text((70, 60), "#30DayMapChallenge Day 8 — Utopia", font=f(34), fill=SUB)
 d.text((70, 112), "車に頼らず暮らせる人の割合（市ごと）", font=f(80, True), fill=TXT)
 d.text((70, 220), "1時間に6本以上の駅まで500m以内、学校と医療機関の両方まで1km以内に住む人の割合。全国は "
@@ -83,5 +86,5 @@ for t in [
 ]:
     d.text((70, y), t, font=f(25), fill=SUB)
     y += 38
-img.crop((0, 0, W, y + 40)).save(sys.argv[2])
+img.crop((0, 0, W * S, (y + 40) * S)).save(sys.argv[2])
 print(len(seirei), len(chukaku), len(other), n0)
