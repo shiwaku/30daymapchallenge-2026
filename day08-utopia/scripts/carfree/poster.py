@@ -6,7 +6,6 @@ import json
 import sys
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 from PIL import Image, ImageFont
 
@@ -29,50 +28,9 @@ def font(size, bold=False):
     return ImageFont.truetype(FONT_B if bold else FONT_R, size * S)
 
 
-BG = np.array([10, 12, 20], float)
-C_BOTH = np.array([255, 200, 80], float)
-C_SERV = np.array([62, 104, 160], float)
-C_NONE = np.array([105, 78, 112], float)
-DLON, DLAT = 1 / 320, 1 / 480
+from maplib import BG, C_BOTH, C_NONE, C_SERV, glow, init, render  # noqa: E402
 
-cat = np.where(m["both"], 2, np.where(m["service"], 1, 0))
-pop = m["pop"].to_numpy().astype(float)
-lon = m["lon"].to_numpy()
-lat = m["lat"].to_numpy()
-
-
-def shade(p_both, p_serv, p_none, ref):
-    tot = p_both + p_serv + p_none
-    with np.errstate(invalid="ignore", divide="ignore"):
-        mix = (C_BOTH * p_both[..., None] + C_SERV * p_serv[..., None] + C_NONE * p_none[..., None]) / tot[..., None]
-    mix = np.nan_to_num(mix)
-    a = np.clip(np.log10(tot + 1) / np.log10(ref), 0, 1) ** 0.9
-    a = np.where(tot > 0, np.maximum(a, 0.18), 0)[..., None]
-    return (BG * (1 - a) + mix * a).clip(0, 255).astype(np.uint8)
-
-
-def render(lon0, lon1, lat0, lat1, w, ref):
-    """経度方向を中央緯度の cos で縮めた正距円筒で描く。1画素に入るメッシュの人口を足す。"""
-    k = np.cos(np.radians((lat0 + lat1) / 2))
-    h = int(round(w * (lat1 - lat0) / ((lon1 - lon0) * k)))
-    sel = (lon > lon0) & (lon < lon1) & (lat > lat0) & (lat < lat1)
-    if (lon1 - lon0) / w < DLON:  # 拡大図: メッシュを矩形で塗る
-        out = np.tile(BG.astype(np.uint8), (h, w, 1))
-        ls, bs, cs, ps = lon[sel], lat[sel], cat[sel], pop[sel]
-        x0 = np.round((ls - DLON / 2 - lon0) / (lon1 - lon0) * w).astype(int)
-        x1 = np.round((ls + DLON / 2 - lon0) / (lon1 - lon0) * w).astype(int)
-        y0 = np.round((lat1 - bs - DLAT / 2) / (lat1 - lat0) * h).astype(int)
-        y1 = np.round((lat1 - bs + DLAT / 2) / (lat1 - lat0) * h).astype(int)
-        z = np.zeros(len(ps))
-        col = shade(np.where(cs == 2, ps, z), np.where(cs == 1, ps, z), np.where(cs == 0, ps, z), ref)
-        for i in range(len(ps)):
-            out[max(y0[i], 0):max(y1[i], 0), max(x0[i], 0):max(x1[i], 0)] = col[i]
-        return out
-    x = ((lon[sel] - lon0) / (lon1 - lon0) * w).astype(int).clip(0, w - 1)
-    y = ((lat1 - lat[sel]) / (lat1 - lat0) * h).astype(int).clip(0, h - 1)
-    idx = y * w + x
-    acc = [np.bincount(idx, weights=np.where(cat[sel] == c, pop[sel], 0), minlength=w * h).reshape(h, w) for c in (2, 1, 0)]
-    return shade(*acc, ref)
+init(m, S)
 
 
 W, H = 2400, 2560
@@ -93,10 +51,12 @@ MX, MY, MW = 40, 330, 1620
 # 1画素にメッシュが入りきらない倍率では人口を足して混ぜる（ref は1画素あたり）。
 # 6倍以上ではメッシュ1つが1.4画素以上になるので、メッシュを四角で塗る（ref は1メッシュあたり）
 main = render(128.4, 146.0, 30.9, 45.6, MW * S, 6000 / S**2 if S < 4 else 1500)
+main = glow(main, (1.5, 6), (0.9, 0.5))
 MH = main.shape[0] // S
 img.paste(Image.fromarray(main), (MX * S, MY * S))
 # 沖縄本島（左上の空いた所に）
 oki = render(127.62, 128.05, 26.08, 26.75, 250 * S, 1500)
+oki = glow(oki, (2, 10), (0.4, 0.5))
 OH, OW = oki.shape[0] // S, oki.shape[1] // S
 OX, OY = MX + MW - 330, MY + MH - OH - 60
 img.paste(Image.fromarray(oki), (OX * S, OY * S))
@@ -132,6 +92,7 @@ IX, IW = 1700, 660
 iy = MY
 for name, tag, sh, (a, b, c_, e) in insets:
     arr = render(a, b, c_, e, IW * S, 800)
+    arr = glow(arr, (4, 20), (0.25, 0.55))
     AH = arr.shape[0] // S
     img.paste(Image.fromarray(arr), (IX * S, (iy + 56) * S))
     d.rectangle([IX - 1, iy + 55, IX + IW, iy + 56 + AH], outline=(60, 64, 82), width=2)

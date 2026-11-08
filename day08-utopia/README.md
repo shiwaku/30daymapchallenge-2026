@@ -28,7 +28,17 @@
 
 両方を満たすメッシュに住む人を「車に頼らず暮らせる」とし、その人数の割合を全国・都道府県・市区町村で出す。ITDP の残りの指標（車の入らない場所、街区の細かさ、自転車道など）は、「車なしで暮らせるか」との関係が間接的なのと、OSM の描き込みの差が出やすいので使わない。
 
-![車に頼らず暮らせる場所](carfree/day08-carfree-map.png)
+X に貼る4枚（日本全域・首都圏・中京圏・近畿圏）。両方を満たす所は金色で、ぼかした光を重ねて発光させている。
+
+![車に頼らず暮らせる場所（日本全域）](carfree/day08-carfree-map.png)
+
+![首都圏](carfree/day08-carfree-shutoken.png)
+
+![中京圏](carfree/day08-carfree-chukyo.png)
+
+![近畿圏](carfree/day08-carfree-kinki.png)
+
+市ごとの順位（政令指定都市・中核市・三大都市圏の外の市）:
 
 ![車に頼らず暮らせる人の割合（市ごと）](carfree/day08-carfree-cities.png)
 
@@ -42,7 +52,9 @@
 - 三大都市圏の外で、政令指定都市・中核市以外の人口10万人以上の市（80市）: 上位は大野城市31%、廿日市市30%、筑紫野市29%。44市が0%
 - 東京23区は52%（区ごとでは千代田区97%、新宿区84%、品川区82%、荒川区80%）
 
-高解像度版: [全国と地方の4市（14400×14478px、約7.8MB）](carfree/day08-carfree-map-hires.png)は、250mメッシュ1つが約1.7×1.4画素になる大きさで、市区町村まで拡大してもメッシュの粒が見える。[市ごとの順位（4800px 幅）](carfree/day08-carfree-cities-hires.png)。
+高解像度版: [日本全域（14400×14478px、約10MB）](carfree/day08-carfree-map-hires.png)は、250mメッシュ1つが約1.7×1.4画素になる大きさで、市区町村まで拡大してもメッシュの粒が見える。[首都圏](carfree/day08-carfree-shutoken-hires.png)・[中京圏](carfree/day08-carfree-chukyo-hires.png)・[近畿圏](carfree/day08-carfree-kinki-hires.png)（4800px 幅、メッシュ1つが約7画素）、[市ごとの順位](carfree/day08-carfree-cities-hires.png)（4800px 幅）。
+
+圏域の割合（両方を満たす人）: 首都圏（1都3県）29%、近畿圏（大阪・京都・兵庫・奈良）32%、中京圏（愛知・岐阜・三重）16%。
 
 数字は `carfree/city_carfree.csv`（市区町村。政令指定都市は市でまとめ、東京23区は区ごと）と `carfree/pref_carfree.csv`（都道府県）。`transit` は駅の条件、`service` は学校・医療機関の条件、`both` は両方を満たす人の割合。
 
@@ -77,7 +89,7 @@
 ## 使用する技術
 
 - Python（GeoPandas・pyogrio・SciPy の cKDTree で最も近い駅・施設までの距離を出す。緯度経度を3次元の単位ベクトルにし、弦の長さから大圏距離に直す）
-- 画像は Pillow で描く（等倍・2倍の全国図は1画素に入るメッシュの人口を色ごとに足して混ぜる。6倍の全国図と拡大図はメッシュをそのまま四角で塗る）。3つ目の引数で倍率を指定する（座標はそのままで文字・線・地図を描き直す。`scripts/carfree/scaledraw.py`）。フォントは BIZ UDゴシック
+- 画像は Pillow で描く（等倍・2倍の全国図は1画素に入るメッシュの人口を色ごとに足して混ぜる。6倍の全国図と拡大図はメッシュをそのまま四角で塗る）。3つ目の引数で倍率を指定する（座標はそのままで文字・線・地図を描き直す。`scripts/carfree/scaledraw.py`）。発光は、金色の所（赤と青の差で取り出す）を2つの半径でぼかして足す（`scripts/carfree/maplib.py` の `glow`）。圏域の図の市の位置は、およその市役所（東京23区は東京駅）。フォントは BIZ UDゴシック
 
 ## 作り方
 
@@ -93,6 +105,8 @@ python -I -X utf8 scripts/carfree/poster.py data/carfree output/carfree/poster.p
 python -I -X utf8 scripts/carfree/ranking.py data/carfree output/carfree/ranking.png
 python -I -X utf8 scripts/carfree/poster.py data/carfree output/carfree/poster_x6.png 6    # 高解像度版（全国の図もメッシュを四角で塗る）
 python -I -X utf8 scripts/carfree/ranking.py data/carfree output/carfree/ranking_x2.png 2
+python -I -X utf8 scripts/carfree/regions.py data/carfree output/carfree      # 首都圏・中京圏・近畿圏（region_*.png）
+python -I -X utf8 scripts/carfree/regions.py data/carfree output/carfree 2    # 同じく2倍（region_*_x2.png）
 ```
 
 ## 投稿文の下書き
@@ -113,13 +127,13 @@ python -I -X utf8 scripts/carfree/ranking.py data/carfree output/carfree/ranking
 制作に生成AI（Claude Code）を使用（データの集計とコードの作成）
 ```
 
-X の文字数で270（日本語2で数えた）。画像は `carfree/day08-carfree-map.png`（全国と地方の4市）と `carfree/day08-carfree-cities.png`（市ごとの順位）の2枚。どちらも画面内に出典あり。
+X の文字数で270（日本語2で数えた）。画像は4枚: `carfree/day08-carfree-map.png`（日本全域と地方の4市）、`day08-carfree-shutoken.png`（首都圏）、`day08-carfree-chukyo.png`（中京圏）、`day08-carfree-kinki.png`（近畿圏）。どれも画面内に出典あり。
 
 ## 状況
 
 - [x] データ準備
 - [x] 集計（全国・都道府県・市区町村）
-- [x] 投稿用の画像（2枚）
+- [x] 投稿用の画像（4枚＋市ごとの順位）
 - [ ] 投稿（#30DayMapChallenge）
 - [ ] 海外の都市との比較（同じ定義で。人口は GHSL、時刻表は Mobility Database の GTFS を想定）
 

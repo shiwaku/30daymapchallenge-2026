@@ -7,8 +7,12 @@ class SDraw:
         self.d = ImageDraw.Draw(img)
         self.s = s
 
-    def text(self, xy, t, font, fill):
-        self.d.text((xy[0] * self.s, xy[1] * self.s), t, font=font, fill=fill)
+    def text(self, xy, t, font, fill, stroke_width=0, stroke_fill=None):
+        self.d.text((xy[0] * self.s, xy[1] * self.s), t, font=font, fill=fill,
+                    stroke_width=stroke_width * self.s, stroke_fill=stroke_fill)
+
+    def ellipse(self, box, fill=None, outline=None, width=1):
+        self.d.ellipse([v * self.s for v in box], fill=fill, outline=outline, width=width * self.s)
 
     def rectangle(self, box, fill=None, outline=None, width=1):
         self.d.rectangle([v * self.s for v in box], fill=fill, outline=outline, width=width * self.s)
