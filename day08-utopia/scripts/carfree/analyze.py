@@ -3,9 +3,7 @@
 ITDP（Atlas of Sustainable City Transport / pedestriansfirst）の2つの指標を国内のデータで計算する。
 - 公共交通: 1時間に6本以上（ITDP は 7〜21時の平均10分間隔、上下合算）の駅まで500m以内
 - 生活施設: 学校と医療機関の両方が1,000m以内（ITDP の定義）
-- 食料品店: スーパーなど食料品を一通り買える店が1,000m以内（ITDP にはない。国内向けに足した）
-  経済センサス‐活動調査 2021 の500mメッシュ（小分類 561 百貨店・総合スーパー、581 各種食料品小売業）で、
-  店のある500mメッシュの中心までの距離を測る。店の位置はメッシュの中心で代える
+- 食料品店: スーパーか生鮮食品店（青果・鮮魚・精肉）が1,000m以内（ITDP にはない。国内向けに足した）
 距離はメッシュの中心から点までの直線距離（大圏距離）。ITDP は道のりで測るので、こちらは広めに出る。
 
 使い方: python -I -X utf8 analyze.py <day08 の data フォルダ> <出力フォルダ>
@@ -92,30 +90,22 @@ hc = hc[hc["P04_001"].isin(HEALTH)]
 print("学校", len(sc), "医療機関", len(hc))
 
 
-# ---- 食料品店（500mメッシュ） ----
-def mesh500_center(code: pd.Series):
-    c = code.str
-    a, b = c[0:2].astype(int), c[2:4].astype(int)
-    p, q = c[4].astype(int), c[5].astype(int)
-    r, s = c[6].astype(int), c[7].astype(int)
-    m4 = c[8].astype(int)
-    lat = a / 1.5 + p / 12 + r / 120 + (m4 >= 3) / 240 + 1 / 480
-    lon = 100 + b + q / 8 + s / 80 + (m4 % 2 == 0) / 160 + 1 / 320
-    return lat.to_numpy(), lon.to_numpy()
+# ---- 食料品店（japan-food-store-master のスーパーと生鮮食品店） ----
+# 地図は公開できるレイヤ（Overture Places＋食品営業許可。All the Places を含まない）で塗る。
+# 割合の数字は ATP 基準マスター（チェーン公式サイト由来＋Overture・OSM・許可で補う。網羅がよい）で出す。
+# ATP 由来の店は位置が分かる形で出せないので、市区町村・都道府県・全国の割合にだけ使う
+FOOD_CATS = {"supermarket", "fresh_food"}
 
 
-rows = []
-for f in sorted(glob.glob(str(data / "econ500/T001164_*.zip"))):
-    z = zipfile.ZipFile(f)
-    df = pd.read_csv(z.open(z.namelist()[0]), encoding="cp932", skiprows=[1], dtype=str,
-                     usecols=["KEY_CODE", "T001164001", "T001164003"])
-    rows.append(df)
-ec = pd.concat(rows, ignore_index=True)
-ec["n"] = sum(pd.to_numeric(ec[c], errors="coerce").fillna(0) for c in ["T001164001", "T001164003"])
-ec = ec[ec["n"] > 0]
-ec["lat"], ec["lon"] = mesh500_center(ec["KEY_CODE"])
-gr = gpd.GeoDataFrame(ec, geometry=gpd.points_from_xy(ec["lon"], ec["lat"]), crs=6668)
-print("食料品店のある500mメッシュ", len(gr), "店", int(ec["n"].sum()))
+def food(name):
+    f = pd.read_parquet(data / f"food/{name}.parquet", columns=["cat", "lat", "lng"])
+    f = f[f["cat"].isin(FOOD_CATS)]
+    print(name, len(f), f["cat"].value_counts().to_dict())
+    return gpd.GeoDataFrame(f, geometry=gpd.points_from_xy(f["lng"], f["lat"]), crs=6668)
+
+
+gr_pub = food("food_store_master_public_noosm")
+gr_atp = food("food_store_master_atp_permit")
 
 
 def xyz(lat, lon):
@@ -135,11 +125,16 @@ def nearest(pts: gpd.GeoDataFrame):
 mesh["d_rail"] = nearest(freq)
 mesh["d_school"] = nearest(sc)
 mesh["d_health"] = nearest(hc)
-mesh["d_grocery"] = nearest(gr)
+mesh["d_grocery_pub"] = nearest(gr_pub)
+mesh["d_grocery_atp"] = nearest(gr_atp)
 mesh["transit"] = mesh["d_rail"] <= D_TRANSIT
 mesh["service_itdp"] = (mesh["d_school"] <= D_SERVICE) & (mesh["d_health"] <= D_SERVICE)
-mesh["service"] = mesh["service_itdp"] & (mesh["d_grocery"] <= D_SERVICE)
 mesh["both_itdp"] = mesh["transit"] & mesh["service_itdp"]
+# 地図用（公開できるレイヤ）
+mesh["service"] = mesh["service_itdp"] & (mesh["d_grocery_pub"] <= D_SERVICE)
+# 数字用（ATP 基準）
+mesh["service_atp"] = mesh["service_itdp"] & (mesh["d_grocery_atp"] <= D_SERVICE)
+mesh["both_atp"] = mesh["transit"] & mesh["service_atp"]
 mesh["both"] = mesh["transit"] & mesh["service"]
 
 # ---- 市区町村 ----
@@ -168,10 +163,12 @@ def share(g):
     return pd.Series({
         "pop": p,
         "transit": g.loc[g["transit"], "pop"].sum() / p,
-        "service": g.loc[g["service"], "pop"].sum() / p,
-        "both": g.loc[g["both"], "pop"].sum() / p,
+        # service・both・grocery は ATP 基準の店で数える。both_map は地図に塗った（公開できるレイヤの）割合
+        "service": g.loc[g["service_atp"], "pop"].sum() / p,
+        "both": g.loc[g["both_atp"], "pop"].sum() / p,
         "both_itdp": g.loc[g["both_itdp"], "pop"].sum() / p,
-        "grocery": g.loc[g["d_grocery"] <= D_SERVICE, "pop"].sum() / p,
+        "both_map": g.loc[g["both"], "pop"].sum() / p,
+        "grocery": g.loc[g["d_grocery_atp"] <= D_SERVICE, "pop"].sum() / p,
     })
 
 
