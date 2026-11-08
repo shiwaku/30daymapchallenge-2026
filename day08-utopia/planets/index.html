@@ -40,14 +40,14 @@
   <div class="ctl">大きさ:
     <button id="same" class="on">同じ大きさで</button>
     <button id="real">本当の大きさの比で（地球1：月0.27：火星0.53）</button>
-    　陰影段彩図（標高が低いほど暗く、高いほど明るい）。ドラッグで回せる
+    　陰影段彩図（3つとも同じ配色。低いほど紫、高いほど白。基準は地球が平均海面、月が半径1737.4kmの球、火星が MOLA の基準面）。ドラッグで回せる
   </div>
 </header>
 <main>
   <div class="col"><div class="map" id="earth"></div>
     <div class="cap"><h2>地球</h2><p>いま住んでいる星。半径6,371km</p></div></div>
   <div class="col"><div class="map" id="moon"></div>
-    <div class="cap"><h2>月</h2><p>南極の尾根。<span class="key" style="background:#ffc850"></span>日がよく当たる（日照率50%以上）
+    <div class="cap"><h2>月</h2><p>南極の尾根。<span class="key" style="background:#ffc850"></span>日がよく当たる（日照率40%以上）
       <span class="key" style="background:#3c82ff"></span>永久影（氷がありうる）。白い線はアルテミス計画の有人着陸の候補（NASA、2024年10月）。南極が正面に来るよう回して描いた</p></div></div>
   <div class="col"><div class="map" id="mars"></div>
     <div class="cap"><h2>火星</h2><p><span class="key" style="background:#78ffaa"></span>地下5mまでに氷がありそうで、標高+2km以下、南北50°以内（表面の4.0%）
@@ -55,8 +55,8 @@
 </main>
 <footer>
   出典）地球: <a href="https://mapterhorn.com/attribution" target="_blank">Mapterhorn</a>（日本は国土地理院 数値標高モデル、ほか）／
-  月: NASA LRO LOLA（LDEM_16・LDEM_75S_120M、PDS Geosciences Node）、平均日照率・永久影（NASA GSFC PGDA、Mazarico et al. 2011）、着陸候補の地域（McClernan 2024, USGS、CC0）／
-  火星: MGS MOLA MEGDR（NASA/GSFC、PDS）、SWIM 4 MIM ice consistency（Morgan, Putzig ほか、PSI／NASA）。月と火星のタイルは加工して作成。生成AI（Claude Code）を使って制作
+  月: NASA LRO LOLA（LDEM_16・LDEM_75S_120M・LDEM_85S_20M、PDS Geosciences Node）、平均日照率・永久影（NASA GSFC PGDA、Mazarico et al. 2011）、着陸候補の地域（McClernan 2024, USGS、CC0）／
+  火星: MGS MOLA 463m DEM（NASA/GSFC、USGS Astrogeology、CC0）、SWIM 4 MIM ice consistency（Morgan, Putzig ほか、PSI／NASA）。月と火星のタイルは加工して作成。生成AI（Claude Code）を使って制作
 </footer>
 <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
 <script>
@@ -65,24 +65,24 @@ const LABELS = fetch("labels.json").then(r => r.json());
 function ramp(stops) { // [[標高, 色], ...] → color-relief の式
   return ["interpolate", ["linear"], ["elevation"], ...stops.flat()];
 }
+// 3つで同じ段彩（同じ色 = 同じ標高）。金・青・緑は重ね合わせに使うので段彩には使わない
+const SHARED = [[-9000, "#1c1233"], [-6000, "#2f1f4d"], [-4000, "#47305e"], [-2000, "#624868"], [0, "#7c6066"], [1500, "#967a6c"],
+                  [3000, "#ad957f"], [6000, "#c8b8a4"], [10000, "#e1d7ca"], [21000, "#ffffff"]];
 const BODIES = {
   earth: {
     ratio: 1, center: [138, 30], dem: "https://tiles.mapterhorn.com/{z}/{x}/{y}.webp", demMax: 12, ov: null, shade: 0.35,
     attrib: "<a href='https://mapterhorn.com/attribution' target='_blank'>© Mapterhorn</a>",
-    relief: ramp([[-8000, "#081a3a"], [-4000, "#103a6e"], [-200, "#2a6aa8"], [0, "#1d4f86"], [0.5, "#5f8a4e"], [300, "#8aa25e"],
-                  [1000, "#c2b680"], [2500, "#a88a64"], [4000, "#d8d0c4"], [6000, "#ffffff"]]),
+    relief: ramp([[-1, "#1d4f86"], [0, "#1d4f86"], [0.5, "#7c6066"], [1500, "#967a6c"], [3000, "#ad957f"], [6000, "#c8b8a4"], [10000, "#e1d7ca"]]),
   },
   moon: {
-    ratio: 0.2727, center: [0, 0], dem: "tiles/moon/dem/{z}/{x}/{y}.png", demMax: 9, ov: "tiles/moon/ov/{z}/{x}/{y}.png", shade: 0.8,
+    ratio: 0.2727, center: [0, 0], dem: "tiles/moon/dem/{z}/{x}/{y}.png", demMax: 10, ovMax: 8, ov: "tiles/moon/ov/{z}/{x}/{y}.png", shade: 0.8,
     attrib: "NASA LRO LOLA・GSFC PGDA・USGS",
-    relief: ramp([[-8000, "#221e3a"], [-5000, "#34365c"], [-2500, "#465c68"], [-500, "#687a68"], [1000, "#969270"],
-                  [3000, "#bea884"], [5500, "#decebb"], [8000, "#f6f2ec"]]),
+    relief: ramp(SHARED),
   },
   mars: {
-    ratio: 0.532, center: [60, 28], dem: "tiles/mars/dem/{z}/{x}/{y}.png", demMax: 6, ov: "tiles/mars/ov/{z}/{x}/{y}.png", shade: 0.6,
+    ratio: 0.532, center: [60, 28], dem: "tiles/mars/dem/{z}/{x}/{y}.png", demMax: 7, ovMax: 5, ov: "tiles/mars/ov/{z}/{x}/{y}.png", shade: 0.6,
     attrib: "NASA MGS MOLA・SWIM (PSI)",
-    relief: ramp([[-8000, "#2a1210"], [-5000, "#4a1e16"], [-3000, "#6e2e1e"], [-1000, "#8e4428"], [1000, "#a85e36"],
-                  [4000, "#c8875a"], [8000, "#e2b48c"], [21000, "#fff0dc"]]),
+    relief: ramp(SHARED),
   },
 };
 
@@ -101,7 +101,7 @@ for (const [id, b] of Object.entries(BODIES)) {
   ];
   const sources = { dem: { type: "raster-dem", tiles: [b.dem], encoding: "terrarium", tileSize: 512, maxzoom: b.demMax, attribution: b.attrib } };
   if (b.ov) {
-    sources.ov = { type: "raster", tiles: [b.ov], tileSize: 512, maxzoom: b.demMax };
+    sources.ov = { type: "raster", tiles: [b.ov], tileSize: 512, maxzoom: b.ovMax };
     layers.push({ id: "ov", type: "raster", source: "ov", paint: { "raster-resampling": "linear" } });
   }
   const m = new maplibregl.Map({
