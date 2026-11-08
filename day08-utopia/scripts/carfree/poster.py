@@ -115,11 +115,14 @@ d.text((70, ly + 62), "明るさは人口（250mメッシュ、拡大図はメ�
        font=font(26), fill=SUB)
 d.text((70, ly + 100), "鉄道（路面電車・モノレールを含む）だけでバスは含まない。距離はメッシュの中心からの直線距離で、道のりより短い。特急・新幹線は本数に含まない",
        font=font(26), fill=SUB)
+d.text((70, ly + 138), "食料品店はスーパーと生鮮食品店（青果・鮮魚・精肉）。地図の色は公開できる店のデータ（Overture・食品営業許可）で、割合はチェーン各社の公式サイトの店舗も加えて計算",
+       font=font(26), fill=SUB)
 
 # ---- 出典 ----
-cy = ly + 160
+cy = ly + 198
 for t in [
-    "出典）国勢調査2020 250mメッシュ人口・経済センサス‐活動調査2021 500mメッシュ（e-Stat）、gtfs-gis.jp 全国鉄道運行本数データ 2026年版（西澤明、CC BY 4.0・ODbL）、",
+    "出典）国勢調査2020 250mメッシュ人口（e-Stat）、gtfs-gis.jp 全国鉄道運行本数データ 2026年版（西澤明、CC BY 4.0・ODbL）、Overture Maps Foundation（CDLA Permissive 2.0）、",
+    "食品営業許可オープンデータ（厚生労働省 食品衛生申請等システム・各自治体）、チェーン各社の公式サイトの店舗情報（All the Places ほか。割合の計算にだけ使用）、",
     "国土数値情報（学校 2023年度・医療機関 2020年度、CC BY 4.0）を加工して作成。指標は ITDP「Atlas of Sustainable City Transport」に倣った",
 ]:
     d.text((70, cy), t, font=font(26), fill=SUB)

@@ -73,7 +73,7 @@ for key, name, prefs, pref_note, (a, b, c, e), cities in REGIONS:
     arr = glow(arr, (2, 10), (0.35, 0.5))
     MH = arr.shape[0] // S
     MY = 280
-    H = MY + MH + 260
+    H = MY + MH + 340
     img = Image.new("RGB", (W * S, H * S), tuple(BG.astype(int)))
     d = SDraw(img, S)
     img.paste(Image.fromarray(arr), (MX * S, MY * S))
@@ -103,7 +103,9 @@ for key, name, prefs, pref_note, (a, b, c, e), cities in REGIONS:
     d.text((lx, ly + 8), "明るさは人口。市の割合は市内に住む人のうちすべて満たす人の割合", font=font(26), fill=SUB)
     for i, t in enumerate([
         "鉄道（路面電車・モノレールを含む）だけでバスは含まない。1時間6本は上りと下りを合わせた本数（ITDP に倣う）。距離は直線距離",
-        "出典）国勢調査2020 250mメッシュ人口・経済センサス‐活動調査2021 500mメッシュ（e-Stat）、gtfs-gis.jp 全国鉄道運行本数データ 2026年版（西澤明、CC BY 4.0・ODbL）、",
+        "食料品店はスーパーと生鮮食品店（青果・鮮魚・精肉）。地図の色は公開できる店のデータ（Overture・食品営業許可）で、割合はチェーン各社の公式サイトの店舗も加えて計算",
+        "出典）国勢調査2020 250mメッシュ人口（e-Stat）、gtfs-gis.jp 全国鉄道運行本数データ 2026年版（西澤明、CC BY 4.0・ODbL）、Overture Maps Foundation（CDLA Permissive 2.0）、",
+    "食品営業許可オープンデータ（厚生労働省 食品衛生申請等システム・各自治体）、チェーン各社の公式サイトの店舗情報（All the Places ほか。割合の計算にだけ使用）、",
         "国土数値情報（学校 2023年度・医療機関 2020年度・行政区域 2026年、CC BY 4.0）を加工して作成",
     ]):
         d.text((70, ly + 70 + i * 38), t, font=font(25), fill=SUB)
