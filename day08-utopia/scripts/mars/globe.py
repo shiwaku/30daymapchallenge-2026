@@ -15,7 +15,7 @@ import numpy as np
 import rasterio
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "carfree"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from scaledraw import SDraw  # noqa: E402
 
 S = int(sys.argv[3]) if len(sys.argv) > 3 else 1
