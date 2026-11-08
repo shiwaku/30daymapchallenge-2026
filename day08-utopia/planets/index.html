@@ -59,16 +59,13 @@
   火星: MGS MOLA 463m DEM（NASA/GSFC、USGS Astrogeology、CC0）、SWIM 4 MIM ice consistency（Morgan, Putzig ほか、PSI／NASA）。月と火星のタイルは加工して作成。生成AI（Claude Code）を使って制作
 </footer>
 <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
-<script src="https://unpkg.com/pmtiles@4.3.0/dist/pmtiles.js"></script>
 <script>
-// 月と火星のタイル。公開版は PMTiles（約2GB、Git に入れない）を外に置いて読む。
-// ?tiles=URL で置き場所を差し替えられる。TILE_BASE が空、または ?local のときは手元の planets/tiles/（XYZ の PNG）を読む
-const TILE_BASE = new URLSearchParams(location.search).get("tiles") || "";
-const LOCAL = !TILE_BASE || new URLSearchParams(location.search).has("local");
-if (!LOCAL) maplibregl.addProtocol("pmtiles", new pmtiles.Protocol().tile);
-const tileSrc = (body, kind) => LOCAL
-  ? { tiles: [`tiles/${body}/${kind}/{z}/{x}/{y}.png`] }
-  : { url: `pmtiles://${TILE_BASE}/${body}-${kind}.pmtiles` };
+// 月と火星のタイル。公開版は PMTiles（約2GB、Git に入れない）を R2 に置き、tiles.shi-works.com が
+// 1タイルずつ ZXY で返す（1.6GB の火星の標高は Cloudflare のキャッシュに載らず、pmtiles:// で直接読むと遅いため）。
+// ?tiles=URL で置き場所を差し替えられる。?local のときは手元の planets/tiles/ を読む
+const Q = new URLSearchParams(location.search);
+const TILE_BASE = Q.has("local") ? "tiles" : (Q.get("tiles") || "https://tiles.shi-works.com/30daymapchallenge-2026/day08");
+const tileSrc = (body, kind) => ({ tiles: [Q.has("local") ? `${TILE_BASE}/${body}/${kind}/{z}/{x}/{y}.png` : `${TILE_BASE}/${body}-${kind}/{z}/{x}/{y}.png`] });
 const LABELS = fetch("labels.json").then(r => r.json());
 
 function ramp(stops) { // [[標高, 色], ...] → color-relief の式
