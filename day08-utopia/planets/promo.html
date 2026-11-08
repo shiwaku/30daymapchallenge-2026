@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>住むならどこ？（動画用）</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css">
+<style>
+  html, body { margin: 0; height: 100%; background: #070a12; overflow: hidden;
+    font-family: "BIZ UDPGothic", "BIZ UDGothic", "Hiragino Sans", sans-serif; color: #eef2f8; }
+  .map { position: absolute; inset: 0; opacity: 0; transition: opacity 1.2s ease; }
+  .map.on { opacity: 1; }
+  .pname { position: absolute; z-index: 5; bottom: 56px; width: 33.33%; text-align: center; font-size: 34px; font-weight: 700; transition: opacity .8s; text-shadow: 0 1px 8px #000; }
+  .pname small { display: block; font-size: 22px; font-weight: 400; color: #9aa6bb; }
+  .tag { position: absolute; left: 44px; top: 30px; font-size: 22px; color: #9aa6bb; z-index: 5; }
+  #cap { position: absolute; left: 28px; top: 66px; z-index: 5; max-width: 780px; transition: opacity .6s;
+    background: rgba(7,10,18,.62); padding: 14px 20px 18px; border-radius: 12px; backdrop-filter: blur(3px); }
+  #cap:empty { display: none; }
+  #cap h1 { margin: 0; font-size: 64px; font-weight: 700; letter-spacing: .02em; text-shadow: 0 2px 12px #000; }
+  #cap p { margin: 12px 0 0; font-size: 28px; line-height: 1.55; text-shadow: 0 1px 8px #000, 0 0 2px #000; }
+  #cap .k { display: inline-block; width: 22px; height: 22px; border-radius: 4px; vertical-align: -3px; margin-right: 6px; }
+  #big { position: absolute; right: 60px; bottom: 120px; z-index: 5; text-align: right; transition: opacity .6s; opacity: 0; }
+  #big b { display: block; font-size: 96px; line-height: 1; color: #78ffaa; text-shadow: 0 0 24px rgba(120,255,170,.5); }
+  #big span { font-size: 26px; text-shadow: 0 1px 8px #000; }
+  #src { position: absolute; left: 44px; right: 44px; bottom: 18px; z-index: 5; font-size: 15px; color: #8d98ad; line-height: 1.45; text-shadow: 0 0 4px #000; }
+  .lbl { color: #fff; font: 700 22px "BIZ UDPGothic", sans-serif; text-shadow: 0 0 4px #000, 0 0 8px #000; white-space: nowrap; pointer-events: none; }
+  .lbl > div { transform: translate(14px, -50%); opacity: 0; transition: opacity .8s; position: relative; }
+  .lbl.on > div { opacity: 1; }
+  .lbl small { display: block; font-weight: 400; font-size: 17px; color: #ffd27a; }
+  .lbl > div::before { content: ""; position: absolute; left: -13px; top: 50%; width: 9px; height: 9px; margin-top: -4.5px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 2px #000; }
+  .maplibregl-ctrl-attrib, .maplibregl-ctrl-logo { display: none !important; }
+</style>
+</head>
+<body>
+<div class="map" id="earth"></div><div class="map" id="moon"></div><div class="map" id="mars"></div>
+<div class="tag">#30DayMapChallenge Day 8 — Utopia</div>
+<div id="cap"></div>
+<div id="big"></div>
+<div id="src"></div>
+<script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script>
+const ramp = s => ["interpolate", ["linear"], ["elevation"], ...s.flat()];
+// 3つで同じ段彩（同じ色 = 同じ標高）。金・青・緑は重ね合わせに使うので段彩には使わない
+const SHARED = [[-9000, "#1c1233"], [-6000, "#2f1f4d"], [-4000, "#47305e"], [-2000, "#624868"], [0, "#7c6066"], [1500, "#967a6c"],
+                  [3000, "#ad957f"], [6000, "#c8b8a4"], [10000, "#e1d7ca"], [21000, "#ffffff"]];
+const B = {
+  earth: { dem: "https://tiles.mapterhorn.com/{z}/{x}/{y}.webp", max: 12, ov: null, shade: 0.35,
+    relief: ramp([[-1, "#1d4f86"], [0, "#1d4f86"], [0.5, "#7c6066"], [1500, "#967a6c"], [3000, "#ad957f"], [6000, "#c8b8a4"], [10000, "#e1d7ca"]]) },
+  moon: { dem: "tiles/moon/dem/{z}/{x}/{y}.png", max: 10, ovMax: 8, ov: "tiles/moon/ov/{z}/{x}/{y}.png", shade: 0.8,
+    relief: ramp(SHARED) },
+  mars: { dem: "tiles/mars/dem/{z}/{x}/{y}.png", max: 7, ovMax: 5, ov: "tiles/mars/ov/{z}/{x}/{y}.png", shade: 0.6,
+    relief: ramp(SHARED) },
+};
+const SRC = {
+  earth: "標高: Mapterhorn（日本は国土地理院 数値標高モデル、ほか）",
+  moon: "標高: NASA LRO LOLA（南極は20m・120m、PDS Geosciences Node）／平均日照率・永久影: NASA GSFC PGDA（Mazarico et al. 2011）／着陸候補の地域: McClernan 2024（USGS、CC0）。南極が正面に来るよう座標を回して描いた",
+  mars: "標高: MGS MOLA 463m DEM（USGS Astrogeology、CC0）／氷: SWIM 4 MIM ice consistency（Morgan, Putzig ほか、PSI／NASA）／オデッセイの道のりは原作と映画から読んだおよその位置",
+};
+const Z0 = Math.log2(Math.min(innerWidth, innerHeight) / 2 / 81.5 * 0.8);
+const maps = {};
+const START = { earth: [138, 32], moon: [40, 10], mars: [100, 30] };
+for (const [id, b] of Object.entries(B)) {
+  const sources = { dem: { type: "raster-dem", tiles: [b.dem], encoding: "terrarium", tileSize: 512, maxzoom: b.max } };
+  const layers = [
+    { id: "space", type: "background", paint: { "background-color": "rgba(0,0,0,0)" } },
+    { id: "relief", type: "color-relief", source: "dem", paint: { "color-relief-color": b.relief } },
+    { id: "shade", type: "hillshade", source: "dem", paint: { "hillshade-exaggeration": b.shade, "hillshade-shadow-color": "#000000" } },
+  ];
+  if (b.ov) { sources.ov = { type: "raster", tiles: [b.ov], tileSize: 512, maxzoom: b.ovMax }; layers.push({ id: "ov", type: "raster", source: "ov" }); }
+  maps[id] = new maplibregl.Map({ container: id, center: START[id], zoom: Z0, interactive: false, attributionControl: false, fadeDuration: 0,
+    style: { version: 8, projection: { type: "globe" }, sources, layers, sky: { "atmosphere-blend": id === "earth" ? 0.8 : 0 } } });
+  maps[id].on("error", () => {});
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const idle = m => new Promise(r => m.once("idle", r));
+const cap = (h, p) => { const c = document.getElementById("cap"); c.style.opacity = 0; setTimeout(() => { c.innerHTML = (h ? `<h1>${h}</h1>` : "") + (p ? `<p>${p}</p>` : ""); c.style.opacity = 1; }, 500); };
+const src = t => document.getElementById("src").textContent = "出典）" + t;
+const show = id => { for (const k in maps) document.getElementById(k).classList.toggle("on", k === id); src(SRC[id]); };
+function spin(m, degPerSec, ms) { // 一定の速さで回す（easeTo を細かくつなぐ）
+  return new Promise(res => { const t0 = performance.now(), c0 = m.getCenter();
+    const f = now => { const t = now - t0; m.jumpTo({ center: [c0.lng + degPerSec * t / 1000, c0.lat] }); if (t < ms) requestAnimationFrame(f); else res(); };
+    requestAnimationFrame(f); });
+}
+const markers = [];
+function label(m, it, cls) {
+  const el = document.createElement("div"); el.className = "lbl " + (cls || "");
+  el.innerHTML = "<div>" + it.name + (it.sub ? `<small>${it.sub}</small>` : "") + "</div>";
+  markers.push(el);
+  new maplibregl.Marker({ element: el, anchor: "left" }).setLngLat(it.lnglat).addTo(m);
+  return el;
+}
+
+(async () => {
+  const L = await fetch("labels.json").then(r => r.json());
+  await Promise.all(Object.values(maps).map(m => new Promise(r => m.loaded() ? r() : m.once("load", r))));
+  // 月の着陸候補の枠と、火星のオデッセイの道のり
+  maps.moon.addSource("regions", { type: "geojson", data: { type: "FeatureCollection",
+    features: L.moon.filter(r => r.ring).map(r => ({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: r.ring } })) } });
+  maps.moon.addLayer({ id: "regions", type: "line", source: "regions", paint: { "line-color": "#fff", "line-width": 2, "line-opacity": 0 } });
+  maps.mars.addSource("route", { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [L.mars_route[0], L.mars_route[0]] } } });
+  maps.mars.addLayer({ id: "route", type: "line", source: "route", paint: { "line-color": "#fff", "line-width": 3, "line-dasharray": [1.5, 1.5] } });
+  const moonLbl = {};
+  for (const it of L.moon) moonLbl[it.name] = label(maps.moon, it.name === "南極点" ? { ...it, sub: "" } : it);
+  const marsLbl = {};
+  for (const it of L.mars) marsLbl[it.name] = label(maps.mars, it);
+  await Promise.all(Object.values(maps).map(idle));
+  // 0. 3つを本当の大きさの比で並べる
+  const RATIO = { earth: 1, moon: 0.2727, mars: 0.532 };
+  const ZT = Math.log2((innerWidth / 3) / 2 / 81.5 * 0.8);
+  const order = ["earth", "moon", "mars"];
+  const names = [["地球", "半径 6,371km"], ["月", "1,737km（地球の0.27）"], ["火星", "3,390km（地球の0.53）"]];
+  const pn = [];
+  const Wd = innerWidth, PT = 150;
+  const pads = [{ left: 0, right: Wd * 2 / 3, top: PT, bottom: 0 }, { left: Wd / 3, right: Wd / 3, top: PT, bottom: 0 }, { left: Wd * 2 / 3, right: 0, top: PT, bottom: 0 }];
+  order.forEach((k, i) => {
+    document.getElementById(k).classList.add("on");
+    maps[k].jumpTo({ padding: pads[i], zoom: ZT + Math.log2(RATIO[k]) });
+    const d = document.createElement("div"); d.className = "pname"; d.style.left = (i * 33.333) + "%";
+    d.innerHTML = names[i][0] + `<small>${names[i][1]}</small>`; document.body.appendChild(d); pn.push(d);
+  });
+  document.getElementById("src").textContent = "出典）標高: Mapterhorn（地球）、NASA LRO LOLA（月）、MGS MOLA（火星）。3つとも同じ段彩（低いほど紫、高いほど白）";
+  await Promise.all(Object.values(maps).map(idle));
+  await sleep(800);
+  document.body.classList.add("tour-start");
+  cap("住むならどこ？", "地球の次に住むなら、月か火星か<br>（大きさは本当の比）");
+  await Promise.all(order.map(k => spin(maps[k], 8, 6000)));
+  // 地球を広げる
+  pn.forEach(d => d.style.opacity = 0);
+  document.getElementById("moon").classList.remove("on");
+  document.getElementById("mars").classList.remove("on");
+  cap("住むならどこ？", "標高と観測データで「住めそうな所」を探す");
+  maps.earth.easeTo({ padding: { left: 0, right: 0, top: 0, bottom: 0 }, zoom: Z0, duration: 1600 });
+  await sleep(1700);
+  for (const k of ["moon", "mars"]) maps[k].jumpTo({ padding: { left: 0, right: 0, top: 0, bottom: 0 }, zoom: Z0 });
+  src(SRC.earth);
+  await spin(maps.earth, 6, 2500);
+
+  // 2. 月
+  show("moon");
+  cap("月", "住むなら南極。日の当たり方が極端な所");
+  await spin(maps.moon, -7, 3500);
+  maps.moon.flyTo({ center: [-1.5, 1.2], zoom: Z0 + 4.3, duration: 4500, curve: 1.2 });
+  await sleep(2200);
+  cap("月の南極", `<span class="k" style="background:#ffc850"></span>ほぼいつも日が当たる尾根（太陽光で電気）<br><span class="k" style="background:#3c82ff"></span>一度も日が当たらない永久影（氷がありうる）<br>その2つが、数km の距離で隣り合う`);
+  await sleep(2600);
+  maps.moon.setPaintProperty("regions", "line-opacity", 1);
+  for (const k in moonLbl) moonLbl[k].classList.add("on");
+  await sleep(1000);
+  cap("アルテミス計画の着陸候補", "マラパート山塊は、日照85%の所から永久影まで0.2km<br>（白い枠は NASA が2024年10月に示した候補の地域）");
+  maps.moon.easeTo({ center: [-2.5, 2.6], zoom: Z0 + 3.9, bearing: 8, duration: 5000 });
+  await sleep(5200);
+  for (const k in moonLbl) moonLbl[k].classList.remove("on");
+
+  // 3. 火星
+  show("mars");
+  cap("火星", `<span class="k" style="background:#78ffaa"></span>地下5mまでに氷がありそうで、標高が低く、南北50°以内<br>（NASA の有人着陸候補の目安と、氷の地図 SWIM から）`);
+  await spin(maps.mars, 5, 3000);
+  maps.mars.flyTo({ center: [117.5, 40], zoom: Z0 + 1.0, duration: 3000 });
+  await sleep(2600);
+  marsLbl["ユートピア平原"].classList.add("on");
+  cap("ユートピア平原", "火星には、本当に「ユートピア」という名の平原がある<br>地下に氷があって、標高が低い。1976年にバイキング2号が着陸");
+  await sleep(4500);
+  marsLbl["ユートピア平原"].classList.remove("on");
+  maps.mars.flyTo({ center: [-12, 14], zoom: Z0 + 0.9, duration: 4000 });
+  await sleep(3200);
+  for (const k of ["アキダリア平原", "パスファインダー", "スキャパレリ・クレーター"]) marsLbl[k].classList.add("on");
+  cap("オデッセイ", "主人公が取り残されたアキダリア平原から、脱出の船が待つスキャパレリまで<br>およそ3,200km（位置は原作と映画から読んだおよそ）");
+  // 道のりを伸ばしていく
+  const R = L.mars_route, pts = [];
+  for (let i = 0; i < R.length - 1; i++) for (let f = 0; f < 1; f += 0.05) pts.push([R[i][0] + (R[i + 1][0] - R[i][0]) * f, R[i][1] + (R[i + 1][1] - R[i][1]) * f]);
+  pts.push(R[R.length - 1]);
+  for (let i = 2; i <= pts.length; i++) { maps.mars.getSource("route").setData({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: pts.slice(0, i) } }); await sleep(70); }
+  await sleep(2500);
+  for (const k in marsLbl) marsLbl[k].classList.remove("on");
+
+  // 4. まとめ
+  maps.mars.flyTo({ center: [60, 25], zoom: Z0, duration: 3000 });
+  cap("住むならどこ？", "月なら南極の尾根、火星なら中緯度の氷の平原");
+  const big = document.getElementById("big");
+  big.innerHTML = "<span>火星で3つの条件を満たすのは</span><b>表面の4.0%</b>";
+  big.style.opacity = 1;
+  await spin(maps.mars, 6, 5500);
+  document.body.classList.add("tour-done");
+})();
+</script>
+</body>
+</html>

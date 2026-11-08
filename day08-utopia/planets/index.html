@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>住むならどこ？ 地球・月・火星</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css">
+<style>
+  :root { --bg: #070a12; --txt: #e6ecf5; --sub: #9aa6bb; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--txt);
+    font-family: "BIZ UDPGothic", "Hiragino Sans", "Noto Sans JP", sans-serif; }
+  body { display: flex; flex-direction: column; }
+  header { padding: 14px 20px 6px; }
+  header .tag { color: var(--sub); font-size: 13px; }
+  header h1 { margin: 2px 0 4px; font-size: 26px; }
+  header .ctl { font-size: 13px; color: var(--sub); }
+  header button { background: #1a2335; color: var(--txt); border: 1px solid #34425f; border-radius: 6px; padding: 3px 10px; cursor: pointer; font-size: 13px; }
+  header button.on { border-color: #8fb4ff; background: #263a5c; }
+  main { flex: 1; display: flex; min-height: 0; }
+  .col { flex: 1; position: relative; min-width: 0; border-left: 1px solid #141b2a; }
+  .col:first-child { border-left: 0; }
+  .map { position: absolute; inset: 0; }
+  .cap { position: absolute; left: 14px; top: 10px; z-index: 2; pointer-events: none; max-width: calc(100% - 28px); }
+  .cap h2 { margin: 0; font-size: 22px; }
+  .cap p { margin: 3px 0 0; font-size: 13px; color: var(--sub); line-height: 1.5; }
+  .cap .key { display: inline-block; width: 11px; height: 11px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+  .lbl { color: #fff; font: 600 13px "BIZ UDPGothic", sans-serif; text-shadow: 0 0 3px #000, 0 0 6px #000; white-space: nowrap; pointer-events: none; transform: translate(10px, -50%); }
+  .lbl small { display: block; font-weight: 400; font-size: 11px; color: #ffd27a; }
+  .lbl::before { content: ""; position: absolute; left: -10px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1.5px #000; }
+  footer { padding: 6px 20px 10px; font-size: 11px; color: var(--sub); line-height: 1.5; }
+  footer a { color: var(--sub); }
+  .maplibregl-ctrl-attrib { font-size: 10px; }
+  @media (max-width: 900px) { main { flex-direction: column; } .col { min-height: 70vh; border-left: 0; border-top: 1px solid #141b2a; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="tag">#30DayMapChallenge Day 8 — Utopia</div>
+  <h1>住むならどこ？ 地球・月・火星</h1>
+  <div class="ctl">大きさ:
+    <button id="same" class="on">同じ大きさで</button>
+    <button id="real">本当の大きさの比で（地球1：月0.27：火星0.53）</button>
+    　陰影段彩図（3つとも同じ配色。低いほど紫、高いほど白。基準は地球が平均海面、月が半径1737.4kmの球、火星が MOLA の基準面）。ドラッグで回せる
+  </div>
+</header>
+<main>
+  <div class="col"><div class="map" id="earth"></div>
+    <div class="cap"><h2>地球</h2><p>いま住んでいる星。半径6,371km</p></div></div>
+  <div class="col"><div class="map" id="moon"></div>
+    <div class="cap"><h2>月</h2><p>南極の尾根。<span class="key" style="background:#ffc850"></span>日がよく当たる（日照率40%以上）
+      <span class="key" style="background:#3c82ff"></span>永久影（氷がありうる）。白い線はアルテミス計画の有人着陸の候補（NASA、2024年10月）。南極が正面に来るよう回して描いた</p></div></div>
+  <div class="col"><div class="map" id="mars"></div>
+    <div class="cap"><h2>火星</h2><p><span class="key" style="background:#78ffaa"></span>地下5mまでに氷がありそうで、標高+2km以下、南北50°以内（表面の4.0%）
+      <span class="key" style="background:#96afd7"></span>氷はありそうだが高すぎるか極に近い。点線はオデッセイの主人公の道のり（およそ）</p></div></div>
+</main>
+<footer>
+  出典）地球: <a href="https://mapterhorn.com/attribution" target="_blank">Mapterhorn</a>（日本は国土地理院 数値標高モデル、ほか）／
+  月: NASA LRO LOLA（LDEM_16・LDEM_75S_120M・LDEM_85S_20M、PDS Geosciences Node）、平均日照率・永久影（NASA GSFC PGDA、Mazarico et al. 2011）、着陸候補の地域（McClernan 2024, USGS、CC0）／
+  火星: MGS MOLA 463m DEM（NASA/GSFC、USGS Astrogeology、CC0）、SWIM 4 MIM ice consistency（Morgan, Putzig ほか、PSI／NASA）。月と火星のタイルは加工して作成。生成AI（Claude Code）を使って制作
+</footer>
+<script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script>
+const LABELS = fetch("labels.json").then(r => r.json());
+
+function ramp(stops) { // [[標高, 色], ...] → color-relief の式
+  return ["interpolate", ["linear"], ["elevation"], ...stops.flat()];
+}
+// 3つで同じ段彩（同じ色 = 同じ標高）。金・青・緑は重ね合わせに使うので段彩には使わない
+const SHARED = [[-9000, "#1c1233"], [-6000, "#2f1f4d"], [-4000, "#47305e"], [-2000, "#624868"], [0, "#7c6066"], [1500, "#967a6c"],
+                  [3000, "#ad957f"], [6000, "#c8b8a4"], [10000, "#e1d7ca"], [21000, "#ffffff"]];
+const BODIES = {
+  earth: {
+    ratio: 1, center: [138, 30], dem: "https://tiles.mapterhorn.com/{z}/{x}/{y}.webp", demMax: 12, ov: null, shade: 0.35,
+    attrib: "<a href='https://mapterhorn.com/attribution' target='_blank'>© Mapterhorn</a>",
+    relief: ramp([[-1, "#1d4f86"], [0, "#1d4f86"], [0.5, "#7c6066"], [1500, "#967a6c"], [3000, "#ad957f"], [6000, "#c8b8a4"], [10000, "#e1d7ca"]]),
+  },
+  moon: {
+    ratio: 0.2727, center: [0, 0], dem: "tiles/moon/dem/{z}/{x}/{y}.png", demMax: 10, ovMax: 8, ov: "tiles/moon/ov/{z}/{x}/{y}.png", shade: 0.8,
+    attrib: "NASA LRO LOLA・GSFC PGDA・USGS",
+    relief: ramp(SHARED),
+  },
+  mars: {
+    ratio: 0.532, center: [60, 28], dem: "tiles/mars/dem/{z}/{x}/{y}.png", demMax: 7, ovMax: 5, ov: "tiles/mars/ov/{z}/{x}/{y}.png", shade: 0.6,
+    attrib: "NASA MGS MOLA・SWIM (PSI)",
+    relief: ramp(SHARED),
+  },
+};
+
+const maps = {};
+let mode = "same", syncing = false;
+const BASE_Z = () => Math.log2(Math.min(document.getElementById("earth").clientWidth, document.getElementById("earth").clientHeight) / 2 / 81.5 * 0.82);
+
+const ONLY = new URLSearchParams(location.search).get("only");
+const NOSHADE = new URLSearchParams(location.search).has("noshade");
+for (const [id, b] of Object.entries(BODIES)) {
+  if (ONLY && ONLY !== id) continue;
+  const layers = [
+    { id: "space", type: "background", paint: { "background-color": "#070a12" } },
+    { id: "relief", type: "color-relief", source: "dem", paint: { "color-relief-color": b.relief } },
+    ...(NOSHADE ? [] : [{ id: "shade", type: "hillshade", source: "dem", paint: { "hillshade-exaggeration": b.shade, "hillshade-shadow-color": "#000000", "hillshade-highlight-color": "#ffffff" } }]),
+  ];
+  const sources = { dem: { type: "raster-dem", tiles: [b.dem], encoding: "terrarium", tileSize: 512, maxzoom: b.demMax, attribution: b.attrib } };
+  if (b.ov) {
+    sources.ov = { type: "raster", tiles: [b.ov], tileSize: 512, maxzoom: b.ovMax };
+    layers.push({ id: "ov", type: "raster", source: "ov", paint: { "raster-resampling": "linear" } });
+  }
+  const m = new maplibregl.Map({
+    container: id, center: b.center, zoom: BASE_Z(), attributionControl: { compact: true },
+    style: { version: 8, projection: { type: "globe" }, sources, layers,
+      sky: { "atmosphere-blend": id === "earth" ? 0.8 : 0 } },
+  });
+  m.on("error", () => {}); // 範囲外のタイル（404）は黙って飛ばす
+  maps[id] = m;
+  m.on("zoom", () => {
+    if (mode !== "real" || syncing) return;
+    syncing = true;
+    const z0 = m.getZoom() - Math.log2(b.ratio);
+    for (const [k, o] of Object.entries(maps)) if (o !== m) o.setZoom(z0 + Math.log2(BODIES[k].ratio));
+    syncing = false;
+  });
+}
+
+function setMode(md) {
+  mode = md;
+  document.getElementById("same").classList.toggle("on", md === "same");
+  document.getElementById("real").classList.toggle("on", md === "real");
+  const z = BASE_Z();
+  for (const [k, m] of Object.entries(maps)) m.easeTo({ zoom: md === "real" ? z + Math.log2(BODIES[k].ratio) : z, duration: 800 });
+}
+document.getElementById("same").onclick = () => setMode("same");
+document.getElementById("real").onclick = () => setMode("real");
+
+LABELS.then(L => {
+  const add = (m, items) => items.forEach(it => {
+    const el = document.createElement("div"); el.className = "lbl";
+    el.innerHTML = it.name + (it.sub ? `<small>${it.sub}</small>` : "");
+    new maplibregl.Marker({ element: el, anchor: "left" }).setLngLat(it.lnglat).addTo(m);
+  });
+  if (maps.moon) maps.moon.on("load", () => {
+    maps.moon.addSource("regions", { type: "geojson", data: { type: "FeatureCollection",
+      features: L.moon.filter(r => r.ring).map(r => ({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: r.ring } })) } });
+    maps.moon.addLayer({ id: "regions", type: "line", source: "regions", paint: { "line-color": "#ffffff", "line-width": 1.5 } });
+    // 引いて見ているときは名前が重なるので、南極の目印だけにする。拡大すると着陸候補の名前を出す
+    const els = [];
+    const add2 = it => { const el = document.createElement("div"); el.className = "lbl";
+      el.innerHTML = it.name + (it.sub ? `<small>${it.sub}</small>` : "");
+      new maplibregl.Marker({ element: el, anchor: "left" }).setLngLat(it.lnglat).addTo(maps.moon); return el; };
+    for (const it of L.moon) els.push(add2(it));
+    const hint = add2({ name: "南極", sub: "拡大すると着陸候補の名前が出る", lnglat: [0, 0] });
+    const upd = () => { const near = maps.moon.getZoom() > BASE_Z() + Math.log2(BODIES.moon.ratio) * (mode === "real") + 2.6;
+      els.forEach(e => e.style.display = near ? "" : "none"); hint.style.display = near ? "none" : ""; };
+    maps.moon.on("zoom", upd); upd();
+  });
+  if (maps.mars) maps.mars.on("load", () => {
+    maps.mars.addSource("route", { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: L.mars_route } } });
+    maps.mars.addLayer({ id: "route", type: "line", source: "route", paint: { "line-color": "#ffffff", "line-width": 2, "line-dasharray": [2, 2] } });
+    add(maps.mars, L.mars);
+  });
+});
+window.maps = maps;
+</script>
+</body>
+</html>
