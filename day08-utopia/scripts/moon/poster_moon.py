@@ -14,7 +14,7 @@ import rasterio
 from PIL import Image, ImageFilter, ImageFont
 from pyproj import Transformer
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "carfree"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from scaledraw import SDraw  # noqa: E402
 
 Image.MAX_IMAGE_PIXELS = None

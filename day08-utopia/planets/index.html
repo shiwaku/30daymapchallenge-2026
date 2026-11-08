@@ -59,7 +59,16 @@
   火星: MGS MOLA 463m DEM（NASA/GSFC、USGS Astrogeology、CC0）、SWIM 4 MIM ice consistency（Morgan, Putzig ほか、PSI／NASA）。月と火星のタイルは加工して作成。生成AI（Claude Code）を使って制作
 </footer>
 <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/pmtiles@4.3.0/dist/pmtiles.js"></script>
 <script>
+// 月と火星のタイル。公開版は PMTiles（約2GB、Git に入れない）を外に置いて読む。
+// ?tiles=URL で置き場所を差し替えられる。TILE_BASE が空、または ?local のときは手元の planets/tiles/（XYZ の PNG）を読む
+const TILE_BASE = new URLSearchParams(location.search).get("tiles") || "";
+const LOCAL = !TILE_BASE || new URLSearchParams(location.search).has("local");
+if (!LOCAL) maplibregl.addProtocol("pmtiles", new pmtiles.Protocol().tile);
+const tileSrc = (body, kind) => LOCAL
+  ? { tiles: [`tiles/${body}/${kind}/{z}/{x}/{y}.png`] }
+  : { url: `pmtiles://${TILE_BASE}/${body}-${kind}.pmtiles` };
 const LABELS = fetch("labels.json").then(r => r.json());
 
 function ramp(stops) { // [[標高, 色], ...] → color-relief の式
@@ -70,17 +79,17 @@ const SHARED = [[-9000, "#1c1233"], [-6000, "#2f1f4d"], [-4000, "#47305e"], [-20
                   [3000, "#ad957f"], [6000, "#c8b8a4"], [10000, "#e1d7ca"], [21000, "#ffffff"]];
 const BODIES = {
   earth: {
-    ratio: 1, center: [138, 30], dem: "https://tiles.mapterhorn.com/{z}/{x}/{y}.webp", demMax: 12, ov: null, shade: 0.35,
+    ratio: 1, center: [138, 30], dem: { tiles: ["https://tiles.mapterhorn.com/{z}/{x}/{y}.webp"] }, demMax: 12, ov: null, shade: 0.35,
     attrib: "<a href='https://mapterhorn.com/attribution' target='_blank'>© Mapterhorn</a>",
     relief: ramp([[-1, "#1d4f86"], [0, "#1d4f86"], [0.5, "#7c6066"], [1500, "#967a6c"], [3000, "#ad957f"], [6000, "#c8b8a4"], [10000, "#e1d7ca"]]),
   },
   moon: {
-    ratio: 0.2727, center: [0, 0], dem: "tiles/moon/dem/{z}/{x}/{y}.png", demMax: 10, ovMax: 8, ov: "tiles/moon/ov/{z}/{x}/{y}.png", shade: 0.8,
+    ratio: 0.2727, center: [0, 0], dem: tileSrc("moon", "dem"), demMax: 10, ovMax: 8, ov: tileSrc("moon", "ov"), shade: 0.8,
     attrib: "NASA LRO LOLA・GSFC PGDA・USGS",
     relief: ramp(SHARED),
   },
   mars: {
-    ratio: 0.532, center: [60, 28], dem: "tiles/mars/dem/{z}/{x}/{y}.png", demMax: 7, ovMax: 5, ov: "tiles/mars/ov/{z}/{x}/{y}.png", shade: 0.6,
+    ratio: 0.532, center: [60, 28], dem: tileSrc("mars", "dem"), demMax: 7, ovMax: 5, ov: tileSrc("mars", "ov"), shade: 0.6,
     attrib: "NASA MGS MOLA・SWIM (PSI)",
     relief: ramp(SHARED),
   },
@@ -99,9 +108,9 @@ for (const [id, b] of Object.entries(BODIES)) {
     { id: "relief", type: "color-relief", source: "dem", paint: { "color-relief-color": b.relief } },
     ...(NOSHADE ? [] : [{ id: "shade", type: "hillshade", source: "dem", paint: { "hillshade-exaggeration": b.shade, "hillshade-shadow-color": "#000000", "hillshade-highlight-color": "#ffffff" } }]),
   ];
-  const sources = { dem: { type: "raster-dem", tiles: [b.dem], encoding: "terrarium", tileSize: 512, maxzoom: b.demMax, attribution: b.attrib } };
+  const sources = { dem: { type: "raster-dem", ...b.dem, encoding: "terrarium", tileSize: 512, maxzoom: b.demMax, attribution: b.attrib } };
   if (b.ov) {
-    sources.ov = { type: "raster", tiles: [b.ov], tileSize: 512, maxzoom: b.ovMax };
+    sources.ov = { type: "raster", ...b.ov, tileSize: 512, maxzoom: b.ovMax };
     layers.push({ id: "ov", type: "raster", source: "ov", paint: { "raster-resampling": "linear" } });
   }
   const m = new maplibregl.Map({
