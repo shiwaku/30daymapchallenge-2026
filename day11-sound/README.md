@@ -31,6 +31,10 @@
 
 - [鶴ヶ島上空の朝](morning-flights/)（[ページ](https://shiwaku.github.io/30daymapchallenge-2026/day11-sound/morning-flights/)）: 2026年10月19日朝に鶴ヶ島駅の上空を通った航空機を、所属ごとに色分けしたアニメーション（MapLibre GL JS）
 
+## 候補（手元のデータ、2026-11-09 調べ）
+
+- 別案: jma-liden-tile-pipeline（気象庁 ナウキャストの落雷の位置）で「雷鳴が聞こえた範囲」（雷鳴が届くのは約10〜15km）
+
 ## 状況
 
 - 準備度: ○
