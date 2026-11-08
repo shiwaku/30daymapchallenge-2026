@@ -13,9 +13,117 @@
 
 ## 地図のテーマ
 
-車に頼らず暮らせる場所（全国の250mメッシュ）
+住むならどこ？ 地球・月・火星（投稿済み）
 
 ## 内容
+
+「ありうるかもしれない」住む場所を、地球の外に探す。地球・月・火星を MapLibre GL JS の地球儀で横に並べ、3つとも同じ配色の陰影段彩図（低いほど紫、高いほど白）で描いた。月と火星には「住めそうな所」を重ねた。
+
+- **月**: 南極の尾根。ほぼいつも日が当たる所（太陽光で電気を作れる）と、一度も日が当たらない永久影（氷がありうる）が数 km の距離で隣り合う。NASA が2024年10月に示したアルテミス計画の有人着陸の候補（9地域、外形が公開されている8地域）を重ねた
+- **火星**: 地下5mまでに氷がありそうで、標高が +2km 以下、南北50°以内の所（NASA が2015年に有人着陸の候補地を募ったときの目安と、氷の地図 SWIM から）。火星の表面の **4.0%**。火星には本当に「ユートピア平原（Utopia Planitia）」があり、条件をよく満たす。映画『オデッセイ』（原作『火星の人』）の主人公の道のり（アキダリア平原→パスファインダー→スキャパレリ・クレーター、およそ3,200km）も点線で入れた
+
+投稿した動画（ビューワを画面録画、約29秒）は `output/planets/demo3.mp4`（Git 管理外）。動画用に自動で動くページ（`planets/promo.html`）で録った約53秒版（`output/planets/day08-planets.mp4`）もある。
+
+### 主な数字
+
+月（候補地域の中でいちばん日が当たる所の日照率と、そこからいちばん近い永久影までの距離。`moon/moon_regions.json`）:
+
+| 地域 | 日照率 | 永久影まで |
+|---|---|---|
+| ノビレの縁 1 | 86% | 1.8km |
+| マラパート山塊 | 85% | 0.2km |
+| ムートン山 | 80% | 1.1km |
+| ド・ジェルラッシュの縁 2 | 79% | 2.9km |
+| ハワース | 75% | 1.1km |
+| カベウスB近くの峰 | 68% | 0.8km |
+| スレーター平原 | 66% | 0.3km |
+| ノビレの縁 2 | 54% | 3.4km |
+
+火星: 3つの条件を満たすのは表面の 4.0%。地下5mまでに氷がありそうな所は 9.8%（SWIM の範囲は南北60°まで）。
+
+静止画: `moon/day08-moon.png`（南極を斜めから見た立体）、`mars/day08-mars.png`（火星の地球儀2面）。どちらも `-hires.png` あり。
+
+### 言える範囲
+
+- 陰影段彩の基準面はそれぞれ違う（地球は平均海面、月は半径1737.4km の球、火星は MOLA の基準面）。同じ色は同じ「基準面からの高さ」で、同じ気圧や環境ではない。地球の海は海底の深さを入れず青1色
+- 月の日照率は地表での平均（18.6年の歳差周期を1時間ごとに計算、Mazarico ほか 2011）。地面から数m上げた太陽電池なら、もっと長く日が当たる。数字は120m 格子の1画素
+- 月の候補地域の外形は1km 格子の外側をつないだもの（凸包）。9地域のうちムートン山の台地は外形が公開されていない。有人着陸がアルテミス III から IV に移ったとの報道があるので、「III」とは書いていない
+- 火星の氷は SWIM の ice consistency（いくつもの観測が氷のありそうなことで一致する度合い、-1〜1）が 0.5 以上。氷の量や確かさではない。レーダーの軌跡に沿った縦の筋が残る（0.15°でならした）。極冠は SWIM の範囲外で塗っていない
+- オデッセイの道のりは、原作と映画から読んだおよその位置
+- MapLibre の地球儀は Web メルカトルのタイルで緯度85°より極側を描けないので、月は座標を回して南極を正面（緯度0°・経度0°）に置いた。球体の見た目は同じだが、ビューワの「北」は本当の北ではない
+
+## データ
+
+| データ | 細かさ・使ったズーム | 提供・ライセンス |
+|---|---|---|
+| 地球の標高 | Mapterhorn（`tiles.mapterhorn.com` を直接読む） | Mapterhorn（日本は国土地理院 数値標高モデル、ほか。https://mapterhorn.com/attribution ） |
+| 月の標高（全球） | LOLA LDEM_16（約1.9km）→ z4 | NASA LRO LOLA、PDS Geosciences Node |
+| 月の標高（南緯75〜85°） | LDEM_75S_120M（120m）→ z8 | 同上 |
+| 月の標高（南緯85°より極側） | LDEM_85S_20M（20m）→ z10 | 同上 |
+| 月の平均日照率・永久影 | AVGVISIB_75S_120M・LPSR_75S_120M（120m）→ z8 | NASA GSFC PGDA（Mazarico et al. 2011, Icarus 211） |
+| アルテミスの着陸候補 | 1km 格子のシェープファイル | McClernan 2024, USGS（CC0、doi:10.5066/P1MEQ6UK。元は LROC QuickMap） |
+| 火星の標高 | MGS MOLA DEM 463m → z7 | NASA/GSFC、USGS Astrogeology（CC0） |
+| 火星の氷 | SWIM 4 MIM 合成 ice consistency（0〜1m・1〜5m、約3km）→ z5 | Morgan, Putzig ほか、Planetary Science Institute／NASA（利用条件の明示なし。出典を明記して使用） |
+
+ズームは「画素の大きさ = 2π×半径 ÷ (512×2^z)」が元の格子に近いところで止めた。月の日照率・永久影や火星の氷は、標高より粗いので重ね合わせのタイルを先に止め、拡大すると引き伸ばされる。
+
+## 使用する技術
+
+- 月と火星のタイル: Python（NumPy・rasterio）で Terrarium 形式の標高 PNG と重ね合わせの PNG を作る（`scripts/planets/make_tiles.py`）。月は座標を回してから作る
+- 表示: MapLibre GL JS 5.24 の地球儀（globe）。段彩は color-relief、陰影は hillshade。ビューワ `planets/index.html`（大きさを「同じ」と「本当の比」で切り替え）、動画用 `planets/promo.html`
+- 動画: ビューワの画面録画（投稿分）。動画用ページは Playwright の画面録画（`scripts/planets/record.mjs`、コマ撮りではない）
+- 静止画: Pillow（`scripts/moon/`・`scripts/mars/`）。フォントは BIZ UDゴシック
+
+## 作り方
+
+```sh
+# 月（data/moon/）: LOLA の ldem_16.img・ldem_75s_120m.img・ldem_85s_20m.img（PDS Geosciences Node）、
+#   PGDA の AVGVISIB_75S_120M_201608.TIF・LPSR_75S_120M_201608.TIF、USGS の着陸候補（regions/*.zip）
+# 火星（data/mars/）: USGS の Mars_MGS_MOLA_DEM_mosaic_global_463m.tif（mola/）、SWIM 4 MIM の GeoTIFF（swim/z/）
+python -I -X utf8 scripts/planets/make_tiles.py moon data/moon planets/tiles/moon   # 約5分
+python -I -X utf8 scripts/planets/make_tiles.py mars data/mars planets/tiles/mars   # 約20分（約1.6GB）
+cd planets && python -m http.server 8809                                             # http://localhost:8809/
+node scripts/planets/record.mjs http://localhost:8809/promo.html output/planets/day08-planets.mp4 1600x900
+python -I -X utf8 scripts/moon/poster_moon.py data/moon moon/day08-moon.png 1 moon/moon_regions.json
+python -I -X utf8 scripts/mars/globe.py data/mars mars/day08-mars.png
+```
+
+タイル（`planets/tiles/`、約2GB）は Git に入れていないので、ビューワはまだ公開していない。
+
+## 投稿文
+
+本文（X の文字数で274）:
+
+```text
+#30DayMapChallenge Day 8 - Utopia
+地球の次に住むなら、月か火星か。地球儀で並べてみました🌏🌕
+📝月は南極の尾根。マラパート山塊は日照85%の所から永久影（氷がありうる）まで0.2km。火星は氷があって低い中緯度で、表面の4.0%。火星には本当に「ユートピア平原」がある
+#MapLibre #OpenData
+```
+
+リプライ:
+
+```text
+出典）地球: Mapterhorn、月: NASA LRO LOLA・GSFC PGDA（Mazarico et al. 2011）・USGS（アルテミス着陸候補）、火星: MGS MOLA（USGS）・SWIM（PSI/NASA）を加工して作成
+制作に生成AI（Claude Code）を使用（データの加工とコードの作成）
+```
+
+## 状況
+
+- [x] データ準備（月の南極は20m、火星は463m）
+- [x] ビューワと動画
+- [x] 投稿（#30DayMapChallenge、2026-11-08、動画）
+- [ ] ビューワの公開（タイルを PMTiles にまとめて置く場所を決める）
+
+## 別案: 海が上がったら、関東は（未投稿）
+
+温暖化で海面が上がったときの関東を、Mapterhorn の3D地形と波立つ海面（three.js のカスタムレイヤー）で描いた（`sealevel/index.html`）。海とつながって沈むメッシュに住む人は +1m で190万人、+3m で599万人、+5m で900万人（関東1都6県、国勢調査2020 250mメッシュ、堤防は考えない。`sealevel/flood_pop.json`）。目安は IPCC AR6 WG1 SPM B.5.3・B.5.4。ユートピアではないので Day 8 には使わず、Day 26（Water）の候補として残す。
+
+## 別案: 車に頼らず暮らせる場所（未投稿）
+
+Day 8 の候補として、全国の250mメッシュで作った地図。現状を測る地図で「ありうる未来」には弱いので、投稿は月と火星に替えた。数字と画像（`carfree/`）はそのまま残す。
+
+### 内容
 
 公共交通と徒歩で暮らせて、車に頼らなくてよい街を「ありえるかもしれない」理想の街として、その条件を満たす場所がいまの日本にどれだけあるかを全国の250mメッシュで描く。まず国内で作り、次に同じ定義で海外の都市と比べる予定。
 
@@ -43,7 +151,7 @@ X に貼る4枚（日本全域・首都圏・中京圏・近畿圏）。すべ�
 
 ![車に頼らず暮らせる人の割合（市ごと）](carfree/day08-carfree-cities.png)
 
-### 主な数字
+#### 主な数字
 
 - 全国: **17.8%**（約2,247万人）。駅の条件だけなら18.0%、学校・医療機関・食料品店の条件だけなら81.8%で、差を生むのはほぼ駅。食料品店を足す前（ITDP の2つだけ）は17.9%で、駅の近くにはたいてい食料品店もあるので、足しても0.1ポイントしか下がらない。下がりが目立つのは瀬戸市（21%→18%）、河内長野市（15%→13%）、橿原市（32%→30%）など
 - 都道府県: 東京43%、大阪38%、京都32%、神奈川26%、兵庫25%。岩手・山形・青森・島根・鳥取・秋田は0%
@@ -59,7 +167,7 @@ X に貼る4枚（日本全域・首都圏・中京圏・近畿圏）。すべ�
 
 数字は `carfree/city_carfree.csv`（市区町村。政令指定都市は市でまとめ、東京23区は区ごと）と `carfree/pref_carfree.csv`（都道府県）。`transit` は駅の条件、`service` は学校・医療機関・食料品店の条件、`both` はすべて満たす人の割合、`both_itdp` は食料品店を入れない ITDP の2つの条件での割合、`grocery` は食料品店の条件だけの割合（ここまで食料品店は ATP 基準マスター）。`both_map` は地図に塗った公開できるレイヤでの割合（全国17.8%で、ATP 基準との差は0.04ポイント）。
 
-### 計算の方法
+#### 計算の方法
 
 - 人口: 国勢調査2020の250mメッシュ（5次メッシュ）の総人口。人口0のメッシュは除く。全国で1,163,745メッシュ・126,145,734人（公表値 126,146,099人との差の365人は、ダウンロードした1次メッシュに入らなかった小さな島の分）
 - 距離: メッシュの中心から点までの直線距離（大圏距離）。ITDP は道のりで測るので、こちらの方が広めに出る
@@ -73,7 +181,7 @@ X に貼る4枚（日本全域・首都圏・中京圏・近畿圏）。すべ�
 - 市区町村: メッシュの中心が入る市区町村（国土数値情報 行政区域 2026年1月1日時点）。海岸沿いで中心が陸地から外れる8,253メッシュ（204,790人）は、いちばん近い市区町村に入れた
 - 中核市は総務省の「中核市・施行時特例市」のページの令和5年4月1日現在の62市。三大都市圏は東京・神奈川・埼玉・千葉・大阪・京都・兵庫・奈良・愛知・岐阜・三重の1都2府8県とした
 
-### 言える範囲
+#### 言える範囲
 
 - **鉄道だけで、バスを含めない**。バスが中心の街（金沢・新潟・長野など）は低く出る。全国のバスの時刻表（GTFS-JP）は事業者ごとに抜けがあるので、今回は入れていない
 - 1時間6本は上りと下りを合わせた数で、片道では約3本。ITDP に合わせた基準で、日本の都市の感覚よりは緩い。特急・新幹線と、追加料金の要る列車は本数に含まない（gtfs-gis.jp のデータの決め方）
@@ -85,7 +193,7 @@ X に貼る4枚（日本全域・首都圏・中京圏・近畿圏）。すべ�
 - 人口は2020年の国勢調査で、駅（2026年）と時点が違う。宇都宮ライトレール（2023年開業）のように、その後にできた線の沿線の人口は2020年のもの
 - 「車に頼らず暮らせる」は上の3つの条件を満たすという意味で、実際に車を持たずに暮らしている人の割合ではない
 
-## データ
+### データ
 
 - 国勢調査2020 250mメッシュ人口（総務省統計局、[e-Stat](https://www.e-stat.go.jp/gis/statmap-search?type=1) 統計表 T001142）を加工して作成
 - [gtfs-gis.jp 全国鉄道運行本数データ](https://gtfs-gis.jp/railway_honsu/) 2026年版・事業者別・駅別発着本数（作成: 西澤明、ライセンス: CC BY 4.0 / ODbL）を加工して作成
@@ -93,12 +201,12 @@ X に貼る4枚（日本全域・首都圏・中京圏・近畿圏）。すべ�
 - 国土数値情報 学校データ（P29、2023年度）・医療機関データ（P04、2020年度）・行政区域データ（N03、2026年1月1日時点）（国土交通省、CC BY 4.0）を加工して作成
 - 指標の定義: ITDP「The Atlas of Sustainable City Transport」、計算コード [ITDP/pedestriansfirst](https://github.com/ITDP/pedestriansfirst)（MIT）。ITDP のデータ（数値）は使っていない
 
-## 使用する技術
+### 使用する技術
 
 - Python（GeoPandas・pyogrio・SciPy の cKDTree で最も近い駅・施設までの距離を出す。緯度経度を3次元の単位ベクトルにし、弦の長さから大圏距離に直す）
 - 画像は Pillow で描く（等倍・2倍の全国図は1画素に入るメッシュの人口を色ごとに足して混ぜる。6倍の全国図と拡大図はメッシュをそのまま四角で塗る）。3つ目の引数で倍率を指定する（座標はそのままで文字・線・地図を描き直す。`scripts/carfree/scaledraw.py`）。発光は、金色の所（赤と青の差で取り出す）を2つの半径でぼかして足す（`scripts/carfree/maplib.py` の `glow`）。圏域の図の市の位置は、およその市役所（東京23区は東京駅）。フォントは BIZ UDゴシック
 
-## 作り方
+### 作り方
 
 ```sh
 mkdir -p data/ksj data/rail data/n03 data/food
@@ -117,7 +225,7 @@ python -I -X utf8 scripts/carfree/regions.py data/carfree output/carfree      # 
 python -I -X utf8 scripts/carfree/regions.py data/carfree output/carfree 2    # 同じく2倍（region_*_x2.png）
 ```
 
-## 投稿文の下書き
+### 投稿文の下書き
 
 本文:
 
@@ -137,13 +245,14 @@ python -I -X utf8 scripts/carfree/regions.py data/carfree output/carfree 2    # 
 
 X の文字数で278（日本語2で数えた）。画像は4枚: `carfree/day08-carfree-map.png`（日本全域と地方の4市）、`day08-carfree-shutoken.png`（首都圏）、`day08-carfree-chukyo.png`（中京圏）、`day08-carfree-kinki.png`（近畿圏）。どれも画面内に出典あり。
 
-## 状況
+### 状況
 
 - [x] データ準備
 - [x] 集計（全国・都道府県・市区町村）
 - [x] 投稿用の画像（4枚＋市ごとの順位）
 - [ ] 投稿（#30DayMapChallenge）
 - [ ] 海外の都市との比較（同じ定義で。人口は GHSL、時刻表は Mobility Database の GTFS を想定）
+
 
 ## 別案: 自転車の道が、つながったら（未投稿）
 
