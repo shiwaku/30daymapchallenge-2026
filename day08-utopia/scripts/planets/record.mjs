@@ -25,7 +25,7 @@ await page.goto(url);
 await page.waitForFunction(() => document.body.classList.contains("tour-start"), null, { timeout: 180000, polling: 20 });
 const start = (Date.now() - t0) / 1000;
 if (shots) {
-  const ts = [3, 8, 13, 17, 22, 27, 31, 37, 43, 48];
+  const ts = (process.env.SHOTS ?? "3,8,13,17,22,27,31,37,43,48").split(",").map(Number);
   for (const t of ts) {
     const wait = start * 1000 + t * 1000 - (Date.now() - t0);
     if (wait > 0) await page.waitForTimeout(wait);

@@ -140,7 +140,16 @@ LABELS.then(L => {
     maps.moon.addSource("regions", { type: "geojson", data: { type: "FeatureCollection",
       features: L.moon.filter(r => r.ring).map(r => ({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: r.ring } })) } });
     maps.moon.addLayer({ id: "regions", type: "line", source: "regions", paint: { "line-color": "#ffffff", "line-width": 1.5 } });
-    add(maps.moon, L.moon.filter(r => r.name !== "南極点").concat(L.moon.filter(r => r.name === "南極点")));
+    // 引いて見ているときは名前が重なるので、南極の目印だけにする。拡大すると着陸候補の名前を出す
+    const els = [];
+    const add2 = it => { const el = document.createElement("div"); el.className = "lbl";
+      el.innerHTML = it.name + (it.sub ? `<small>${it.sub}</small>` : "");
+      new maplibregl.Marker({ element: el, anchor: "left" }).setLngLat(it.lnglat).addTo(maps.moon); return el; };
+    for (const it of L.moon) els.push(add2(it));
+    const hint = add2({ name: "南極", sub: "拡大すると着陸候補の名前が出る", lnglat: [0, 0] });
+    const upd = () => { const near = maps.moon.getZoom() > BASE_Z() + Math.log2(BODIES.moon.ratio) * (mode === "real") + 2.6;
+      els.forEach(e => e.style.display = near ? "" : "none"); hint.style.display = near ? "none" : ""; };
+    maps.moon.on("zoom", upd); upd();
   });
   if (maps.mars) maps.mars.on("load", () => {
     maps.mars.addSource("route", { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: L.mars_route } } });

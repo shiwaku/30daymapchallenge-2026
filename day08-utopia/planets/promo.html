@@ -10,6 +10,8 @@
     font-family: "BIZ UDPGothic", "BIZ UDGothic", "Hiragino Sans", sans-serif; color: #eef2f8; }
   .map { position: absolute; inset: 0; opacity: 0; transition: opacity 1.2s ease; }
   .map.on { opacity: 1; }
+  .pname { position: absolute; z-index: 5; bottom: 56px; width: 33.33%; text-align: center; font-size: 34px; font-weight: 700; transition: opacity .8s; text-shadow: 0 1px 8px #000; }
+  .pname small { display: block; font-size: 22px; font-weight: 400; color: #9aa6bb; }
   .tag { position: absolute; left: 44px; top: 30px; font-size: 22px; color: #9aa6bb; z-index: 5; }
   #cap { position: absolute; left: 28px; top: 66px; z-index: 5; max-width: 780px; transition: opacity .6s;
     background: rgba(7,10,18,.62); padding: 14px 20px 18px; border-radius: 12px; backdrop-filter: blur(3px); }
@@ -60,7 +62,7 @@ const START = { earth: [138, 32], moon: [40, 10], mars: [100, 30] };
 for (const [id, b] of Object.entries(B)) {
   const sources = { dem: { type: "raster-dem", tiles: [b.dem], encoding: "terrarium", tileSize: 512, maxzoom: b.max } };
   const layers = [
-    { id: "space", type: "background", paint: { "background-color": "#070a12" } },
+    { id: "space", type: "background", paint: { "background-color": "rgba(0,0,0,0)" } },
     { id: "relief", type: "color-relief", source: "dem", paint: { "color-relief-color": b.relief } },
     { id: "shade", type: "hillshade", source: "dem", paint: { "hillshade-exaggeration": b.shade, "hillshade-shadow-color": "#000000" } },
   ];
@@ -103,13 +105,36 @@ function label(m, it, cls) {
   const marsLbl = {};
   for (const it of L.mars) marsLbl[it.name] = label(maps.mars, it);
   await Promise.all(Object.values(maps).map(idle));
-  show("earth");
-  await sleep(1500);
+  // 0. 3つを本当の大きさの比で並べる
+  const RATIO = { earth: 1, moon: 0.2727, mars: 0.532 };
+  const ZT = Math.log2((innerWidth / 3) / 2 / 81.5 * 0.8);
+  const order = ["earth", "moon", "mars"];
+  const names = [["地球", "半径 6,371km"], ["月", "1,737km（地球の0.27）"], ["火星", "3,390km（地球の0.53）"]];
+  const pn = [];
+  const Wd = innerWidth, PT = 150;
+  const pads = [{ left: 0, right: Wd * 2 / 3, top: PT, bottom: 0 }, { left: Wd / 3, right: Wd / 3, top: PT, bottom: 0 }, { left: Wd * 2 / 3, right: 0, top: PT, bottom: 0 }];
+  order.forEach((k, i) => {
+    document.getElementById(k).classList.add("on");
+    maps[k].jumpTo({ padding: pads[i], zoom: ZT + Math.log2(RATIO[k]) });
+    const d = document.createElement("div"); d.className = "pname"; d.style.left = (i * 33.333) + "%";
+    d.innerHTML = names[i][0] + `<small>${names[i][1]}</small>`; document.body.appendChild(d); pn.push(d);
+  });
+  document.getElementById("src").textContent = "出典）標高: Mapterhorn（地球）、NASA LRO LOLA（月）、MGS MOLA（火星）。3つとも同じ段彩（低いほど紫、高いほど白）";
+  await Promise.all(Object.values(maps).map(idle));
+  await sleep(800);
   document.body.classList.add("tour-start");
-
-  // 1. 地球
-  cap("住むならどこ？", "地球の次に住むなら、月か火星か<br>標高と観測データで「住めそうな所」を探す");
-  await spin(maps.earth, 6, 5500);
+  cap("住むならどこ？", "地球の次に住むなら、月か火星か<br>（大きさは本当の比）");
+  await Promise.all(order.map(k => spin(maps[k], 8, 6000)));
+  // 地球を広げる
+  pn.forEach(d => d.style.opacity = 0);
+  document.getElementById("moon").classList.remove("on");
+  document.getElementById("mars").classList.remove("on");
+  cap("住むならどこ？", "標高と観測データで「住めそうな所」を探す");
+  maps.earth.easeTo({ padding: { left: 0, right: 0, top: 0, bottom: 0 }, zoom: Z0, duration: 1600 });
+  await sleep(1700);
+  for (const k of ["moon", "mars"]) maps[k].jumpTo({ padding: { left: 0, right: 0, top: 0, bottom: 0 }, zoom: Z0 });
+  src(SRC.earth);
+  await spin(maps.earth, 6, 2500);
 
   // 2. 月
   show("moon");
