@@ -27,6 +27,10 @@
 
 - Mapterhorn
 
+## 候補（手元のデータ、2026-11-09 調べ）
+
+- 別案: usgs-earthquake-data-converter / jma-earthquake-data-converter の震源を H3 で集計
+
 ## 状況
 
 - 準備度: ○

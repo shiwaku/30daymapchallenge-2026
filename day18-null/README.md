@@ -27,6 +27,11 @@ OSM の道路のうち、名前（name）が入っていない道を描く
 
 - japan-basemap-tile-pipeline（OSM）
 
+## 候補（手元のデータ、2026-11-09 調べ）
+
+- sapporo-address-grid: 札幌の交差点にはほとんど名前がなく、住所（条・丁目）で呼ぶ。「名前のない道」と同じ話として補える
+- 別案: ndl-warp-geospatial-data-fetcher（配布元が消え、国立国会図書館の WARP にしか残っていない地理空間データ）
+
 ## 状況
 
 - 準備度: △

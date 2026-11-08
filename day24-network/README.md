@@ -27,6 +27,11 @@
 
 - 国土数値情報 道路（ksj-route-search-api）
 
+## 候補（手元のデータ、2026-11-09 調べ）
+
+- 別案: mlit-hokonavi（ほこナビDP の歩行空間ネットワーク、利用者の種類ごと）
+- 別案: japan-flight-shinkansen-3d（飛行機と新幹線の1日）
+
 ## 状況
 
 - 準備度: ○

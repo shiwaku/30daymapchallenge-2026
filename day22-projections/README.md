@@ -27,6 +27,11 @@
 
 - GBFS
 
+## 候補（手元のデータ、2026-11-09 調べ）
+
+- 日本のステーションは japan-bikeshare-station-data（ODPT の GBFS）にある
+- mapterhorn-geoid-viewer（楕円体・ジオイド）を投影法の話の前置きに使える
+
 ## 状況
 
 - 準備度: ○
