@@ -17,6 +17,8 @@
 
 ## 内容
 
+ビューワ: https://shiwaku.github.io/30daymapchallenge-2026/day08-utopia/planets/
+
 「ありうるかもしれない」住む場所を、地球の外に探す。地球・月・火星を MapLibre GL JS の地球儀で横に並べ、3つとも同じ配色の陰影段彩図（低いほど紫、高いほど白）で描いた。月と火星には「住めそうな所」を重ねた。
 
 - **月**: 南極の尾根。ほぼいつも日が当たる所（太陽光で電気を作れる）と、一度も日が当たらない永久影（氷がありうる）が数 km の距離で隣り合う。NASA が2024年10月に示したアルテミス計画の有人着陸の候補（9地域、外形が公開されている8地域）を重ねた
@@ -89,7 +91,7 @@ python -I -X utf8 scripts/moon/poster_moon.py data/moon moon/day08-moon.png 1 mo
 python -I -X utf8 scripts/mars/globe.py data/mars mars/day08-mars.png
 ```
 
-タイル（`planets/tiles/`、約2GB）は Git に入れず、PMTiles（`moon-dem`・`moon-ov`・`mars-dem`・`mars-ov`）にまとめて外に置く。ビューワは `planets/index.html` の `TILE_BASE` の場所から読む（`?tiles=URL` で差し替え、`?local` で手元の `planets/tiles/` を読む）。
+タイル（`planets/tiles/`、約2GB）は Git に入れず、PMTiles（`moon-dem`・`moon-ov`・`mars-dem`・`mars-ov`）にまとめて https://shi-works.com/pmtiles/30daymapchallenge-2026/day08/ （Cloudflare R2）に置き、ビューワは `https://tiles.shi-works.com/30daymapchallenge-2026/day08/{moon,mars}-{dem,ov}/{z}/{x}/{y}.png`（PMTiles から1タイルずつ返す Worker）で読む。1.6GB の火星の標高は Cloudflare のキャッシュに載らず、`pmtiles://` で直接読むと1回の読み取りに数秒〜30秒かかったため（`?tiles=URL` で差し替え、`?local` で手元の `planets/tiles/` を読む）。
 
 ## 投稿文
 
@@ -115,4 +117,4 @@ python -I -X utf8 scripts/mars/globe.py data/mars mars/day08-mars.png
 - [x] ビューワと動画
 - [x] 投稿（#30DayMapChallenge、2026-11-08、動画）
 - [x] タイルを PMTiles にまとめ、ビューワを PMTiles で読むように
-- [ ] PMTiles を外に置いてビューワを公開（R2 など）
+- [x] PMTiles を R2 に置いてビューワを公開
