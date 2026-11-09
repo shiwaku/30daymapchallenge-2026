@@ -121,7 +121,7 @@ python scripts/check_census.py
 python scripts/check_smod_did.py <DID> <N03.parquet>   # → data/check_smod_did.csv
 ```
 
-`ghsl_anim.py`・`ghsl_top100.py`・`smod_by_country.py` と GIF 2枚は、GHS-SMOD（都市・農村の区分）を試した下書き。投稿用の GIF は `python scripts/smod_8cities_gif.py`（data/ghsl/ に GHS-SMOD 1975〜2020 を置く）→ output/day09-smod-8cities.gif。
+`ghsl_anim.py`・`ghsl_top100.py`・`smod_by_country.py` と GIF 2枚は、GHS-SMOD（都市・農村の区分）を試した下書き。投稿用の GIF は `python scripts/smod_8cities_gif.py`（data/ghsl/ に GHS-SMOD 1975〜2020 を置く）→ output/day09-smod-8cities.gif。配布データのモルワイデ図法（ESRI:54009）のまま切ると経度0度から離れた都市（東京など）が斜めにゆがむので、都市ごとに中心を基準にした正距方位図法へ最近傍で移している。
 
 ## 投稿文
 

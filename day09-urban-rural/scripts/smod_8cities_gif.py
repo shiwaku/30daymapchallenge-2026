@@ -9,6 +9,9 @@ from pathlib import Path
 import json
 import numpy as np, rasterio
 from rasterio.windows import from_bounds
+from rasterio.warp import reproject, Resampling
+from rasterio.transform import from_origin
+from rasterio.crs import CRS
 from pyproj import Transformer
 from PIL import Image, ImageDraw, ImageFont
 
@@ -45,7 +48,15 @@ for yr in YEARS:
             dr.text((M, y0 + 4), title, font=FT(20, True), fill=SUB)
             for j, n in enumerate(names):
                 x, y = tr.transform(*pts[n])
-                a = r.read(1, window=from_bounds(x - HALF, y - HALF, x + HALF, y + HALF, r.transform), boundless=True, fill_value=10)
+                # モルワイデのまま切ると経度0度から離れた都市（東京など）が斜めにゆがむので、都市ごとに中心を基準にした正距方位図法へ移す（1km、最近傍）
+                win = from_bounds(x - 2 * HALF, y - 2 * HALF, x + 2 * HALF, y + 2 * HALF, r.transform)
+                src = r.read(1, window=win, boundless=True, fill_value=10)
+                lon, lat = pts[n]
+                a = np.full((2 * HALF // 1000,) * 2, 10, np.int32)
+                reproject(src, a, src_transform=r.window_transform(win), src_crs=r.crs,
+                          dst_transform=from_origin(-HALF, HALF, 1000, 1000),
+                          dst_crs=CRS.from_proj4(f"+proj=aeqd +lat_0={lat} +lon_0={lon} +datum=WGS84 +units=m"),
+                          resampling=Resampling.nearest)
                 a = np.clip(a, 0, 255).astype(np.uint8)
                 px, py = M + j * (T + G), y0 + ROWH
                 im.paste(Image.fromarray(lut[a]).resize((T, T), Image.NEAREST), (px, py))
@@ -61,7 +72,7 @@ for yr in YEARS:
         dr.text((lx + 28, ly + 8), t, font=FT(15), fill=SUB, anchor="lm")
         lx += 28 + int(dr.textlength(t, font=FT(15))) + 26
     dr.text((M, H - 64), "衛星で観測した年は1975・1990・2000・2014・2018年。ほかの年は GHSL が補間した推計。", font=FT(14), fill=MUTE)
-    dr.text((W - M, H - 34), "出典: GHSL（European Commission, JRC）GHS-SMOD R2023A（1kmマス、CC BY 4.0）を加工して作成／都市の点: Natural Earth　#30DayMapChallenge Day 9 Urban-rural",
+    dr.text((W - M, H - 34), "出典: GHSL（European Commission, JRC）GHS-SMOD R2023A（1kmマス、CC BY 4.0）を加工して作成（都市ごとに中心を基準にした正距方位図法）／都市の点: Natural Earth　#30DayMapChallenge Day 9 Urban-rural",
             font=FT(13), fill=MUTE, anchor="ra")
     frames.append(im)
 
