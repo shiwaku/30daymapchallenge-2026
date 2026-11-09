@@ -149,4 +149,4 @@ GIF（day09-smod-8cities.gif）を添付。
 - [x] データ準備
 - [x] 地図作成
 - [x] 画像・ビューア
-- [ ] 投稿（#30DayMapChallenge）
+- [x] 投稿（#30DayMapChallenge）
