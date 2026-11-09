@@ -13,9 +13,20 @@
 
 ## 地図のテーマ
 
-都市はどう広がったか（2000→2020）
+都市か農村か（1975→2020、投稿は GIF）／都市はどう広がったか（2000→2020、建物だけ）
 
 ## 内容
+
+### 投稿用の GIF（GHS-SMOD、8都市）
+
+8都市の中心から上下左右60km（120km四方）を、GHS-SMOD の1km マスごとの都市〜農村の段階で塗り、1975→2020年を5年ごとに動かした。上の段は SMOD の都市中心のマスが大きく増えた都市（東莞・ダッカ・上海・カイロ）、下の段はあまり変わらなかった都市（東京・ニューヨーク・ロンドン・ベルリン）。
+
+- 投稿用の GIF: [day09-smod-8cities.gif](day09-smod-8cities.gif)（`scripts/smod_8cities_gif.py`）
+- 97都市×12コマの下書きは分かりにくかったので、8都市に絞った。予測の年（2025・2030）は入れていない
+- SMOD は人口（GHS-POP）を使うので、先に人口集中地区（DID）と突き合わせた（下の「GHS-SMOD と人口集中地区（DID）の突き合わせ」）。言えるのは「ある年に、どこが都市でどこが農村か」まで。日本では広がりが DID より小さく出るので、どれだけ広がったかは言わない。大阪は SMOD ではほぼ変わらないが DID は +44% 広がっていたので、選ばなかった
+- 衛星で観測した年は1975・1990・2000・2014・2018年で、ほかの年は GHSL が補間した推計
+
+### 建物の広がり（GHS-BUILT-S、97都市）
 
 世界の人口上位の都市圏97について、中心から上下左右40km（80km四方）の建物を、同じ縮尺で並べた。2000年にあった建物を灰色、その後20年で増えた建物を橙で塗り、建物の面積の伸び率が大きい順に並べている。都市が田園を食べていく速さを比べる地図。
 
@@ -110,25 +121,27 @@ python scripts/check_census.py
 python scripts/check_smod_did.py <DID> <N03.parquet>   # → data/check_smod_did.csv
 ```
 
-`ghsl_anim.py`・`ghsl_top100.py`・`smod_by_country.py` と GIF 2枚は、GHS-SMOD（都市・農村の区分）を試した下書き。投稿には使っていない。
+`ghsl_anim.py`・`ghsl_top100.py`・`smod_by_country.py` と GIF 2枚は、GHS-SMOD（都市・農村の区分）を試した下書き。投稿用の GIF は `python scripts/smod_8cities_gif.py`（data/ghsl/ に GHS-SMOD 1975〜2020 を置く）→ output/day09-smod-8cities.gif。
 
 ## 投稿文
+
+GIF（day09-smod-8cities.gif）を添付。
 
 本文:
 
 ```text
 #30DayMapChallenge Day 9 - Urban-rural
-世界の大都市97の、2000→2020年に増えた建物を同じ縮尺で並べてみました🏙️
-📝建物の面積は中央値で+28%。中国16都市は+69%、インド10都市は+62%、アメリカ13都市は+12%、東京・大阪・横浜は+9〜10%。重慶は2.5倍
+世界の8都市を1kmマスごとに都市か農村かで塗り分けて、1975→2020年を動かしてみました🏙️🌾
+📝東莞・ダッカ・上海・カイロは農村だったところが都市に変わり、東京・ニューヨーク・ロンドン・ベルリンは1975年にはほぼ今の形
 #OpenData #Python
 ```
 
 リプライ:
 
 ```text
-出典）GHSL（European Commission, JRC）GHS-BUILT-S R2023A、Natural Earth を加工して作成
-人口（GHS-POP）は、大阪で国勢調査と増減の向きが逆だったので載せていません
-制作に生成AI（Claude Code）を使用（データの加工とコードの作成）
+出典）GHSL（European Commission, JRC）GHS-SMOD R2023A、Natural Earth を加工して作成
+区分は人口密度と建物から決めたもの。日本の人口集中地区（DID）と比べると範囲は合うが、広がりは小さく出る（東京のDIDは1975→2020年で+45%）。衛星の観測年以外は推計
+制作に生成AI（Claude Code）を使用
 ```
 
 ## 状況
