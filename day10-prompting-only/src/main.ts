@@ -77,7 +77,8 @@ const GINKGO_DATA = bin(ginkgoPos);
 
 // グロー（発光）: 大きさの違う薄い円を加算合成で重ね、外へ向かってなだらかに減る光にする。
 // 道路沿いに木が並ぶ所ほど光が重なって明るくなる。?glow=0 で消す、?glow=1.5 で強める
-const GLOW = Math.max(0, Number(params.get("glow") ?? 1));
+// 狭い画面では点が詰まって光が重なりすぎるので弱める
+const GLOW = Math.max(0, Number(params.get("glow") ?? 1)) * (NARROW ? 0.3 : 1);
 const ADDITIVE = {
   depthCompare: "always",
   blend: true,
@@ -158,9 +159,17 @@ const W = 300, H = 70;
 const px = (i: number) => (i / (days.length - 1)) * W;
 const py = (v: number) => H - 4 - (v / N) * (H - 8);
 const path = (key: "y" | "f") => days.map((d, i) => `${i ? "L" : "M"}${px(i).toFixed(1)},${py(d[key]).toFixed(1)}`).join("");
+// 線の色は、その日の地図のイチョウの色に合わせる（黄葉: 緑→黄、落葉: 黄→落ち葉色）
+const hex = (c: RGB) => "#" + c.map((v) => v.toString(16).padStart(2, "0")).join("");
+const stops = (color: (d: Day) => RGB) =>
+  days.map((d, i) => `<stop offset="${(i / (days.length - 1)).toFixed(4)}" stop-color="${hex(color(d))}"/>`).join("");
 chart.innerHTML = `
-  <path d="${path("y")}" fill="none" stroke="#ffd23f" stroke-width="2" vector-effect="non-scaling-stroke"/>
-  <path d="${path("f")}" fill="none" stroke="#c98a3b" stroke-width="2" vector-effect="non-scaling-stroke"/>
+  <defs>
+    <linearGradient id="gy" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="${W}" y2="0">${stops((d) => mix(GREEN, YELLOW, d.y / N))}</linearGradient>
+    <linearGradient id="gf" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="${W}" y2="0">${stops((d) => mix(YELLOW, FALLEN, d.f / N))}</linearGradient>
+  </defs>
+  <path d="${path("f")}" fill="none" stroke="url(#gf)" stroke-width="2" stroke-dasharray="4 3" vector-effect="non-scaling-stroke"/>
+  <path d="${path("y")}" fill="none" stroke="url(#gy)" stroke-width="2.5" vector-effect="non-scaling-stroke"/>
   <line id="cursor" y1="0" y2="${H}" stroke="#e8ecf1" stroke-opacity="0.6" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
 const cursor = chart.querySelector("#cursor")!;
 
