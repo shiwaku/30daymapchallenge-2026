@@ -28,5 +28,8 @@ for (const d of ["10-15", "11-20", "11-24", "11-30", "12-06", "12-15"]) {
 }
 await shot("date=11-28", "ui-11-28", desk);
 await shot(`date=11-28&road=${encodeURIComponent("青梅街道")}`, "ui-ome", desk, 3500);
+await shot(`date=11-24&road=${encodeURIComponent("青梅街道")}`, "3d-ome-1124", desk, 4500);
+await shot(`date=11-30&road=${encodeURIComponent("目黒通り")}`, "3d-meguro-1130", desk, 4500);
+await shot(`date=12-06&road=${encodeURIComponent("目黒通り")}`, "3d-meguro-1206", desk, 4500);
 await shot("date=11-24", "mobile", mobile);
 await browser.close();
