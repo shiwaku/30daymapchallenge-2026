@@ -39,7 +39,7 @@ const BASE = params.get("base") !== "0"; // ?base=0 で背景地図を消す
 const LABELS = params.get("labels") !== "0"; // ?labels=0 で通りの名前を消す
 const LEAF_FX = params.get("leaves") !== "0"; // ?leaves=0 で舞い落ちる粒を消す
 // 3D の木の大きさの倍率（見やすさのための誇張）。?scale=1 で実寸（樹高・枝張のデータそのまま）
-const TREE_SCALE = Math.max(0.5, Number(params.get("scale") ?? 1.8));
+const TREE_SCALE = Math.max(0.5, Number(params.get("scale") ?? 2.5));
 // 道路は灰色の「ほかの街路樹」の点と見分けられるよう、青みの暗い色にする
 const ROAD = "#1c2633";
 const BASE_LAYERS: maplibregl.LayerSpecification[] = [
