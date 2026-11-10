@@ -18,6 +18,7 @@ const BG = "#070a10";
 const ARR: [number, number, number] = [90, 209, 255];
 const DEP: [number, number, number] = [255, 176, 58];
 const JONAN_C: [number, number, number] = [255, 111, 174];
+const RUNWAY: [number, number, number] = [168, 178, 196]; // 滑走路の色（航跡の水色・橙とぶつからない灰青）
 
 type Mode = "north" | "south" | "south-city" | null;
 type Hour = { h: number; mode: Mode; wd: string | null; deg: number | null; ws: number | null };
@@ -126,12 +127,6 @@ const TRAIL = 1500; // 光の尾の長さ（秒）。長めにして、同じ所
 function layers(t: number) {
   // 城南島の上を通った直後は、輪を広げて「音」を見せる
   const recent = PASSES.filter((p) => p.s <= t && t - p.s < 10);
-  // その時間に使われている滑走路（航跡から推定）。着陸が多ければ水色、離陸が多ければ橙
-  const use = rw.use[Math.min(23, Math.floor(t / 3600))];
-  const active = rw.runways
-    .map((r) => ({ ...r, u: use[r.id] }))
-    .filter((r) => r.u.arr + r.u.dep >= 3)
-    .map((r) => ({ ...r, color: (r.u.arr >= r.u.dep ? ARR : DEP) as [number, number, number] }));
   return [
     // 羽田空港の建物（PLATEAU）
     new Tile3DLayer({
@@ -143,54 +138,35 @@ function layers(t: number) {
       _getMeshColor: () => [74, 86, 108],
       loadOptions: { tileset: { maximumScreenSpaceError: 12 } },
     }),
-    // 滑走路（いつも白く光らせる）
-    new PathLayer<Runway>({
-      id: "runway-glow",
-      data: rw.runways,
-      getPath: (r) => r.path,
-      getColor: [230, 236, 245, 50],
-      widthUnits: "meters",
-      getWidth: 260,
-      widthMinPixels: 12,
-      capRounded: true,
-      parameters: ADDITIVE,
-    }),
+    // 滑走路（1色、光らせない。航跡より下に描く）
     new PathLayer<Runway>({
       id: "runway",
       data: rw.runways,
       getPath: (r) => r.path,
-      getColor: [235, 240, 248, 235],
+      getColor: [...RUNWAY, 210],
       widthUnits: "meters",
       getWidth: 60,
       widthMinPixels: 3.5,
     }),
-    // 使われている滑走路を、着陸・離陸の色で光らせる
-    new PathLayer<Runway & { color: [number, number, number] }>({
-      id: "runway-active",
-      data: active,
-      getPath: (r) => r.path,
-      getColor: (r) => [...r.color, 150],
-      widthUnits: "meters",
-      getWidth: 420,
-      widthMinPixels: 18,
-      capRounded: true,
-      parameters: ADDITIVE,
-      updateTriggers: { getColor: [Math.floor(t / 3600)] },
-    }),
+    // 滑走路の名前（「C滑走路」と番号）
     new TextLayer<Runway>({
       id: "runway-label",
       data: rw.runways,
       getPosition: (r) => r.c,
-      getText: (r) => r.id,
-      getColor: [255, 255, 255, 235],
-      getSize: 13,
+      getText: (r) => `${r.id}滑走路
+${r.ref}`,
+      getColor: [236, 240, 246, 245],
+      getSize: 14,
+      lineHeight: 1.1,
+      getTextAnchor: "start",
+      getAlignmentBaseline: "center",
+      getPixelOffset: [12, 0],
       fontFamily: FONT,
       fontWeight: 700,
-      characterSet: "ABCD",
+      characterSet: "ABCD滑走路0123456789LR/ ",
       fontSettings: { sdf: true, buffer: 6 },
-      outlineWidth: 4,
-      outlineColor: [5, 7, 10, 230],
-      getPixelOffset: [14, 0],
+      outlineWidth: 5,
+      outlineColor: [5, 7, 10, 240],
     }),
     // 地面に落ちる影（どこの上を飛んでいるかがわかるように）
     new TripsLayer<Track>({
