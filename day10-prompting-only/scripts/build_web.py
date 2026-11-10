@@ -9,6 +9,8 @@
   trees.bin   点の並び。先頭にイチョウ、続いてその他。Float32 の [経度, 緯度] を交互に並べる
   meta.json   イチョウの本数・全体の本数・範囲
   phenology.json  日ごとの「その日までに黄葉（落葉）した年の数」（東京、1991〜2020年）
+  ginkgo_size.bin  イチョウの樹高と枝張（m）。trees.bin のイチョウと同じ並びで Float32 の [樹高, 枝張] を交互に並べる
+                  枝張が空の木（17本）は、イチョウの枝張の中央値で埋める
   roads.json  通称道路名ごとのイチョウの本数と、イチョウがいちばん密に並ぶ地点（半径 RADIUS m に入る本数が最多の木）
 
 使い方: python -I day10-prompting-only/scripts/build_web.py
@@ -49,12 +51,20 @@ def read_trees():
             if name:
                 all_by_road[name] += 1
             if row["樹種"] == SPECIES:
-                ginkgo.append((lon, lat))
+                ginkgo.append((lon, lat, num(row["樹高(m)"]), num(row["枝張(m)"])))
                 if name:
                     by_road[name].append((lon, lat, row["行政区"]))
             else:
                 others.append((lon, lat))
     return ginkgo, others, by_road, all_by_road
+
+
+def num(v):
+    try:
+        x = float(v)
+        return x if x > 0 else None
+    except (TypeError, ValueError):
+        return None
 
 
 def densest(pts):
@@ -109,10 +119,18 @@ def read_jma(name):
 def main():
     WEB.mkdir(exist_ok=True)
     ginkgo, others, by_road, all_by_road = read_trees()
-    pts = ginkgo + others
+    pts = [(g[0], g[1]) for g in ginkgo] + others
     with open(WEB / "trees.bin", "wb") as f:
         for lon, lat in pts:
             f.write(struct.pack("<ff", lon, lat))
+    crowns = sorted(g[3] for g in ginkgo if g[3])
+    crown_med = crowns[len(crowns) // 2]
+    hs = sorted(g[2] for g in ginkgo if g[2])
+    h_med = hs[len(hs) // 2]
+    with open(WEB / "ginkgo_size.bin", "wb") as f:
+        for g in ginkgo:
+            f.write(struct.pack("<ff", g[2] or h_med, g[3] or crown_med))
+    print(f"樹高の中央値 {h_med} m、枝張の中央値 {crown_med} m（空は中央値で埋める: 樹高 {sum(1 for g in ginkgo if not g[2])} 本、枝張 {sum(1 for g in ginkgo if not g[3])} 本）")
     lons = [p[0] for p in pts]
     lats = [p[1] for p in pts]
     meta = {

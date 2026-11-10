@@ -3,6 +3,8 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import { ScatterplotLayer, TextLayer } from "@deck.gl/layers";
+import { SimpleMeshLayer } from "@deck.gl/mesh-layers";
+import { CROWN_BASE, CROWN_MESH, TRUNK_MESH, hash } from "./tree3d";
 import { Protocol } from "pmtiles";
 import "./style.css";
 
@@ -35,6 +37,7 @@ const NARROW = innerWidth <= 600;
 const R = NARROW ? 0.55 : 1; // 狭い画面では点を小さくする
 const BASE = params.get("base") !== "0"; // ?base=0 で背景地図を消す
 const LABELS = params.get("labels") !== "0"; // ?labels=0 で通りの名前を消す
+const LEAF_FX = params.get("leaves") !== "0"; // ?leaves=0 で舞い落ちる粒を消す
 // 道路は灰色の「ほかの街路樹」の点と見分けられるよう、青みの暗い色にする
 const ROAD = "#1c2633";
 const BASE_LAYERS: maplibregl.LayerSpecification[] = [
@@ -73,12 +76,15 @@ const BASE_LAYERS: maplibregl.LayerSpecification[] = [
 ];
 if (SHOT) document.body.classList.add("shot");
 
-const [meta, pheno, buf, roadData] = await Promise.all([
+const [meta, pheno, buf, roadData, sizeBuf] = await Promise.all([
   fetch(DATA + "meta.json").then((r) => r.json() as Promise<Meta>),
   fetch(DATA + "phenology.json").then((r) => r.json() as Promise<Pheno>),
   fetch(DATA + "trees.bin").then((r) => r.arrayBuffer()),
   fetch(DATA + "roads.json").then((r) => r.json() as Promise<{ radius: number; roads: Road[] }>),
+  fetch(DATA + "ginkgo_size.bin").then((r) => r.arrayBuffer()),
 ]);
+// イチョウ1本ずつの [樹高, 枝張]（m）
+const SIZE = new Float32Array(sizeBuf);
 const ROADS = roadData.roads;
 const pos = new Float32Array(buf);
 const ginkgoPos = pos.subarray(0, meta.ginkgo * 2);
@@ -92,6 +98,7 @@ const map = new maplibregl.Map({
   bounds: meta.bounds,
   fitBoundsOptions: { padding: PAD },
   maxZoom: 18,
+  maxPitch: 72,
   attributionControl: false,
   canvasContextAttributes: { preserveDrawingBuffer: SHOT },
   style: {
@@ -103,7 +110,7 @@ const map = new maplibregl.Map({
     ],
   },
 });
-map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");
 
 // deck.gl 9.4 の interleaved は MapLibre 6 と合わないので、地図の上に重ねる。
 // 通りの名前も deck.gl の TextLayer で、光る点の上に描く
@@ -186,6 +193,65 @@ function placeLabels(): Label[] {
   return out;
 }
 
+// 3D の木: ズーム 13.5〜14.5 で点から木へ切り替える。木は画面に入っているものだけ描く
+const Z3 = 13.5;
+const k3d = () => Math.min(1, Math.max(0, map.getZoom() - Z3));
+let visibleTrees: number[] = [];
+let visibleKey = "";
+function updateVisible() {
+  const b = map.getBounds();
+  const key = `${b.toArray().flat().map((v) => v.toFixed(4)).join(",")}`;
+  if (key === visibleKey) return;
+  visibleKey = key;
+  // 斜めに見ると奥まで入るので、少し広めに取る
+  const w = b.getWest(), e = b.getEast(), s = b.getSouth(), n = b.getNorth();
+  const mx = (e - w) * 0.15, my = (n - s) * 0.15;
+  const out: number[] = [];
+  for (let i = 0; i < meta.ginkgo; i++) {
+    const x = ginkgoPos[i * 2], y = ginkgoPos[i * 2 + 1];
+    if (x > w - mx && x < e + mx && y > s - my && y < n + my) out.push(i);
+  }
+  visibleTrees = out.slice(0, 6000);
+}
+// その日の落葉の進み方（落葉した年の割合の、1日あたりの増え方。最大を 1 にそろえる）
+const fallRate = days.map((_, i) => {
+  const a = days[Math.max(0, i - 1)].f, b = days[Math.min(days.length - 1, i + 1)].f;
+  return (b - a) / 2;
+});
+const FALL_MAX = Math.max(...fallRate);
+const rateAt = (t: number) => {
+  const i = Math.floor(t), j = Math.min(days.length - 1, i + 1), k = t - i;
+  return (fallRate[i] * (1 - k) + fallRate[j] * k) / FALL_MAX;
+};
+// 舞い落ちる光の粒（演出）。1本あたり最大 LEAVES 粒、落葉の進み方に合わせて数を増やす
+const LEAVES = 5;
+let leafPos = new Float32Array(0);
+let leafCount = 0;
+function updateLeaves(rate: number, now: number) {
+  const need = visibleTrees.length * LEAVES * 3;
+  if (leafPos.length < need) leafPos = new Float32Array(need);
+  let n = 0;
+  for (const i of visibleTrees) {
+    const h = SIZE[i * 2], wd = SIZE[i * 2 + 1];
+    const lon = ginkgoPos[i * 2], lat = ginkgoPos[i * 2 + 1];
+    for (let k = 0; k < LEAVES; k++) {
+      if (hash(i, k) > rate) continue;
+      const speed = 0.12 + 0.1 * hash(i, k + 7); // 1秒に落ちる割合
+      const p = (now * speed + hash(i, k + 13)) % 1;
+      const ang = hash(i, k + 21) * Math.PI * 2;
+      const rr = wd * 0.5 * (0.3 + 0.9 * p) * hash(i, k + 31);
+      const sway = Math.sin(now * 1.7 + k * 2.1 + i) * 0.6 * p;
+      const dx = (Math.cos(ang) * rr + sway) / (111320 * Math.cos((lat * Math.PI) / 180));
+      const dy = (Math.sin(ang) * rr) / 110540;
+      leafPos[n * 3] = lon + dx;
+      leafPos[n * 3 + 1] = lat + dy;
+      leafPos[n * 3 + 2] = h * (CROWN_BASE + 0.6 * (1 - CROWN_BASE)) * (1 - p);
+      n++;
+    }
+  }
+  leafCount = n;
+}
+
 // ズームすると点を大きくする（近づいて通りを見るとき、木が1本ずつ見えるように）
 const zoomK = () => Math.min(3.5, Math.max(1, 2 ** ((map.getZoom() - 11) * 0.55)));
 
@@ -199,6 +265,14 @@ function layers(t: number) {
   // 光は黄葉が進むほど強く、散るほど弱く小さくする
   const glow = GLOW * alive * (0.08 + 0.92 * y * y);
   const size = 0.3 + 0.7 * alive;
+  const k3 = k3d();
+  if (k3 > 0) updateVisible();
+  const rate = k3 > 0 && t < days.length - 1 ? rateAt(t) : 0;
+  if (rate > 0) updateLeaves(rate, performance.now() / 1000);
+  // 樹冠は黄葉が進むほど明るく（自分で光るように）、散るほど小さくして、最後は幹だけ残す
+  const lit = 1 + 0.12 * y * alive;
+  const crownColor = c.map((v) => Math.min(255, Math.round(v * lit))) as RGB;
+  const crownK = 0.12 + 0.88 * alive;
   return [
     new ScatterplotLayer({
       id: "other",
@@ -215,7 +289,7 @@ function layers(t: number) {
           id: `ginkgo-glow-${i}`,
           data: GINKGO_DATA,
           visible: glow > 0,
-          getFillColor: [...c, Math.min(255, Math.round(h.a * glow))],
+          getFillColor: [...c, Math.min(255, Math.round(h.a * glow * (1 - 0.35 * k3)))],
           radiusUnits: "pixels",
           getRadius: R * h.r * size * zk,
           parameters: ADDITIVE,
@@ -225,10 +299,51 @@ function layers(t: number) {
     new ScatterplotLayer({
       id: "ginkgo",
       data: GINKGO_DATA,
-      getFillColor: [...c, Math.round(60 + 175 * alive)],
+      getFillColor: [...c, Math.round((60 + 175 * alive) * (1 - k3))],
+      visible: k3 < 1,
       radiusUnits: "pixels",
       getRadius: R * 1.7 * (0.35 + 0.65 * alive) * zk,
-      updateTriggers: { getFillColor: [t], getRadius: [t, zk] },
+      updateTriggers: { getFillColor: [t, k3], getRadius: [t, zk] },
+    }),
+    // 3D の幹（高さは樹冠の始まるところまで）
+    new SimpleMeshLayer<number>({
+      id: "trunk",
+      data: visibleTrees,
+      visible: k3 > 0,
+      opacity: k3,
+      mesh: TRUNK_MESH,
+      getPosition: (i) => [ginkgoPos[i * 2], ginkgoPos[i * 2 + 1], 0],
+      getScale: (i) => [0.22, 0.22, SIZE[i * 2] * CROWN_BASE + 0.4],
+      getColor: [92, 78, 62],
+      material: { ambient: 0.6, diffuse: 0.5, shininess: 0, specularColor: [0, 0, 0] },
+    }),
+    // 3D の樹冠（大きさは樹高・枝張のデータ、色は過去30年の割合）
+    new SimpleMeshLayer<number>({
+      id: "crown",
+      data: visibleTrees,
+      visible: k3 > 0,
+      opacity: k3,
+      mesh: CROWN_MESH,
+      getPosition: (i) => [ginkgoPos[i * 2], ginkgoPos[i * 2 + 1], SIZE[i * 2] * CROWN_BASE],
+      getScale: (i) => {
+        const w = SIZE[i * 2 + 1] * crownK, hh = SIZE[i * 2] * (1 - CROWN_BASE) * crownK;
+        return [w, w, hh];
+      },
+      getColor: crownColor,
+      material: { ambient: 0.5, diffuse: 0.55, shininess: 0, specularColor: [0, 0, 0] },
+      updateTriggers: { getScale: [crownK] },
+    }),
+    // 舞い落ちる光の粒（演出。粒の数だけが「落葉の進み方」に合わせて変わる）
+    new ScatterplotLayer({
+      id: "leaves",
+      data: { length: leafCount, attributes: { getPosition: { value: leafPos.subarray(0, leafCount * 3), size: 3 } } },
+      visible: rate > 0 && LEAF_FX,
+      getFillColor: [...mix(YELLOW, FALLEN, 0.25 + 0.5 * f), 210],
+      radiusUnits: "pixels",
+      getRadius: 2.2 + zk * 0.6,
+      billboard: true,
+      parameters: ADDITIVE,
+      updateTriggers: { getFillColor: [t] },
     }),
     // 選んだ通りの、イチョウがいちばん密に並ぶ地点（半径 roadData.radius m の輪）
     new ScatterplotLayer<Road>({
@@ -239,9 +354,11 @@ function layers(t: number) {
       getRadius: roadData.radius,
       stroked: true,
       filled: false,
-      getLineColor: [244, 241, 232, 210],
+      // 斜めから見ると輪が画面いっぱいに広がるので、薄くする
+      getLineColor: [244, 241, 232, map.getPitch() > 20 ? 70 : 210],
       lineWidthUnits: "pixels",
       getLineWidth: 1.3,
+      updateTriggers: { getLineColor: [map.getPitch() > 20] },
     }),
     // 通りの名前。本数の多い通りから順に置き、ほかの名前と重なるときは反対側へ、それでも重なれば出さない
     new TextLayer<Label>({
@@ -340,14 +457,15 @@ function select(i: number) {
   const info = $("road-info");
   if (i < 0) {
     info.innerHTML = "";
-    map.fitBounds(meta.bounds, { padding: PAD, duration: 1200 });
+    map.fitBounds(meta.bounds, { padding: PAD, duration: 1400, pitch: 0, bearing: 0 });
     return;
   }
   const r = ROADS[i];
   info.innerHTML =
     `<b>${r.name}</b>: 都道の街路樹 ${Math.round(r.n / r.share).toLocaleString("ja-JP")}本のうち <b>${Math.round(r.share * 100)}%</b> がイチョウ。` +
     `輪の中（${r.spotWard}、半径${roadData.radius}m）に ${r.near}本が並ぶ`;
-  map.flyTo({ center: r.spot, zoom: 15, padding: PAD, duration: 1600 });
+  // 斜めから見下ろして、3D の並木を見せる
+  map.flyTo({ center: r.spot, zoom: 17.3, pitch: 64, bearing: -25, padding: PAD, duration: 2600 });
 }
 list.addEventListener("click", (e) => {
   const b = (e.target as HTMLElement).closest("button");
@@ -391,6 +509,19 @@ slider.addEventListener("input", () => {
 });
 
 // 再生していないときは、ズームに合わせて点の大きさを描き直す
+// 3D の木を見ているあいだは、止めていても粒が舞い続けるように描き直す
+function idleLoop() {
+  if (!playing && LEAF_FX && k3d() > 0 && rateAt(t) > 0) render();
+  requestAnimationFrame(idleLoop);
+}
+requestAnimationFrame(idleLoop);
+
+// 斜めから見る／真上から見る
+$("tilt").addEventListener("click", () => {
+  const flat = map.getPitch() < 5;
+  map.easeTo({ pitch: flat ? 60 : 0, bearing: flat ? -20 : 0, zoom: flat ? Math.max(map.getZoom(), 15.5) : map.getZoom(), duration: 1200 });
+});
+
 map.on("move", () => {
   if (!playing) render();
 });
