@@ -21,7 +21,7 @@ async function shot(query, file, size) {
 
 const desk = { width: 1920, height: 1080 };
 for (const d of ["10-15", "11-14", "11-20", "11-24", "11-30", "12-06", "12-15"]) {
-  await shot(`date=${d}`, `output/web/${d}-v6.png`, desk);
+  await shot(`date=${d}`, `output/web/${d}-v9.png`, desk);
 }
-await shot("date=11-24", "output/web/mobile-v6.png", { width: 390, height: 844 });
+await shot("date=11-24", "output/web/mobile-v9.png", { width: 390, height: 844 });
 await browser.close();
