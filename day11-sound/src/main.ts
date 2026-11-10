@@ -38,7 +38,7 @@ const NARROW = innerWidth <= 600;
 // 高さの誇張（見やすさのため）。?z=1 で実寸
 const ZX = Math.max(0.5, Number(params.get("z") ?? 2.5));
 
-const [buf, tmeta, day, jonan, year, rw, windData] = await Promise.all([
+const [buf, tmeta, day, jonan, year, rw, windData, loud] = await Promise.all([
   fetch(DATA + "tracks.bin").then((r) => r.arrayBuffer()),
   fetch(DATA + "tracks.json").then((r) => r.json() as Promise<{ day: string; haneda: [number, number]; tracks: TrackMeta[] }>),
   fetch(DATA + "day.json").then((r) => r.json() as Promise<{ day: string; hours: Hour[] }>),
@@ -46,6 +46,7 @@ const [buf, tmeta, day, jonan, year, rw, windData] = await Promise.all([
   fetch(DATA + "year.json").then((r) => r.json() as Promise<{ fy: number; months: Month[] }>),
   fetch(DATA + "runways.json").then((r) => r.json() as Promise<{ runways: Runway[]; use: Use[] }>),
   fetch(DATA + "wind.json").then((r) => r.json() as Promise<{ day: string; stations: Station[] }>),
+  fetch(DATA + "loud.json").then((r) => r.json() as Promise<{ step: number; lv: number[] }>),
 ]);
 // PLATEAU 大田区の建物（2025年度、LOD2、テクスチャなし）。羽田空港のターミナルなどを含む
 const PLATEAU_OTA =
@@ -291,18 +292,18 @@ ${r.ref}`,
       jointRounded: true,
       parameters: ADDITIVE,
     }),
-    // 城南島の上の「音が鳴る範囲」（半径500m、高度1,500ft）
-    new ColumnLayer<{ p: [number, number] }>({
-      id: "jonan-zone",
-      data: [{ p: JONAN }],
-      getPosition: (d) => d.p,
-      radius: jonan.r,
-      diskResolution: 48,
-      extruded: true,
-      getElevation: jonan.ft * 0.3048 * ZX,
-      getFillColor: [...JONAN_C, recent.length ? 120 : 55],
-      updateTriggers: { getFillColor: [recent.length > 0] },
-      parameters: ADDITIVE,
+    // 空港の上の風の矢印（羽田の風。長さは風速に比例）
+    new PathLayer<{ p: [number, number][] }>({
+      id: "wind-arrow",
+      data: windArrow(t),
+      getPath: (d) => d.p,
+      getColor: [240, 244, 250, 225],
+      widthUnits: "meters",
+      getWidth: 90,
+      widthMinPixels: 3,
+      capRounded: true,
+      jointRounded: true,
+      updateTriggers: { getPath: [Math.round(t / 60)] },
     }),
     new ScatterplotLayer<Pass>({
       id: "jonan-pulse",
@@ -337,6 +338,34 @@ ${r.ref}`,
       billboard: true,
     }),
   ];
+}
+
+// 羽田の風（1時間ごと）を時間で滑らかにつなぐ。返すのは [流れる向き（度、北から時計回り）, 風速]
+function hanedaWind(t: number): [number, number] {
+  const hf = Math.min(23, Math.max(0, t / 3600 - 0.5));
+  const h0 = Math.floor(hf), h1 = Math.min(23, h0 + 1), k = hf - h0;
+  const uv = (h: number) => {
+    const x = day.hours[h];
+    if (x.deg === null || x.ws === null) return [0, 0];
+    const r = ((x.deg + 180) * Math.PI) / 180;
+    return [x.ws * Math.sin(r), x.ws * Math.cos(r)];
+  };
+  const a = uv(h0), b = uv(h1);
+  const u = a[0] * (1 - k) + b[0] * k, v = a[1] * (1 - k) + b[1] * k;
+  return [((Math.atan2(u, v) * 180) / Math.PI + 360) % 360, Math.hypot(u, v)];
+}
+function windArrow(t: number) {
+  const [dir, ws] = hanedaWind(t);
+  if (ws < 0.3) return [];
+  const L = 900 + ws * 420; // m
+  const r = (dir * Math.PI) / 180;
+  const cx = 111320 * Math.cos((HANEDA[1] * Math.PI) / 180), cy = 110540;
+  const pt = (along: number, side: number): [number, number] => [
+    HANEDA[0] + (Math.sin(r) * along + Math.cos(r) * side) / cx,
+    HANEDA[1] + (Math.cos(r) * along - Math.sin(r) * side) / cy,
+  ];
+  const head = Math.min(700, L * 0.32);
+  return [{ p: [pt(-L / 2, 0), pt(L / 2, 0)] }, { p: [pt(L / 2 - head, -head * 0.6), pt(L / 2, 0), pt(L / 2 - head, head * 0.6)] }];
 }
 
 // パネル
@@ -396,21 +425,85 @@ const cursor = tl.querySelector("#tl-cursor")!;
     .join("");
 }
 
-// 音（ブラウザで聞くとき）: 城南島の上を機体が通るたびに鳴らす。低く飛ぶほど低い音
+// 音（ブラウザで聞くとき）。どちらもデータを音に置き換えたもので、実際の音ではない
+// 風の音: 羽田の風速で大きさと高さを変える。飛行機の音: 城南島で聞こえる強さ（loud.json）で大きさを変える
 let audio: AudioContext | null = null;
-function ping(alt: number) {
+let windGain: GainNode, windFilter: BiquadFilterNode, planeGain: GainNode, planeFilter: BiquadFilterNode;
+function startAudio() {
+  const ctx = new AudioContext();
+  const noise = (seconds: number) => {
+    const b = ctx.createBuffer(1, ctx.sampleRate * seconds, ctx.sampleRate);
+    const d = b.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < d.length; i++) {
+      // 少し低めの雑音（ブラウンノイズ寄り）
+      last = (last + 0.04 * (Math.random() * 2 - 1)) / 1.04;
+      d[i] = last * 3.5;
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = b;
+    src.loop = true;
+    return src;
+  };
+  const w = noise(4);
+  windFilter = ctx.createBiquadFilter();
+  windFilter.type = "bandpass";
+  windFilter.Q.value = 0.7;
+  windGain = ctx.createGain();
+  windGain.gain.value = 0;
+  w.connect(windFilter).connect(windGain).connect(ctx.destination);
+  w.start();
+  const p = noise(3);
+  planeFilter = ctx.createBiquadFilter();
+  planeFilter.type = "lowpass";
+  planeGain = ctx.createGain();
+  planeGain.gain.value = 0;
+  p.connect(planeFilter).connect(planeGain).connect(ctx.destination);
+  p.start();
+  audio = ctx;
+}
+function loudAt(t: number) {
+  const i = t / loud.step;
+  const a = Math.floor(i), k = i - a;
+  return (loud.lv[a] ?? 0) * (1 - k) + (loud.lv[a + 1] ?? 0) * k;
+}
+function updateAudio(t: number) {
   if (!audio) return;
-  const o = audio.createOscillator();
-  const g = audio.createGain();
-  o.type = "sine";
-  o.frequency.value = 180 + (alt / 457) * 520;
   const now = audio.currentTime;
-  g.gain.setValueAtTime(0, now);
-  g.gain.linearRampToValueAtTime(0.18, now + 0.02);
-  g.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
-  o.connect(g).connect(audio.destination);
-  o.start(now);
-  o.stop(now + 1.3);
+  const ws = hanedaWind(t)[1];
+  windGain.gain.setTargetAtTime(Math.min(0.5, 0.025 * ws ** 1.4), now, 0.3);
+  windFilter.frequency.setTargetAtTime(300 + ws * 90, now, 0.3);
+  const lv = loudAt(t);
+  planeGain.gain.setTargetAtTime(lv * 0.9, now, 0.08);
+  planeFilter.frequency.setTargetAtTime(120 + lv * 900, now, 0.08);
+}
+
+// 運用が切り替わる時刻（1時間ごとの推定で、前の時間と運用が変わった時間の始まり）
+const SWITCHES: { s: number; from: string; to: string }[] = [];
+{
+  let prev: Mode = null;
+  for (const hr of day.hours) {
+    if (hr.mode && prev && hr.mode !== prev) SWITCHES.push({ s: hr.h * 3600, from: prev, to: hr.mode });
+    if (hr.mode) prev = hr.mode;
+  }
+}
+const SWITCH_TEXT: Record<string, string> = {
+  "north>south": "風が南に変わり、南風運用へ",
+  "south>south-city": "15時台、都心側からの着陸に切り替え",
+  "south-city>south": "18時台、いつもの南風運用に戻る",
+  "south>north": "風が北に変わり、北風運用へ",
+};
+// 再生の速さ: 切り替わりの前後 SLOW_W 秒はゆっくり、それ以外は速く
+const SLOW_W = 1800;
+function rate(t: number) {
+  return SWITCHES.some((x) => Math.abs(t - x.s) < SLOW_W) ? 0.28 : 1.6;
+}
+const banner = $("banner");
+let bannerUntil = 0;
+function showSwitch(x: { from: string; to: string }) {
+  banner.innerHTML = `<span class="${x.from}">${MODE_NAME[x.from]}</span> → <span class="${x.to}">${MODE_NAME[x.to]}</span><div>${SWITCH_TEXT[`${x.from}>${x.to}`] ?? ""}</div>`;
+  banner.classList.add("on");
+  bannerUntil = performance.now() + 4500;
 }
 
 let t = 6 * 3600;
@@ -424,6 +517,11 @@ function render() {
   overlay.setProps({ layers: layers(t) });
   panel(t);
   slider.value = String(t);
+  updateAudio(t);
+  if (bannerUntil && performance.now() > bannerUntil) {
+    banner.classList.remove("on");
+    bannerUntil = 0;
+  }
 }
 
 let playing = false;
@@ -435,8 +533,8 @@ function tick(now: number) {
   const dt = last ? (now - last) / 1000 : 0;
   last = now;
   const prev = t;
-  t = Math.min(86400, t + dt * Number(speed.value));
-  for (const p of PASSES) if (p.s > prev && p.s <= t) ping(p.alt);
+  t = Math.min(86400, t + dt * Number(speed.value) * rate(t));
+  for (const x of SWITCHES) if (x.s > prev && x.s <= t) showSwitch(x);
   if (t >= 86400) setPlaying(false);
   render();
   requestAnimationFrame(tick);
@@ -447,7 +545,7 @@ function setPlaying(on: boolean) {
   if (on) {
     if (!audio && !SHOT) {
       try {
-        audio = new AudioContext();
+        startAudio();
       } catch {
         audio = null;
       }
@@ -471,9 +569,44 @@ function windLoop(now: number) {
   requestAnimationFrame(windLoop);
 }
 
+// 録画用ツアー（?shot&tour）: 7:00 から 19:30 まで、切り替わりの前後をゆっくり再生する。
+// 音を後から作るため、再生した時刻の記録（ページの時刻 ms, 地図の時刻 s）を window.__tlog に残す
+async function tour() {
+  t = 7 * 3600;
+  render();
+  await new Promise((r) => setTimeout(r, 1500));
+  const w = window as unknown as { __tlog: [number, number][]; __t0: number };
+  w.__tlog = [];
+  w.__t0 = performance.now();
+  document.body.classList.add("tour-start");
+  const END = 19.5 * 3600;
+  map.easeTo({ bearing: cam[4] + 25, duration: 60000, easing: (x) => x, essential: true });
+  await new Promise<void>((resolve) => {
+    let lastT = 0;
+    const step = (now: number) => {
+      const dt = lastT ? (now - lastT) / 1000 : 0;
+      lastT = now;
+      const prev = t;
+      t = Math.min(END, t + dt * 1200 * rate(t));
+      for (const x of SWITCHES) if (x.s > prev && x.s <= t) showSwitch(x);
+      w.__tlog.push([now - w.__t0, t]);
+      render();
+      if (t < END) requestAnimationFrame(step);
+      else resolve();
+    };
+    requestAnimationFrame(step);
+  });
+  await new Promise((r) => setTimeout(r, 1500));
+  w.__tlog.push([performance.now() - w.__t0, t]);
+  document.body.classList.add("tour-done");
+}
+
 map.on("load", () => {
   requestAnimationFrame(windLoop);
   render();
-  map.once("idle", () => document.body.classList.add("ready"));
+  map.once("idle", () => {
+    document.body.classList.add("ready");
+    if (params.has("tour")) tour();
+  });
   if (params.has("play")) setPlaying(true);
 });

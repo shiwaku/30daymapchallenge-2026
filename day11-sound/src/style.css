@@ -60,3 +60,15 @@ body.shot .maplibregl-ctrl-bottom-right { display: none; }
   #clock { font-size: 40px; }
   #year, .note { display: none; }
 }
+
+/* 運用が切り替わったときの知らせ */
+#banner { position: absolute; z-index: 3; left: 50%; top: 9%; transform: translate(-50%, -12px); opacity: 0; transition: opacity 0.6s, transform 0.6s;
+  background: rgba(7, 10, 16, 0.82); padding: 14px 26px; border-radius: 8px; text-align: center; pointer-events: none; font-size: 30px; font-weight: 700; white-space: nowrap; }
+#banner.on { opacity: 1; transform: translate(-50%, 0); }
+#banner div { font-size: 17px; font-weight: 400; margin-top: 6px; color: var(--fg); }
+#banner .north { color: var(--north); }
+#banner .south { color: var(--south); }
+#banner .south-city { color: var(--south-city); }
+.ln.arrow-l { background: #f0f4fa; height: 3px; }
+body.shot #year { display: none; }
+@media (max-width: 600px) { #banner { font-size: 18px; top: 46%; padding: 10px 14px; } #banner div { font-size: 13px; } }
