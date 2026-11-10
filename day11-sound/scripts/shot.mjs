@@ -19,7 +19,9 @@ async function shot(query, name, size, wait = 1500) {
   console.log(file);
 }
 const desk = { width: 1920, height: 1080 };
-for (const t of ["08:30", "12:00", "16:30"]) await shot(`shot&t=${t}`, `t${t.replace(":", "")}`, desk);
+for (const t of ["08:30", "12:00", "16:30"]) await shot(`shot&t=${t}`, `t${t.replace(":", "")}`, desk, 4000);
+await shot("shot&t=12:00&cam=139.786,35.556,13.2,62,-30", "airport-1200", desk, 6000);
+await shot("shot&t=16:30&cam=139.786,35.556,13.2,62,-30", "airport-1630", desk, 6000);
 await shot("t=12:00", "ui-1200", desk);
 await shot("t=12:00", "mobile", { width: 390, height: 844 });
 await browser.close();
