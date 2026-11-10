@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>風で変わる羽田の空 — #30DayMapChallenge Day 11 Sound</title>
-  <script type="module" crossorigin src="./assets/index-DkVUREtO.js"></script>
+  <script type="module" crossorigin src="./assets/index-DeFLQKHh.js"></script>
   <link rel="modulepreload" crossorigin href="./assets/array-utils-flat-Bzaz163T.js">
   <link rel="modulepreload" crossorigin href="./assets/expression-BHHGFImw.js">
   <link rel="modulepreload" crossorigin href="./assets/get-attribute-from-layouts-C15FggZW.js">
   <link rel="modulepreload" crossorigin href="./assets/webgl-device-BZ3AcICp.js">
   <link rel="modulepreload" crossorigin href="./assets/webgpu-B2dKURx6.js">
   <link rel="modulepreload" crossorigin href="./assets/buffer-transform-Bt4Pt9Qz.js">
-  <link rel="stylesheet" crossorigin href="./assets/index-DVMBJ5EJ.css">
+  <link rel="stylesheet" crossorigin href="./assets/index-BMhVdC3W.css">
 </head>
 <body>
   <div id="map"></div>
@@ -51,6 +51,7 @@
     <div class="legend">
       <span><i class="ln arr"></i>着陸</span>
       <span><i class="ln dep"></i>離陸</span>
+      <span><i class="ln wind"></i>風（アメダス14地点を補間）</span>
       <span><i class="dot jonan"></i>城南島の上を通った便 <b id="jonan-count">0</b></span>
     </div>
 
@@ -63,7 +64,7 @@
     <p class="note">
       航跡は ADS-B（ADSB.lol）。発信していない機体は入らない。高度は気圧から出した値で、地面からの高さではない。高さは見やすさのため2.5倍にしている。
       運用は空港の近くを低く飛ぶ機体の向きから推定したもので、切り替えは管制官が風などから判断している。
-      城南島の音は、上空 500m 以内・高度1,500ft 未満を通った機体をデータから鳴らしたもので、実際の音の大きさではない。
+      風は、羽田・東京・千葉・横浜など14地点の1時間ごとの風向・風速を距離で重み付けして補間したもので、粒子の速さは誇張している。城南島の音は、上空 500m 以内・高度1,500ft 未満を通った機体をデータから鳴らしたもので、実際の音の大きさではない。
     </p>
     <p class="src">出典: ADSB.lol（ODbL）、気象庁「過去の気象データ」（羽田）、国土交通省「羽田空港のこれから」ニュースレター第19号を加工して作成 / 滑走路: © OpenStreetMap contributors / 建物: 3D都市モデル（Project PLATEAU）大田区（2025年度） / 背景: <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院ベクトルタイル</a></p>
   </section>

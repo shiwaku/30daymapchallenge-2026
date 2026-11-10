@@ -37,6 +37,7 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .ln { display: inline-block; width: 18px; height: 3px; border-radius: 2px; }
 .ln.arr { background: var(--arr); box-shadow: 0 0 6px var(--arr); }
+.ln.wind { background: #d2deee; opacity: 0.6; height: 1.5px; }
 .ln.dep { background: var(--dep); box-shadow: 0 0 6px var(--dep); }
 .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 .dot.jonan { background: var(--jonan); box-shadow: 0 0 6px var(--jonan); }
