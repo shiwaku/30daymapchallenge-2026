@@ -2,8 +2,9 @@ import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import { MapboxOverlay } from "@deck.gl/mapbox";
-import { ColumnLayer, ScatterplotLayer, TextLayer } from "@deck.gl/layers";
-import { TripsLayer } from "@deck.gl/geo-layers";
+import { ColumnLayer, PathLayer, ScatterplotLayer, TextLayer } from "@deck.gl/layers";
+import { Tile3DLayer, TripsLayer } from "@deck.gl/geo-layers";
+import { Tiles3DLoader } from "@loaders.gl/3d-tiles";
 import { Protocol } from "pmtiles";
 import "./style.css";
 
@@ -23,6 +24,8 @@ type Hour = { h: number; mode: Mode; wd: string | null; deg: number | null; ws: 
 type TrackMeta = { n: number; k: "arr" | "dep"; t: string; f: string };
 type Pass = { i: number; s: number; alt: number; d: number; t: string; f: string };
 type Month = { m: number; wind: number; am: number; pm: number; ops: number };
+type Runway = { id: string; ref: string; path: [number, number][]; c: [number, number] };
+type Use = Record<string, { arr: number; dep: number }>;
 type Track = { path: [number, number, number][]; ground: [number, number, number][]; ts: number[]; k: "arr" | "dep" };
 
 // URL のパラメータ: ?t=10:00 でその時刻、?shot で操作部品を隠す（録画用）、?play で自動再生
@@ -33,13 +36,18 @@ const NARROW = innerWidth <= 600;
 // 高さの誇張（見やすさのため）。?z=1 で実寸
 const ZX = Math.max(0.5, Number(params.get("z") ?? 2.5));
 
-const [buf, tmeta, day, jonan, year] = await Promise.all([
+const [buf, tmeta, day, jonan, year, rw] = await Promise.all([
   fetch(DATA + "tracks.bin").then((r) => r.arrayBuffer()),
   fetch(DATA + "tracks.json").then((r) => r.json() as Promise<{ day: string; haneda: [number, number]; tracks: TrackMeta[] }>),
   fetch(DATA + "day.json").then((r) => r.json() as Promise<{ day: string; hours: Hour[] }>),
   fetch(DATA + "jonan.json").then((r) => r.json() as Promise<{ spot: [number, number]; r: number; ft: number; passes: Pass[] }>),
   fetch(DATA + "year.json").then((r) => r.json() as Promise<{ fy: number; months: Month[] }>),
+  fetch(DATA + "runways.json").then((r) => r.json() as Promise<{ runways: Runway[]; use: Use[] }>),
 ]);
+// PLATEAU 大田区の建物（2025年度、LOD2、テクスチャなし）。羽田空港のターミナルなどを含む
+const PLATEAU_OTA =
+  "https://assets.cms.plateau.reearth.io/assets/1b/e7ae85-9dbb-4b17-af10-86da7641d370/13111_ota-ku_pref_2025_citygml_1_op_bldg_3dtiles_13111_ota-ku_lod2_no_texture/tileset.json";
+const BLDG = params.get("bldg") !== "0"; // ?bldg=0 で建物を消す
 
 // 航跡を組み立てる（点は [経度, 緯度, 高度m, 秒]）
 const F = new Float32Array(buf);
@@ -64,12 +72,15 @@ const PASSES = jonan.passes;
 
 // 背景地図: 国土地理院の最適化ベクトルタイル。水域・道路・鉄道を暗く薄く出す
 const ROAD = "#1a2230";
+// ?cam=経度,緯度,ズーム,傾き,向き でカメラを決める（確認・録画用）
+const CAM = (params.get("cam") ?? "").split(",").map(Number);
+const cam = CAM.length === 5 && CAM.every(Number.isFinite) ? CAM : [139.792, 35.556, NARROW ? 10.4 : 11.6, 58, -28];
 const map = new maplibregl.Map({
   container: "map",
-  center: [139.80, 35.565],
-  zoom: NARROW ? 9.6 : 10.7,
-  pitch: 58,
-  bearing: -28,
+  center: [cam[0], cam[1]],
+  zoom: cam[2],
+  pitch: cam[3],
+  bearing: cam[4],
   maxPitch: 75,
   attributionControl: false,
   canvasContextAttributes: { preserveDrawingBuffer: SHOT },
@@ -115,7 +126,72 @@ const TRAIL = 1500; // 光の尾の長さ（秒）。長めにして、同じ所
 function layers(t: number) {
   // 城南島の上を通った直後は、輪を広げて「音」を見せる
   const recent = PASSES.filter((p) => p.s <= t && t - p.s < 10);
+  // その時間に使われている滑走路（航跡から推定）。着陸が多ければ水色、離陸が多ければ橙
+  const use = rw.use[Math.min(23, Math.floor(t / 3600))];
+  const active = rw.runways
+    .map((r) => ({ ...r, u: use[r.id] }))
+    .filter((r) => r.u.arr + r.u.dep >= 3)
+    .map((r) => ({ ...r, color: (r.u.arr >= r.u.dep ? ARR : DEP) as [number, number, number] }));
   return [
+    // 羽田空港の建物（PLATEAU）
+    new Tile3DLayer({
+      id: "plateau",
+      data: PLATEAU_OTA,
+      loader: Tiles3DLoader,
+      visible: BLDG,
+      opacity: 0.9,
+      _getMeshColor: () => [74, 86, 108],
+      loadOptions: { tileset: { maximumScreenSpaceError: 12 } },
+    }),
+    // 滑走路（いつも白く光らせる）
+    new PathLayer<Runway>({
+      id: "runway-glow",
+      data: rw.runways,
+      getPath: (r) => r.path,
+      getColor: [230, 236, 245, 50],
+      widthUnits: "meters",
+      getWidth: 260,
+      widthMinPixels: 12,
+      capRounded: true,
+      parameters: ADDITIVE,
+    }),
+    new PathLayer<Runway>({
+      id: "runway",
+      data: rw.runways,
+      getPath: (r) => r.path,
+      getColor: [235, 240, 248, 235],
+      widthUnits: "meters",
+      getWidth: 60,
+      widthMinPixels: 3.5,
+    }),
+    // 使われている滑走路を、着陸・離陸の色で光らせる
+    new PathLayer<Runway & { color: [number, number, number] }>({
+      id: "runway-active",
+      data: active,
+      getPath: (r) => r.path,
+      getColor: (r) => [...r.color, 150],
+      widthUnits: "meters",
+      getWidth: 420,
+      widthMinPixels: 18,
+      capRounded: true,
+      parameters: ADDITIVE,
+      updateTriggers: { getColor: [Math.floor(t / 3600)] },
+    }),
+    new TextLayer<Runway>({
+      id: "runway-label",
+      data: rw.runways,
+      getPosition: (r) => r.c,
+      getText: (r) => r.id,
+      getColor: [255, 255, 255, 235],
+      getSize: 13,
+      fontFamily: FONT,
+      fontWeight: 700,
+      characterSet: "ABCD",
+      fontSettings: { sdf: true, buffer: 6 },
+      outlineWidth: 4,
+      outlineColor: [5, 7, 10, 230],
+      getPixelOffset: [14, 0],
+    }),
     // 地面に落ちる影（どこの上を飛んでいるかがわかるように）
     new TripsLayer<Track>({
       id: "ground",
@@ -187,12 +263,12 @@ function layers(t: number) {
       id: "labels",
       data: [
         { p: JONAN, s: "城南島", c: JONAN_C },
-        { p: HANEDA, s: "羽田空港", c: [232, 236, 241] },
+        { p: [HANEDA[0] + 0.006, HANEDA[1] - 0.026], s: "羽田空港", c: [255, 255, 255] },
       ],
       getPosition: (d) => d.p,
       getText: (d) => d.s,
       getColor: (d) => [...d.c, 240],
-      getSize: 15,
+      getSize: (d) => (d.s === "羽田空港" ? 20 : 15),
       getPixelOffset: [0, -22],
       fontFamily: FONT,
       fontWeight: 700,

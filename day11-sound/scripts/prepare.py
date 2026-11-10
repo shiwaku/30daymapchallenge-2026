@@ -10,6 +10,7 @@
   tracks.json   航跡ごとの点の数・着陸/離陸・機種・便名
   day.json      主役の日の 1時間ごとの風と、航跡から推定した運用
   jonan.json    城南島の上（半径 JONAN_R m、高度 JONAN_FT ft 未満）を通った時刻・高度・機種
+  runways.json  羽田の4本の滑走路の中心線（OpenStreetMap、ODbL）と、1時間ごとの使われ方（航跡からの推定）
   year.json     2024年度の月ごとの「南寄りの風の時間の割合」と公表の南風運用の割合
 
 使い方: python -I day11-sound/scripts/prepare.py
@@ -184,6 +185,44 @@ def jonan_passes(tracks):
     return out
 
 
+# 滑走路の向き（航跡の向き）と、その向きで使う滑走路
+DIR_RUNWAYS = {"34": "AC", "16": "AC", "22": "BD", "05": "BD"}
+
+
+def runways(hours):
+    """data/osm/haneda_osm.json（Overpass で取った aeroway=runway）から、滑走路ごとに中心線の両端を出す"""
+    d = json.load(open(ROOT / "data" / "osm" / "haneda_osm.json", encoding="utf-8"))
+    pts = defaultdict(list)
+    names = {}
+    for e in d["elements"]:
+        t = e.get("tags", {})
+        if t.get("aeroway") != "runway":
+            continue
+        m = re.search(r"([A-D])滑走路", t.get("name", ""))
+        if not m:
+            continue
+        pts[m.group(1)] += [(g["lon"], g["lat"]) for g in e["geometry"]]
+        names[m.group(1)] = t.get("ref")
+    out = []
+    for k in sorted(pts):
+        p = pts[k]
+        cx = sum(x for x, _ in p) / len(p)
+        cy = sum(y for _, y in p) / len(p)
+        # いちばん離れた2点を両端にする
+        a = max(p, key=lambda q: km(q[0], q[1], cx, cy))
+        b = max(p, key=lambda q: km(q[0], q[1], *a))
+        out.append({"id": k, "ref": names[k], "path": [list(a), list(b)], "c": [cx, cy]})
+    use = []
+    for h in hours:
+        u = {k: {"arr": 0, "dep": 0} for k in "ABCD"}
+        for key, n in h["counts"].items():
+            kind, rw = key[:3], key[3:]
+            for k in DIR_RUNWAYS.get(rw, ""):
+                u[k][kind] += n / 2
+        use.append(u)
+    return {"runways": out, "use": use}
+
+
 def year_wind():
     am, pm, day = defaultdict(lambda: [0, 0]), defaultdict(lambda: [0, 0]), defaultdict(lambda: [0, 0])
     for f in sorted(glob.glob(str(JMA / "hourly" / "*.html"))):
@@ -223,6 +262,7 @@ def main():
         hours.append({**o, "wd": wd, "deg": ANG.get(wd) if wd else None, "ws": ws})
     (WEB / "day.json").write_text(json.dumps({"day": DAY.isoformat(), "hours": hours}, ensure_ascii=False), encoding="utf-8")
 
+    (WEB / "runways.json").write_text(json.dumps(runways(hours), ensure_ascii=False), encoding="utf-8")
     passes = jonan_passes(tracks)
     (WEB / "jonan.json").write_text(json.dumps({"spot": JONAN, "r": JONAN_R, "ft": JONAN_FT, "passes": passes}, ensure_ascii=False), encoding="utf-8")
     (WEB / "year.json").write_text(json.dumps({"fy": 2024, "months": year_wind()}, ensure_ascii=False), encoding="utf-8")
