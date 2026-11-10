@@ -94,5 +94,5 @@ npm run build                    # site/ に書き出す
 - 準備度: ○
 - [x] データ準備
 - [x] 地図作成（Web 版、MapLibre + deck.gl）
-- [ ] 動画（mp4 / GIF）
+- [x] 動画（`output/day10-ginkgo.mp4`、1920×1080・約37秒。`node scripts/record.mjs` で `?shot&tour` を画面録画。23区全体で 11/1〜11/28 → 青梅街道へ斜めに寄って 11/28〜12/14 → 全体に戻って 12/15。出典は画面内）
 - [ ] 投稿（#30DayMapChallenge）

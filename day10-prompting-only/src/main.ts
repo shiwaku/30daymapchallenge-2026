@@ -536,6 +536,51 @@ map.on("load", () => {
     const i = ROADS.findIndex((r) => r.name === r0);
     if (i >= 0) select(i);
   }
-  map.once("idle", () => document.body.classList.add("ready"));
+  map.once("idle", () => {
+    document.body.classList.add("ready");
+    if (params.has("tour")) tour();
+  });
   if (params.has("play")) setPlaying(true);
 });
+
+// 録画用の自動ツアー（?shot&tour）。23区全体で色づき始めるまでを見せ、青梅街道へ斜めに寄って
+// 黄葉して散るまでをゆっくり見せ、最後に全体へ戻る。始まりと終わりを body の class で知らせる
+const dayIndex = (md: string) => days.findIndex((d) => d.md === md);
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+function playRange(from: string, to: string, seconds: number) {
+  const a = dayIndex(from), b = dayIndex(to);
+  return new Promise<void>((resolve) => {
+    const t0 = performance.now();
+    const step = (now: number) => {
+      const k = Math.min(1, (now - t0) / (seconds * 1000));
+      t = a + (b - a) * k;
+      render();
+      if (k < 1) requestAnimationFrame(step);
+      else resolve();
+    };
+    requestAnimationFrame(step);
+  });
+}
+const moved = () => new Promise<void>((r) => map.once("moveend", () => r()));
+async function tour() {
+  const road = ROADS[0]; // 青梅街道
+  t = dayIndex("11-01");
+  render();
+  await wait(1500);
+  document.body.classList.add("tour-start");
+  await wait(1500);
+  // 23区全体で、緑から黄色へ光が広がって、いちばん光るところまで
+  await playRange("11-01", "11-28", 9);
+  await wait(800);
+  map.flyTo({ center: road.spot, zoom: 17.3, pitch: 64, bearing: -40, padding: PAD, duration: 3500, essential: true });
+  await moved();
+  // 回り込みながら、黄色い並木が縮んで散るまでをゆっくり
+  map.easeTo({ bearing: 5, duration: 15000, easing: (x) => x, essential: true });
+  await playRange("11-28", "12-14", 15);
+  await wait(500);
+  map.fitBounds(meta.bounds, { padding: PAD, pitch: 0, bearing: 0, duration: 3500, essential: true });
+  await moved();
+  await playRange("12-14", "12-15", 1);
+  await wait(2000);
+  document.body.classList.add("tour-done");
+}
