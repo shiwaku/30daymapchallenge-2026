@@ -23,10 +23,10 @@
 
 見せたいのは2つ。
 
-1. **風向きで運用が変わる瞬間**。再生は、運用が切り替わる時刻の前後30分だけゆっくりにし、それ以外は速く進める。切り替わると画面の上に「北風運用 → 南風運用」「風が南に変わり、南風運用へ」のように大きく出す。空港の上には羽田の風の矢印（長さは風速に比例）を置き、着陸が風に向かって降りるのと並べて見せる
+1. **風向きで運用が変わる瞬間**。再生は、運用が切り替わる時刻の前後30分だけゆっくりにし、それ以外は速く進める。切り替わると画面の上に「北風運用 → 南風運用」「風が南に変わり、南風運用へ」のように大きく出す。空港の南東の海の上に羽田の風の矢印（長さは風速に比例、文字はその時間の観測値）を置き、着陸が風に向かって降りるのと並べて見せる
 2. **風と飛行機の音**。風の音は羽田の風速で大きさと高さを変える。飛行機の音は、城南島（城南島海浜公園のあたり）で聞こえる強さで大きさと明るさを変える。強さは、城南島から各機体までの3Dの距離 d で `1 - exp(-Σ (300m / d)²)` とした（2秒ごと）。南風運用のときは着陸する機体が城南島の真上を低く降りてくるので音が重なり、北風の朝と、都心側から着陸する15〜17時台は静かになる。騒音の大きさ（dB）は出さない
 
-羽田空港は、4本の滑走路（A・B・C・D）を1色で描き、航跡がその上に重なって見えるようにする。空港のまわりの建物は PLATEAU の3D都市モデル（大田区）で立てる。
+羽田空港は、4本の滑走路（A・B・C・D）を1色で描き、航跡がその上に重なって見えるようにする。誘導路とエプロンも描き、D滑走路が誘導路の橋で空港とつながっていることがわかるようにする。城南島海浜公園は範囲をピンクで塗る。背景の海岸線は白で縁取る。空港のまわりの建物は PLATEAU の3D都市モデル（大田区）で立てる。
 
 風は、東京湾まわりのアメダス・気象台14地点（羽田・東京・江戸川臨海・練馬・府中・船橋・千葉・木更津・佐倉・我孫子・横浜・海老名・三浦・辻堂）の1時間ごとの風向・風速を、距離の2乗の逆数で重み付けして補間し、地面の高さに粒子として流す。
 
@@ -78,7 +78,7 @@ python -I scripts/sound.py output/live/rec-<日時>      # 音を作って重ね
 - 航跡: [ADSB.lol](https://adsb.lol/) の日次アーカイブ [adsblol/globe_history_2026](https://github.com/adsblol/globe_history_2026)（ODbL）。[adsb-flight-data-converter](https://github.com/shiwaku/adsb-flight-data-converter) で観測点にしたもの（2026-03-31〜04-06 UTC）から、2026-04-03 JST の羽田から半径35km・高度10,000ft 以下を取り出す。`web/` の航跡は ODbL の派生データ
 - 風: [気象庁 過去の気象データ検索](https://www.data.jma.go.jp/stats/etrn/index.php)（1時間ごとの値）。羽田の2024年度分と、主役の日の14地点（`scripts/fetch_wind.py` で取得）
 - 運用の割合: 国土交通省「羽田空港のこれから」[ニュースレター第19号（2025年秋）](https://www.mlit.go.jp/koku/haneda/assets/pdf/newsletter_20.pdf)（2024年度）、[羽田空港の国際線増便の実現方策 FAQ](https://www.mlit.go.jp/koku/haneda/archive/faq/pdf/06.pdf)、[第38回定期運用報告](https://www.mlit.go.jp/koku/haneda/news/20261005)（2026年4〜6月）
-- 滑走路: [OpenStreetMap](https://www.openstreetmap.org/)（© OpenStreetMap contributors、ODbL）の aeroway=runway を Overpass API で取得し、滑走路ごとに中心線の両端を出す
+- 滑走路: [OpenStreetMap](https://www.openstreetmap.org/)（© OpenStreetMap contributors、ODbL）の aeroway=runway・taxiway・apron と、城南島海浜公園（leisure=park、relation 15635330）を Overpass API で取得。滑走路は中心線の両端、公園はリレーションの線をつないだ外周
 - 建物: [3D都市モデル（Project PLATEAU）大田区（2025年度）](https://www.geospatial.jp/ckan/dataset/plateau)の建築物モデル（LOD2、テクスチャなし、3D Tiles、CC BY 4.0）を配信URLから直接読む
 - 背景: [国土地理院ベクトルタイル](https://maps.gsi.go.jp/development/ichiran.html)（最適化ベクトルタイル）
 - 出典表記: ADSB.lol（ODbL）、気象庁「過去の気象データ」（羽田）、国土交通省「羽田空港のこれから」を加工して作成 / 滑走路: © OpenStreetMap contributors / 建物: 3D都市モデル（Project PLATEAU）大田区（2025年度） / 背景: 国土地理院ベクトルタイル

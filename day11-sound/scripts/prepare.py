@@ -13,6 +13,7 @@
   runways.json  羽田の4本の滑走路の中心線（OpenStreetMap、ODbL）と、1時間ごとの使われ方（航跡からの推定）
   loud.json     城南島で聞こえる飛行機の音の強さ（0〜1）。2秒ごと、1日分。機体と城南島の3Dの距離から決める
   wind.json     主役の日の、東京湾まわりのアメダス・気象台14地点の1時間ごとの風向（度）・風速（m/s）
+  ground.json   羽田の誘導路（線）・エプロン（面）と、城南島海浜公園の範囲（OpenStreetMap、ODbL）
   year.json     2024年度の月ごとの「南寄りの風の時間の割合」と公表の南風運用の割合
 
 使い方: python -I day11-sound/scripts/prepare.py
@@ -290,6 +291,52 @@ def loudness(tracks):
     return [round(1 - math.exp(-v), 3) for v in acc]
 
 
+def chain_rings(ways):
+    """端点でつないで閉じた輪にする（OSM のリレーションのメンバーの線から外周を作る）"""
+    segs = [[(round(g["lon"], 7), round(g["lat"], 7)) for g in w["geometry"]] for w in ways]
+    rings = []
+    while segs:
+        ring = segs.pop(0)
+        changed = True
+        while changed and ring[0] != ring[-1]:
+            changed = False
+            for i, sg in enumerate(segs):
+                if sg[0] == ring[-1]:
+                    ring += sg[1:]
+                elif sg[-1] == ring[-1]:
+                    ring += sg[::-1][1:]
+                elif sg[-1] == ring[0]:
+                    ring = sg[:-1] + ring
+                elif sg[0] == ring[0]:
+                    ring = sg[::-1][:-1] + ring
+                else:
+                    continue
+                segs.pop(i)
+                changed = True
+                break
+        if len(ring) >= 4:
+            rings.append([list(c) for c in ring])
+    return rings
+
+
+def ground():
+    """data/osm/park_taxi.json（誘導路・エプロン）と data/osm/park_ways.json（城南島海浜公園のリレーションの線）から"""
+    osm = ROOT / "data" / "osm"
+    d = json.load(open(osm / "park_taxi.json", encoding="utf-8"))
+    taxi, apron = [], []
+    for e in d["elements"]:
+        if e["type"] != "way" or "geometry" not in e:
+            continue
+        c = [[round(g["lon"], 6), round(g["lat"], 6)] for g in e["geometry"]]
+        kind = e.get("tags", {}).get("aeroway")
+        if kind == "taxiway":
+            taxi.append(c)
+        elif kind == "apron" and c[0] == c[-1]:
+            apron.append(c)
+    park = chain_rings(json.load(open(osm / "park_ways.json", encoding="utf-8"))["elements"])
+    return {"taxiways": taxi, "aprons": apron, "park": park}
+
+
 def year_wind():
     am, pm, day = defaultdict(lambda: [0, 0]), defaultdict(lambda: [0, 0]), defaultdict(lambda: [0, 0])
     for f in sorted(glob.glob(str(JMA / "hourly" / "*.html"))):
@@ -332,6 +379,7 @@ def main():
     (WEB / "runways.json").write_text(json.dumps(runways(hours), ensure_ascii=False), encoding="utf-8")
     passes = jonan_passes(tracks)
     (WEB / "jonan.json").write_text(json.dumps({"spot": JONAN, "r": JONAN_R, "ft": JONAN_FT, "passes": passes}, ensure_ascii=False), encoding="utf-8")
+    (WEB / "ground.json").write_text(json.dumps(ground(), ensure_ascii=False), encoding="utf-8")
     (WEB / "loud.json").write_text(json.dumps({"step": LOUD_STEP, "lv": loudness(tracks)}), encoding="utf-8")
     (WEB / "wind.json").write_text(json.dumps({"day": DAY.isoformat(), "stations": station_wind()}, ensure_ascii=False), encoding="utf-8")
     (WEB / "year.json").write_text(json.dumps({"fy": 2024, "months": year_wind()}, ensure_ascii=False), encoding="utf-8")

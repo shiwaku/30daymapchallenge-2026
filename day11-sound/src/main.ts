@@ -2,7 +2,7 @@ import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import { MapboxOverlay } from "@deck.gl/mapbox";
-import { ColumnLayer, LineLayer, PathLayer, ScatterplotLayer, TextLayer } from "@deck.gl/layers";
+import { LineLayer, PathLayer, PolygonLayer, ScatterplotLayer, TextLayer } from "@deck.gl/layers";
 import { Tile3DLayer, TripsLayer } from "@deck.gl/geo-layers";
 import { Tiles3DLoader } from "@loaders.gl/3d-tiles";
 import { Protocol } from "pmtiles";
@@ -38,7 +38,7 @@ const NARROW = innerWidth <= 600;
 // 高さの誇張（見やすさのため）。?z=1 で実寸
 const ZX = Math.max(0.5, Number(params.get("z") ?? 2.5));
 
-const [buf, tmeta, day, jonan, year, rw, windData, loud] = await Promise.all([
+const [buf, tmeta, day, jonan, year, rw, windData, loud, gnd] = await Promise.all([
   fetch(DATA + "tracks.bin").then((r) => r.arrayBuffer()),
   fetch(DATA + "tracks.json").then((r) => r.json() as Promise<{ day: string; haneda: [number, number]; tracks: TrackMeta[] }>),
   fetch(DATA + "day.json").then((r) => r.json() as Promise<{ day: string; hours: Hour[] }>),
@@ -47,6 +47,7 @@ const [buf, tmeta, day, jonan, year, rw, windData, loud] = await Promise.all([
   fetch(DATA + "runways.json").then((r) => r.json() as Promise<{ runways: Runway[]; use: Use[] }>),
   fetch(DATA + "wind.json").then((r) => r.json() as Promise<{ day: string; stations: Station[] }>),
   fetch(DATA + "loud.json").then((r) => r.json() as Promise<{ step: number; lv: number[] }>),
+  fetch(DATA + "ground.json").then((r) => r.json() as Promise<{ taxiways: [number, number][][]; aprons: [number, number][][]; park: [number, number][][] }>),
 ]);
 // PLATEAU 大田区の建物（2025年度、LOD2、テクスチャなし）。羽田空港のターミナルなどを含む
 const PLATEAU_OTA =
@@ -92,7 +93,7 @@ const map = new maplibregl.Map({
     version: 8,
     sources: { gsi: { type: "vector", url: `pmtiles://${GSI_PMTILES}` } },
     layers: [
-      { id: "background", type: "background", paint: { "background-color": "#0d121a" } },
+      { id: "background", type: "background", paint: { "background-color": "#111824" } },
       { id: "water", type: "fill", source: "gsi", "source-layer": "WA", paint: { "fill-color": BG } },
       {
         id: "road",
@@ -103,7 +104,9 @@ const map = new maplibregl.Map({
         paint: { "line-color": ROAD, "line-width": ["interpolate", ["linear"], ["zoom"], 9, 0.4, 14, 2] },
       },
       { id: "rail", type: "line", source: "gsi", "source-layer": "RailCL", paint: { "line-color": "#161d28", "line-width": 0.7 } },
-      { id: "coast", type: "line", source: "gsi", "source-layer": "Cstline", paint: { "line-color": "#2a3546", "line-width": 0.8 } },
+      // 海岸線（水域の縁）は白で、はっきり出す
+      { id: "coast", type: "line", source: "gsi", "source-layer": "Cstline", paint: { "line-color": "#e8eef6", "line-opacity": 0.6, "line-width": ["interpolate", ["linear"], ["zoom"], 9, 0.8, 13, 1.6] } },
+      { id: "water-edge", type: "line", source: "gsi", "source-layer": "WA", paint: { "line-color": "#e8eef6", "line-opacity": 0.35, "line-width": ["interpolate", ["linear"], ["zoom"], 9, 0.5, 13, 1.2] } },
     ],
   },
 });
@@ -221,6 +224,34 @@ function layers(t: number) {
       _getMeshColor: () => [74, 86, 108],
       loadOptions: { tileset: { maximumScreenSpaceError: 12 } },
     }),
+    // 空港の地面（エプロン・誘導路）。D滑走路は誘導路の橋で空港とつながっている
+    new PolygonLayer<[number, number][]>({
+      id: "apron",
+      data: gnd.aprons,
+      getPolygon: (d) => d,
+      getFillColor: [38, 46, 60, 255],
+      stroked: false,
+    }),
+    new PathLayer<[number, number][]>({
+      id: "taxiway",
+      data: gnd.taxiways,
+      getPath: (d) => d,
+      getColor: [92, 104, 124, 255],
+      widthUnits: "meters",
+      getWidth: 23,
+      widthMinPixels: 0.8,
+    }),
+    // 城南島海浜公園
+    new PolygonLayer<[number, number][]>({
+      id: "park",
+      data: gnd.park,
+      getPolygon: (d) => d,
+      getFillColor: [...JONAN_C, 150],
+      getLineColor: [255, 210, 230, 255],
+      stroked: true,
+      lineWidthUnits: "pixels",
+      getLineWidth: 2.5,
+    }),
     // 滑走路（1色、光らせない。航跡より下に描く）
     new PathLayer<Runway>({
       id: "runway",
@@ -236,11 +267,9 @@ function layers(t: number) {
       id: "runway-label",
       data: rw.runways,
       getPosition: (r) => r.c,
-      getText: (r) => `${r.id}滑走路
-${r.ref}`,
+      getText: (r) => `${r.id}滑走路`,
       getColor: [236, 240, 246, 245],
-      getSize: 14,
-      lineHeight: 1.1,
+      getSize: 11,
       getTextAnchor: "start",
       getAlignmentBaseline: "center",
       getPixelOffset: [12, 0],
@@ -292,18 +321,45 @@ ${r.ref}`,
       jointRounded: true,
       parameters: ADDITIVE,
     }),
-    // 空港の上の風の矢印（羽田の風。長さは風速に比例）
+    // 羽田の風の矢印。滑走路と重ならないよう、空港の南東の海の上に置く（長さは風速に比例）
+    new PathLayer<{ p: [number, number][] }>({
+      id: "wind-arrow-edge",
+      data: windArrow(t),
+      getPath: (d) => d.p,
+      getColor: [5, 7, 10, 230],
+      widthUnits: "meters",
+      getWidth: 420,
+      widthMinPixels: 9,
+      capRounded: true,
+      jointRounded: true,
+      updateTriggers: { getPath: [Math.round(t / 60)] },
+    }),
     new PathLayer<{ p: [number, number][] }>({
       id: "wind-arrow",
       data: windArrow(t),
       getPath: (d) => d.p,
-      getColor: [240, 244, 250, 225],
+      getColor: [255, 255, 255, 245],
       widthUnits: "meters",
-      getWidth: 90,
-      widthMinPixels: 3,
+      getWidth: 240,
+      widthMinPixels: 5,
       capRounded: true,
       jointRounded: true,
       updateTriggers: { getPath: [Math.round(t / 60)] },
+    }),
+    new TextLayer<{ p: [number, number]; s: string }>({
+      id: "wind-arrow-label",
+      data: [{ p: [ARROW_AT[0], ARROW_AT[1] - 0.03], s: windLabel(t) }],
+      getPosition: (d) => d.p,
+      getText: (d) => d.s,
+      getColor: [255, 255, 255, 245],
+      getSize: 17,
+      fontFamily: FONT,
+      fontWeight: 700,
+      characterSet: "羽田の風静穏北東南西 0123456789.m/s",
+      fontSettings: { sdf: true, buffer: 6 },
+      outlineWidth: 5,
+      outlineColor: [5, 7, 10, 240],
+      updateTriggers: { getText: [Math.round(t / 60)] },
     }),
     new ScatterplotLayer<Pass>({
       id: "jonan-pulse",
@@ -321,7 +377,7 @@ ${r.ref}`,
     new TextLayer<{ p: [number, number]; s: string; c: [number, number, number] }>({
       id: "labels",
       data: [
-        { p: JONAN, s: "城南島", c: JONAN_C },
+        { p: [139.7838, 35.5852], s: "城南島海浜公園", c: JONAN_C },
         { p: [HANEDA[0] + 0.006, HANEDA[1] - 0.026], s: "羽田空港", c: [255, 255, 255] },
       ],
       getPosition: (d) => d.p,
@@ -331,7 +387,7 @@ ${r.ref}`,
       getPixelOffset: [0, -22],
       fontFamily: FONT,
       fontWeight: 700,
-      characterSet: "城南島羽田空港",
+      characterSet: "城南島海浜公園羽田空港",
       fontSettings: { sdf: true, buffer: 6 },
       outlineWidth: 4,
       outlineColor: [5, 7, 10, 230],
@@ -354,17 +410,24 @@ function hanedaWind(t: number): [number, number] {
   const u = a[0] * (1 - k) + b[0] * k, v = a[1] * (1 - k) + b[1] * k;
   return [((Math.atan2(u, v) * 180) / Math.PI + 360) % 360, Math.hypot(u, v)];
 }
+// 矢印を置く所（羽田空港の南東、東京湾の上）
+const ARROW_AT: [number, number] = [139.86, 35.505];
+// 文字はパネルと同じ、その時間の観測値（矢印の向きと長さは時間で滑らかにつないだもの）
+function windLabel(t: number) {
+  const hr = day.hours[Math.min(23, Math.floor(t / 3600))];
+  return hr.ws === null ? "" : hr.ws < 0.3 ? "羽田の風 静穏" : `羽田の風 ${hr.wd} ${hr.ws.toFixed(1)} m/s`;
+}
 function windArrow(t: number) {
   const [dir, ws] = hanedaWind(t);
   if (ws < 0.3) return [];
-  const L = 900 + ws * 420; // m
+  const L = 2200 + ws * 900; // m
   const r = (dir * Math.PI) / 180;
   const cx = 111320 * Math.cos((HANEDA[1] * Math.PI) / 180), cy = 110540;
   const pt = (along: number, side: number): [number, number] => [
-    HANEDA[0] + (Math.sin(r) * along + Math.cos(r) * side) / cx,
-    HANEDA[1] + (Math.cos(r) * along - Math.sin(r) * side) / cy,
+    ARROW_AT[0] + (Math.sin(r) * along + Math.cos(r) * side) / cx,
+    ARROW_AT[1] + (Math.cos(r) * along - Math.sin(r) * side) / cy,
   ];
-  const head = Math.min(700, L * 0.32);
+  const head = Math.min(2000, L * 0.32);
   return [{ p: [pt(-L / 2, 0), pt(L / 2, 0)] }, { p: [pt(L / 2 - head, -head * 0.6), pt(L / 2, 0), pt(L / 2 - head, head * 0.6)] }];
 }
 
