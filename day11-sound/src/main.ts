@@ -267,7 +267,8 @@ const MODE_NOTE: Record<string, string> = {
   south: "北東の浦安沖から回り込み、南西向きに着陸する。城南島の真上を低く降りてくる",
   "south-city": "南風の15〜19時のうち3時間ほど。北の都心側から南向きに着陸する",
 };
-const COLOR: Record<string, string> = { north: "#6fa8ff", south: "#ff9f43", "south-city": "#ff6a3d" };
+// 運用の色は、航跡（着陸 水色・離陸 橙）と城南島（ピンク）に重ならない色にする
+const COLOR: Record<string, string> = { north: "#a99bff", south: "#5fd38a", "south-city": "#c6e86a" };
 
 function panel(t: number) {
   const h = Math.min(23, Math.floor(t / 3600));
@@ -307,7 +308,7 @@ const cursor = tl.querySelector("#tl-cursor")!;
       const ho = H * (m.ops / 100);
       const hl = m.m === mo ? `<rect x="${x + 0.5}" y="0" width="${W - 1}" height="${H}" fill="#ffffff" opacity="0.06"/>` : "";
       return `${hl}<rect x="${x + 3}" y="${H - hw}" width="${W / 2 - 3}" height="${hw}" fill="#3b4656"/>` +
-        `<rect x="${x + W / 2}" y="${H - ho}" width="${W / 2 - 3}" height="${ho}" fill="#ff9f43"/>` +
+        `<rect x="${x + W / 2}" y="${H - ho}" width="${W / 2 - 3}" height="${ho}" fill="#5fd38a"/>` +
         `<text x="${x + W / 2}" y="${H + 14}" fill="${m.m === mo ? "#e8ecf1" : "#8a94a3"}" font-size="10" text-anchor="middle">${m.m}月</text>`;
     })
     .join("");
