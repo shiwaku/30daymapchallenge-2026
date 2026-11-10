@@ -2,10 +2,15 @@ import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import { MapboxOverlay } from "@deck.gl/mapbox";
-import { ScatterplotLayer } from "@deck.gl/layers";
+import { ScatterplotLayer, TextLayer } from "@deck.gl/layers";
+import { Protocol } from "pmtiles";
 import "./style.css";
 
 maplibregl.setWorkerUrl(workerUrl);
+maplibregl.addProtocol("pmtiles", new Protocol().tile);
+
+// 背景地図: 国土地理院の最適化ベクトルタイル。水域・道路・区界だけを、点より目立たない暗い色で薄く出す
+const GSI_PMTILES = "https://cyberjapandata.gsi.go.jp/xyz/optimal_bvmap-v1/optimal_bvmap-v1.pmtiles";
 
 // 開発時は day10-prompting-only/web、公開時（day10-prompting-only/site/）は ../web を読む
 const DATA = import.meta.env.DEV ? "./web/" : "../web/";
@@ -20,6 +25,7 @@ const WEEK = "日月火水木金土";
 type RGB = [number, number, number];
 type Day = { md: string; y: number; f: number };
 type Pheno = { station: string; years: [number, number]; n: number; days: Day[] };
+type Road = { name: string; n: number; share: number; wards: string[]; spot: [number, number]; spotWard: string; near: number };
 type Meta = { ginkgo: number; total: number; bounds: [[number, number], [number, number]] };
 
 // URL のパラメータ: ?date=11-20 でその日を表示、?shot で操作部品を隠す（録画用）、?play で自動再生
@@ -27,35 +33,84 @@ const params = new URLSearchParams(location.search);
 const SHOT = params.has("shot");
 const NARROW = innerWidth <= 600;
 const R = NARROW ? 0.55 : 1; // 狭い画面では点を小さくする
+const BASE = params.get("base") !== "0"; // ?base=0 で背景地図を消す
+const LABELS = params.get("labels") !== "0"; // ?labels=0 で通りの名前を消す
+// 道路は灰色の「ほかの街路樹」の点と見分けられるよう、青みの暗い色にする
+const ROAD = "#1c2633";
+const BASE_LAYERS: maplibregl.LayerSpecification[] = [
+  { id: "water", type: "fill", source: "gsi", "source-layer": "WA", paint: { "fill-color": "#0f1824" } },
+  {
+    id: "road-minor",
+    type: "line",
+    source: "gsi",
+    "source-layer": "RdCL",
+    minzoom: 12,
+    filter: ["!", ["in", ["get", "vt_rdctg"], ["literal", ["国道", "都道府県道", "高速自動車国道等"]]]],
+    paint: { "line-color": ROAD, "line-width": ["interpolate", ["linear"], ["zoom"], 12, 0.4, 16, 1.5] },
+  },
+  {
+    id: "road-major",
+    type: "line",
+    source: "gsi",
+    "source-layer": "RdCL",
+    filter: ["in", ["get", "vt_rdctg"], ["literal", ["国道", "都道府県道", "高速自動車国道等"]]],
+    paint: { "line-color": ROAD, "line-width": ["interpolate", ["linear"], ["zoom"], 9, 0.5, 12, 1.2, 16, 4] },
+  },
+  {
+    id: "rail",
+    type: "line",
+    source: "gsi",
+    "source-layer": "RailCL",
+    paint: { "line-color": "#18202a", "line-width": 0.8, "line-dasharray": [3, 2] },
+  },
+  {
+    id: "ward",
+    type: "line",
+    source: "gsi",
+    "source-layer": "AdmBdry",
+    paint: { "line-color": "#2a3442", "line-width": 0.6, "line-dasharray": [4, 3] },
+  },
+];
 if (SHOT) document.body.classList.add("shot");
 
-const [meta, pheno, buf] = await Promise.all([
+const [meta, pheno, buf, roadData] = await Promise.all([
   fetch(DATA + "meta.json").then((r) => r.json() as Promise<Meta>),
   fetch(DATA + "phenology.json").then((r) => r.json() as Promise<Pheno>),
   fetch(DATA + "trees.bin").then((r) => r.arrayBuffer()),
+  fetch(DATA + "roads.json").then((r) => r.json() as Promise<{ radius: number; roads: Road[] }>),
 ]);
+const ROADS = roadData.roads;
 const pos = new Float32Array(buf);
 const ginkgoPos = pos.subarray(0, meta.ginkgo * 2);
 const otherPos = pos.subarray(meta.ginkgo * 2);
 const days = pheno.days;
 const N = pheno.n;
 
+const PAD = NARROW ? { top: 360, bottom: Math.round(innerHeight * 0.26) + 8, left: 16, right: 16 } : { top: 40, bottom: 40, left: 520, right: SHOT ? 40 : 330 };
 const map = new maplibregl.Map({
   container: "map",
   bounds: meta.bounds,
-  fitBoundsOptions: { padding: NARROW ? { top: 360, bottom: 16, left: 16, right: 16 } : { top: 40, bottom: 40, left: 520, right: 40 } },
+  fitBoundsOptions: { padding: PAD },
   maxZoom: 18,
   attributionControl: false,
   canvasContextAttributes: { preserveDrawingBuffer: SHOT },
   style: {
     version: 8,
-    sources: {},
-    layers: [{ id: "background", type: "background", paint: { "background-color": BG } }],
+    sources: BASE ? { gsi: { type: "vector", url: `pmtiles://${GSI_PMTILES}` } } : {},
+    layers: [
+      { id: "background", type: "background", paint: { "background-color": BG } },
+      ...(BASE ? BASE_LAYERS : []),
+    ],
   },
 });
 map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
 
+// deck.gl 9.4 の interleaved は MapLibre 6 と合わないので、地図の上に重ねる。
+// 通りの名前も deck.gl の TextLayer で、光る点の上に描く
 const overlay = new MapboxOverlay({ interleaved: false, layers: [] });
+const TOP = 10; // 一覧と、引いた表示で名前を出す通りの数
+const FONT = '"BIZ UDPGothic", "Yu Gothic UI", "Hiragino Sans", "Noto Sans JP", sans-serif';
+const CHARS = Array.from(new Set(ROADS.map((r) => r.name).join("") + "イチョウ本0123456789, "));
 map.addControl(overlay);
 
 // t は days の添字（小数で日と日のあいだを補間する）
@@ -96,8 +151,47 @@ const HALO = [
   { r: 4, a: 8 },
 ];
 
+type Label = { road: Road; rank: number; text: string; size: number; side: 1 | -1 };
+// 名前を置く場所を画面上で決める（ほかの名前やパネルと重ならないように）
+function placeLabels(): Label[] {
+  const W = map.getContainer().clientWidth;
+  const H = map.getContainer().clientHeight;
+  const boxes: [number, number, number, number][] = [];
+  for (const id of ["panel", "road-panel"]) {
+    const r = document.getElementById(id)?.getBoundingClientRect();
+    if (r && r.width > 0) boxes.push([r.left, r.top, r.right, r.bottom]);
+  }
+  const out: Label[] = [];
+  const hit = (b: [number, number, number, number]) =>
+    b[0] < 0 || b[2] > W || b[1] < 0 || b[3] > H || boxes.some((o) => b[0] < o[2] && b[2] > o[0] && b[1] < o[3] && b[3] > o[1]);
+  ROADS.forEach((road, rank) => {
+    // スマホの引いた表示では、名前は上位だけにする
+    if (NARROW && map.getZoom() < 12 && rank >= 6 && rank !== sel) return;
+    const size = (rank < 5 ? 15 : 12.5) * (NARROW ? 0.85 : 1);
+    const text = `${road.name}
+イチョウ ${road.n.toLocaleString("ja-JP")}本`;
+    const w = Math.max(road.name.length, 9) * size * 1.0 + 6;
+    const h = size * 2.4;
+    const p = map.project(road.spot);
+    for (const side of [1, -1] as const) {
+      const x0 = side > 0 ? p.x + 8 : p.x - 8 - w;
+      const b: [number, number, number, number] = [x0, p.y - h / 2, x0 + w, p.y + h / 2];
+      if (!hit(b) || rank === sel) {
+        boxes.push(b);
+        out.push({ road, rank, text, size, side });
+        return;
+      }
+    }
+  });
+  return out;
+}
+
+// ズームすると点を大きくする（近づいて通りを見るとき、木が1本ずつ見えるように）
+const zoomK = () => Math.min(3.5, Math.max(1, 2 ** ((map.getZoom() - 11) * 0.55)));
+
 function layers(t: number) {
   const { y, f } = at(t);
+  const zk = zoomK();
   // 黄葉した年の割合で緑→黄、落葉した年の割合で黄→落ち葉色。点は散るほど小さく薄くする
   // （道路沿いに点が重なるので、透明度だけでは薄く見えない）
   const c = mix(mix(GREEN, YELLOW, y), FALLEN, f);
@@ -111,8 +205,9 @@ function layers(t: number) {
       data: OTHER_DATA,
       getFillColor: OTHER,
       radiusUnits: "pixels",
-      getRadius: 0.9,
+      getRadius: 0.9 * zk,
       radiusMinPixels: 0.6,
+      updateTriggers: { getRadius: [zk] },
     }),
     ...HALO.map(
       (h, i) =>
@@ -122,9 +217,9 @@ function layers(t: number) {
           visible: glow > 0,
           getFillColor: [...c, Math.min(255, Math.round(h.a * glow))],
           radiusUnits: "pixels",
-          getRadius: R * h.r * size,
+          getRadius: R * h.r * size * zk,
           parameters: ADDITIVE,
-          updateTriggers: { getFillColor: [t, GLOW], getRadius: [t] },
+          updateTriggers: { getFillColor: [t, GLOW], getRadius: [t, zk] },
         }),
     ),
     new ScatterplotLayer({
@@ -132,8 +227,46 @@ function layers(t: number) {
       data: GINKGO_DATA,
       getFillColor: [...c, Math.round(60 + 175 * alive)],
       radiusUnits: "pixels",
-      getRadius: R * 1.7 * (0.35 + 0.65 * alive),
-      updateTriggers: { getFillColor: [t], getRadius: [t] },
+      getRadius: R * 1.7 * (0.35 + 0.65 * alive) * zk,
+      updateTriggers: { getFillColor: [t], getRadius: [t, zk] },
+    }),
+    // 選んだ通りの、イチョウがいちばん密に並ぶ地点（半径 roadData.radius m の輪）
+    new ScatterplotLayer<Road>({
+      id: "road-spot",
+      data: sel >= 0 ? [ROADS[sel]] : [],
+      getPosition: (r) => r.spot,
+      radiusUnits: "meters",
+      getRadius: roadData.radius,
+      stroked: true,
+      filled: false,
+      getLineColor: [244, 241, 232, 210],
+      lineWidthUnits: "pixels",
+      getLineWidth: 1.3,
+    }),
+    // 通りの名前。本数の多い通りから順に置き、ほかの名前と重なるときは反対側へ、それでも重なれば出さない
+    new TextLayer<Label>({
+      id: "road-label",
+      data: placeLabels(),
+      visible: LABELS,
+      pickable: !SHOT,
+      getPosition: (l) => l.road.spot,
+      getText: (l) => l.text,
+      getSize: (l) => l.size,
+      getColor: (l) => (l.rank === sel ? [255, 255, 255, 255] : [239, 230, 207, 235]),
+      getTextAnchor: (l) => (l.side > 0 ? "start" : "end"),
+      getPixelOffset: (l) => [l.side * 10, 0],
+      getAlignmentBaseline: "center",
+      fontFamily: FONT,
+      fontWeight: 700,
+      characterSet: CHARS,
+      lineHeight: 1.15,
+      fontSettings: { sdf: true, buffer: 6 },
+      outlineWidth: 4,
+      outlineColor: [6, 9, 13, 235],
+      updateTriggers: { getColor: [sel] },
+      onClick: (info) => {
+        if (info.object) select(info.object.rank === sel ? -1 : info.object.rank);
+      },
     }),
   ];
 }
@@ -188,6 +321,42 @@ if (start) {
   if (i >= 0) t = i;
 }
 
+// イチョウの多い通りの一覧。押すと、その通りでイチョウがいちばん密に並ぶ地点へ寄る
+const list = $("roads");
+let sel = -1;
+list.innerHTML = ROADS.slice(0, TOP)
+  .map(
+    (r, i) => `<li><button type="button" data-i="${i}">
+      <span class="rk">${i + 1}</span>
+      <span class="nm">${r.name}<small>${r.wards.slice(0, 3).join("・")}</small></span>
+      <span class="ct">${r.n.toLocaleString("ja-JP")}<small>本</small></span>
+    </button></li>`,
+  )
+  .join("");
+function select(i: number) {
+  sel = i;
+  list.querySelectorAll("button").forEach((b) => b.classList.toggle("on", Number(b.dataset.i) === i));
+  render();
+  const info = $("road-info");
+  if (i < 0) {
+    info.innerHTML = "";
+    map.fitBounds(meta.bounds, { padding: PAD, duration: 1200 });
+    return;
+  }
+  const r = ROADS[i];
+  info.innerHTML =
+    `<b>${r.name}</b>: 都道の街路樹 ${Math.round(r.n / r.share).toLocaleString("ja-JP")}本のうち <b>${Math.round(r.share * 100)}%</b> がイチョウ。` +
+    `輪の中（${r.spotWard}、半径${roadData.radius}m）に ${r.near}本が並ぶ`;
+  map.flyTo({ center: r.spot, zoom: 15, padding: PAD, duration: 1600 });
+}
+list.addEventListener("click", (e) => {
+  const b = (e.target as HTMLElement).closest("button");
+  if (!b) return;
+  const i = Number(b.dataset.i);
+  select(sel === i ? -1 : i);
+});
+$("reset").addEventListener("click", () => select(-1));
+
 // 再生: ふつうで1日 0.25 秒
 let playing = false;
 let last = 0;
@@ -221,8 +390,18 @@ slider.addEventListener("input", () => {
   render();
 });
 
+// 再生していないときは、ズームに合わせて点の大きさを描き直す
+map.on("move", () => {
+  if (!playing) render();
+});
+
 map.on("load", () => {
   render();
+  const r0 = params.get("road");
+  if (r0) {
+    const i = ROADS.findIndex((r) => r.name === r0);
+    if (i >= 0) select(i);
+  }
   map.once("idle", () => document.body.classList.add("ready"));
   if (params.has("play")) setPlaying(true);
 });
