@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>風で変わる羽田の空 — #30DayMapChallenge Day 11 Sound</title>
+</head>
+<body>
+  <div id="map"></div>
+
+  <section id="panel">
+    <div class="sub">風で変わる羽田の空　<span id="date"></span></div>
+    <div id="clock">00:00</div>
+
+    <div id="wind-row">
+      <svg id="wind" viewBox="-50 -50 100 100" aria-label="羽田の風">
+        <circle r="44" class="ring"/>
+        <text y="-35" class="n">北</text>
+        <g id="arrow"><path d="M0,-30 L9,8 L0,2 L-9,8 Z"/><line x1="0" y1="2" x2="0" y2="30"/></g>
+      </svg>
+      <div>
+        <div class="k">羽田の風</div>
+        <div id="wind-text">—</div>
+        <div class="k" style="margin-top:6px">滑走路の使い方（航跡から推定）</div>
+        <div id="mode">—</div>
+      </div>
+    </div>
+    <div id="mode-note"></div>
+
+    <svg id="timeline" viewBox="0 0 300 34" preserveAspectRatio="none"></svg>
+    <div class="tl-labels"><span>0時</span><span>6</span><span>12</span><span>18</span><span>24時</span></div>
+
+    <div class="ctrl">
+      <button id="play" type="button">再生</button>
+      <input id="slider" type="range" min="0" max="86400" step="1">
+      <select id="speed">
+        <option value="600">ゆっくり</option>
+        <option value="1200" selected>ふつう</option>
+        <option value="2400">はやい</option>
+      </select>
+    </div>
+
+    <div class="legend">
+      <span><i class="ln arr"></i>着陸</span>
+      <span><i class="ln dep"></i>離陸</span>
+      <span><i class="dot jonan"></i>城南島の上を通った便 <b id="jonan-count">0</b></span>
+    </div>
+
+    <div id="year">
+      <div class="k">1年の中では（2024年度、月ごと）</div>
+      <svg id="year-chart" viewBox="0 0 300 92"></svg>
+      <div class="y-legend"><span><i class="bar wind"></i>羽田で南寄りの風だった時間</span><span><i class="bar ops"></i>南風運用の割合（国交省の公表値）</span></div>
+    </div>
+
+    <p class="note">
+      航跡は ADS-B（ADSB.lol）。発信していない機体は入らない。高度は気圧から出した値で、地面からの高さではない。高さは見やすさのため2.5倍にしている。
+      運用は空港の近くを低く飛ぶ機体の向きから推定したもので、切り替えは管制官が風などから判断している。
+      城南島の音は、上空 500m 以内・高度1,500ft 未満を通った機体をデータから鳴らしたもので、実際の音の大きさではない。
+    </p>
+    <p class="src">出典: ADSB.lol（ODbL）、気象庁「過去の気象データ」（羽田）、国土交通省「羽田空港のこれから」ニュースレター第19号を加工して作成 / 背景: <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院ベクトルタイル</a></p>
+  </section>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
