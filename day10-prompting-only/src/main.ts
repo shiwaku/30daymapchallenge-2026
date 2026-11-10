@@ -38,6 +38,8 @@ const R = NARROW ? 0.55 : 1; // 狭い画面では点を小さくする
 const BASE = params.get("base") !== "0"; // ?base=0 で背景地図を消す
 const LABELS = params.get("labels") !== "0"; // ?labels=0 で通りの名前を消す
 const LEAF_FX = params.get("leaves") !== "0"; // ?leaves=0 で舞い落ちる粒を消す
+// 3D の木の大きさの倍率（見やすさのための誇張）。?scale=1 で実寸（樹高・枝張のデータそのまま）
+const TREE_SCALE = Math.max(0.5, Number(params.get("scale") ?? 1.8));
 // 道路は灰色の「ほかの街路樹」の点と見分けられるよう、青みの暗い色にする
 const ROAD = "#1c2633";
 const BASE_LAYERS: maplibregl.LayerSpecification[] = [
@@ -232,7 +234,7 @@ function updateLeaves(rate: number, now: number) {
   if (leafPos.length < need) leafPos = new Float32Array(need);
   let n = 0;
   for (const i of visibleTrees) {
-    const h = SIZE[i * 2], wd = SIZE[i * 2 + 1];
+    const h = SIZE[i * 2] * TREE_SCALE, wd = SIZE[i * 2 + 1] * TREE_SCALE;
     const lon = ginkgoPos[i * 2], lat = ginkgoPos[i * 2 + 1];
     for (let k = 0; k < LEAVES; k++) {
       if (hash(i, k) > rate) continue;
@@ -313,7 +315,7 @@ function layers(t: number) {
       opacity: k3,
       mesh: TRUNK_MESH,
       getPosition: (i) => [ginkgoPos[i * 2], ginkgoPos[i * 2 + 1], 0],
-      getScale: (i) => [0.22, 0.22, SIZE[i * 2] * CROWN_BASE + 0.4],
+      getScale: (i) => [0.22 * TREE_SCALE, 0.22 * TREE_SCALE, SIZE[i * 2] * TREE_SCALE * CROWN_BASE + 0.4],
       getColor: [92, 78, 62],
       material: { ambient: 0.6, diffuse: 0.5, shininess: 0, specularColor: [0, 0, 0] },
     }),
@@ -324,9 +326,9 @@ function layers(t: number) {
       visible: k3 > 0,
       opacity: k3,
       mesh: CROWN_MESH,
-      getPosition: (i) => [ginkgoPos[i * 2], ginkgoPos[i * 2 + 1], SIZE[i * 2] * CROWN_BASE],
+      getPosition: (i) => [ginkgoPos[i * 2], ginkgoPos[i * 2 + 1], SIZE[i * 2] * TREE_SCALE * CROWN_BASE],
       getScale: (i) => {
-        const w = SIZE[i * 2 + 1] * crownK, hh = SIZE[i * 2] * (1 - CROWN_BASE) * crownK;
+        const w = SIZE[i * 2 + 1] * TREE_SCALE * crownK, hh = SIZE[i * 2] * TREE_SCALE * (1 - CROWN_BASE) * crownK;
         return [w, w, hh];
       },
       getColor: crownColor,
@@ -391,6 +393,7 @@ function layers(t: number) {
 // 表示
 const $ = (id: string) => document.getElementById(id)!;
 $("count").textContent = meta.ginkgo.toLocaleString("ja-JP");
+$("scale-note").textContent = String(TREE_SCALE);
 const slider = $("slider") as HTMLInputElement;
 slider.max = String(days.length - 1);
 
