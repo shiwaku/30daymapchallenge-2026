@@ -93,7 +93,7 @@ npm run build                    # site/ に書き出す
 
 動画（`output/day10-ginkgo.mp4`）を添付。出典は画面内にもある。
 
-本文（X の文字数で273）:
+投稿した本文（X の文字数で273）:
 
 ```text
 #30DayMapChallenge Day 10 - Prompting only
@@ -118,4 +118,4 @@ https://shiwaku.github.io/30daymapchallenge-2026/day10-prompting-only/site/
 - [x] データ準備
 - [x] 地図作成（Web 版、MapLibre + deck.gl）
 - [x] 動画（`output/day10-ginkgo.mp4`、1920×1080・約37秒。`node scripts/record.mjs` で `?shot&tour` を画面録画。23区全体で 11/1〜11/28 → 青梅街道へ斜めに寄って（ズーム17.9） 11/28〜12/14 → 全体に戻って 12/15。出典は画面内）
-- [ ] 投稿（#30DayMapChallenge）
+- [x] 投稿（#30DayMapChallenge、2026-11-10、X、動画）
