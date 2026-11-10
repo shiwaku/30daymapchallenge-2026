@@ -342,7 +342,7 @@ function layers(t: number) {
       visible: rate > 0 && LEAF_FX,
       getFillColor: [...mix(YELLOW, FALLEN, 0.25 + 0.5 * f), 210],
       radiusUnits: "pixels",
-      getRadius: 2.2 + zk * 0.6,
+      getRadius: 0.9 + zk * 0.3, // 葉は木より小さく見えるように
       billboard: true,
       parameters: ADDITIVE,
       updateTriggers: { getFillColor: [t] },
