@@ -67,6 +67,22 @@ C:\Users\yshiw\Documents\GIS\30daymapchallenge-2026\day10-prompting-only\data\jm
 
 - QGIS（Temporal Controller）
 - Mapsuke（QGIS の中で動く AI エージェント、OSS）
+- Web 版: MapLibre GL JS + deck.gl（ScatterplotLayer）。QGIS では表しにくい、日と日のあいだの滑らかな補間や光のにじみを出すため。Claude Code にコマンドラインで指示して作った
+
+### Web 版
+
+- 公開先: [site/](https://shiwaku.github.io/30daymapchallenge-2026/day10-prompting-only/site/)
+- 色: 黄葉した年の割合で緑→黄、落葉した年の割合で黄→落ち葉色にし、散るほど点を小さく薄くする（道路沿いに点が重なるので、透明度だけでは薄く見えない）
+- URL パラメータ: `?date=11-24` でその日を表示、`?play` で自動再生、`?shot` で操作部品を隠す（録画用）
+
+```sh
+cd day10-prompting-only
+python -I scripts/build_web.py   # data/ の CSV から web/ を作る
+npm install
+npm run dev                      # 確認
+node scripts/shot.mjs http://localhost:5173/   # 確認用のスクリーンショット（output/web/）
+npm run build                    # site/ に書き出す
+```
 
 ## データ
 
@@ -78,7 +94,7 @@ C:\Users\yshiw\Documents\GIS\30daymapchallenge-2026\day10-prompting-only\data\jm
   - 平年値（同じ30年の平均）: 黄葉 11月23日、落葉 12月3日（累年値 CSV の平年値列で確認）
   - 参考: 2025年の観測日は黄葉 11月22日、落葉 12月4日
 - 出典表記: 「都道の街路樹」（東京都建設局）、生物季節観測（気象庁）を加工して作成
-- 取得データは `data/` に置き、Git 管理外
+- 取得データは `data/` に置き、Git 管理外。Web 版で使う `web/`（点の座標 1.1MB と日ごとの年数）は CC BY の加工データとして Git に入れる
 
 ## 経緯
 
@@ -91,6 +107,7 @@ C:\Users\yshiw\Documents\GIS\30daymapchallenge-2026\day10-prompting-only\data\jm
 
 - 準備度: ○
 - [x] データ準備
-- [ ] 地図作成（Mapsuke）
+- [ ] 地図作成（Mapsuke）— 1回目は黄葉日に一斉に切り替わった。2回目の実行で QGIS がクラッシュ（Mapsuke が作ったスクリプトの記号の作り方が原因）
+- [x] Web 版（MapLibre + deck.gl）
 - [ ] 動画（mp4 / GIF）
 - [ ] 投稿（#30DayMapChallenge）
