@@ -70,34 +70,65 @@ function at(t: number): { y: number; f: number } {
 }
 const mix = (a: RGB, b: RGB, k: number): RGB => [0, 1, 2].map((i) => Math.round(a[i] + (b[i] - a[i]) * k)) as RGB;
 
+// 点のデータは一度だけ作る（毎コマ作り直すと 14 万点を GPU に送り直してしまう）
+const bin = (p: Float32Array) => ({ length: p.length / 2, attributes: { getPosition: { value: p, size: 2 } } });
+const OTHER_DATA = bin(otherPos);
+const GINKGO_DATA = bin(ginkgoPos);
+
+// グロー（発光）: 大きさの違う薄い円を加算合成で重ね、外へ向かってなだらかに減る光にする。
+// 道路沿いに木が並ぶ所ほど光が重なって明るくなる。?glow=0 で消す、?glow=1.5 で強める
+const GLOW = Math.max(0, Number(params.get("glow") ?? 1));
+const ADDITIVE = {
+  depthCompare: "always",
+  blend: true,
+  blendColorOperation: "add",
+  blendColorSrcFactor: "src-alpha",
+  blendColorDstFactor: "one",
+  blendAlphaOperation: "add",
+  blendAlphaSrcFactor: "one",
+  blendAlphaDstFactor: "one",
+} as const;
+// 木が密に並ぶので、1本あたりの光はごく弱くする（強いと重なって白く飛ぶ）
+const HALO = [
+  { r: 16, a: 1.6 },
+  { r: 8, a: 3.5 },
+  { r: 4, a: 8 },
+];
+
 function layers(t: number) {
   const { y, f } = at(t);
   // 黄葉した年の割合で緑→黄、落葉した年の割合で黄→落ち葉色。点は散るほど小さく薄くする
   // （道路沿いに点が重なるので、透明度だけでは薄く見えない）
   const c = mix(mix(GREEN, YELLOW, y), FALLEN, f);
   const alive = 1 - f;
-  const bin = (p: Float32Array) => ({ length: p.length / 2, attributes: { getPosition: { value: p, size: 2 } } });
+  // 光は黄葉が進むほど強く、散るほど弱く小さくする
+  const glow = GLOW * alive * (0.08 + 0.92 * y * y);
+  const size = 0.3 + 0.7 * alive;
   return [
     new ScatterplotLayer({
       id: "other",
-      data: bin(otherPos),
+      data: OTHER_DATA,
       getFillColor: OTHER,
       radiusUnits: "pixels",
       getRadius: 0.9,
       radiusMinPixels: 0.6,
     }),
-    // 黄葉が進むほど光をにじませる
-    new ScatterplotLayer({
-      id: "ginkgo-glow",
-      data: bin(ginkgoPos),
-      getFillColor: [...c, Math.round(40 * alive * (0.4 + 0.6 * y))],
-      radiusUnits: "pixels",
-      getRadius: R * 4.5 * (0.3 + 0.7 * alive),
-      updateTriggers: { getFillColor: [t], getRadius: [t] },
-    }),
+    ...HALO.map(
+      (h, i) =>
+        new ScatterplotLayer({
+          id: `ginkgo-glow-${i}`,
+          data: GINKGO_DATA,
+          visible: glow > 0,
+          getFillColor: [...c, Math.min(255, Math.round(h.a * glow))],
+          radiusUnits: "pixels",
+          getRadius: R * h.r * size,
+          parameters: ADDITIVE,
+          updateTriggers: { getFillColor: [t, GLOW], getRadius: [t] },
+        }),
+    ),
     new ScatterplotLayer({
       id: "ginkgo",
-      data: bin(ginkgoPos),
+      data: GINKGO_DATA,
       getFillColor: [...c, Math.round(60 + 175 * alive)],
       radiusUnits: "pixels",
       getRadius: R * 1.7 * (0.35 + 0.65 * alive),
