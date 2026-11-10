@@ -25,6 +25,8 @@
 
 羽田空港は、4本の滑走路（A・B・C・D）を1色で描き、航跡がその上に重なって見えるようにする。空港のまわりの建物は PLATEAU の3D都市モデル（大田区）で立てる。
 
+風は、東京湾まわりのアメダス・気象台14地点（羽田・東京・江戸川臨海・練馬・府中・船橋・千葉・木更津・佐倉・我孫子・横浜・海老名・三浦・辻堂）の1時間ごとの風向・風速を、距離の2乗の逆数で重み付けして補間し、地面の高さに粒子として流す。
+
 パネルには、2024年度の月ごとの「羽田で南寄りの風だった時間の割合」と「南風運用の割合（国交省の公表値）」を並べ、その日が1年の中でどこにあたるかを見せる。
 
 ### 調べたこと
@@ -42,6 +44,7 @@
 - 高度は気圧から出した値（alt_baro）で、地面からの高さではない。画面では見やすさのため高さを2.5倍にしている（`?z=1` で実寸）
 - 運用は、空港から5km以内・高度600ft 未満を飛ぶ機体の向きから1時間ごとに推定したもので、公式の運用記録ではない
 - 切り替えは風だけで決まるわけではない（管制官が交通量なども合わせて判断する）ので、「風で決まる」とは言い切らず、風と運用を並べて見せる
+- 風の粒子は14地点の観測を補間したもので、地点のあいだの風は推定。粒子の速さは誇張している（1 m/s で約240 m/秒）。気象庁の風向は16方位、時間ごとの値は前1時間の観測
 - 城南島の音は、データを音に置き換えたもので、実際の音の大きさではない
 - 1週間・1日分の結果なので、「いつもそう」とは言えない。季節の傾向は国交省の公表値に従う
 
@@ -54,6 +57,7 @@
 
 ```sh
 cd day11-sound
+python -I scripts/fetch_wind.py   # 主役の日の14地点の風を取得
 python -I scripts/prepare.py   # ADS-B と気象庁の値から web/ を作る
 npm install
 npm run dev
@@ -62,12 +66,12 @@ npm run build                  # site/ に書き出す
 ```
 
 - 公開先: [site/](https://shiwaku.github.io/30daymapchallenge-2026/day11-sound/site/)
-- URL パラメータ: `?t=16:30` でその時刻、`?play` で自動再生、`?shot` で操作部品を隠す（録画用）、`?z=1` で高さを実寸、`?bldg=0` で建物を消す、`?cam=経度,緯度,ズーム,傾き,向き` でカメラを決める
+- URL パラメータ: `?t=16:30` でその時刻、`?play` で自動再生、`?shot` で操作部品を隠す（録画用）、`?z=1` で高さを実寸、`?bldg=0` で建物を消す、`?wind=0` で風を消す、`?cam=経度,緯度,ズーム,傾き,向き` でカメラを決める
 
 ## データ
 
 - 航跡: [ADSB.lol](https://adsb.lol/) の日次アーカイブ [adsblol/globe_history_2026](https://github.com/adsblol/globe_history_2026)（ODbL）。[adsb-flight-data-converter](https://github.com/shiwaku/adsb-flight-data-converter) で観測点にしたもの（2026-03-31〜04-06 UTC）から、2026-04-03 JST の羽田から半径35km・高度10,000ft 以下を取り出す。`web/` の航跡は ODbL の派生データ
-- 羽田の風: [気象庁 過去の気象データ検索](https://www.data.jma.go.jp/stats/etrn/index.php)（羽田、1時間ごとの値）
+- 風: [気象庁 過去の気象データ検索](https://www.data.jma.go.jp/stats/etrn/index.php)（1時間ごとの値）。羽田の2024年度分と、主役の日の14地点（`scripts/fetch_wind.py` で取得）
 - 運用の割合: 国土交通省「羽田空港のこれから」[ニュースレター第19号（2025年秋）](https://www.mlit.go.jp/koku/haneda/assets/pdf/newsletter_20.pdf)（2024年度）、[羽田空港の国際線増便の実現方策 FAQ](https://www.mlit.go.jp/koku/haneda/archive/faq/pdf/06.pdf)、[第38回定期運用報告](https://www.mlit.go.jp/koku/haneda/news/20261005)（2026年4〜6月）
 - 滑走路: [OpenStreetMap](https://www.openstreetmap.org/)（© OpenStreetMap contributors、ODbL）の aeroway=runway を Overpass API で取得し、滑走路ごとに中心線の両端を出す
 - 建物: [3D都市モデル（Project PLATEAU）大田区（2025年度）](https://www.geospatial.jp/ckan/dataset/plateau)の建築物モデル（LOD2、テクスチャなし、3D Tiles、CC BY 4.0）を配信URLから直接読む

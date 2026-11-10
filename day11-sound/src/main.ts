@@ -2,7 +2,7 @@ import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import { MapboxOverlay } from "@deck.gl/mapbox";
-import { ColumnLayer, PathLayer, ScatterplotLayer, TextLayer } from "@deck.gl/layers";
+import { ColumnLayer, LineLayer, PathLayer, ScatterplotLayer, TextLayer } from "@deck.gl/layers";
 import { Tile3DLayer, TripsLayer } from "@deck.gl/geo-layers";
 import { Tiles3DLoader } from "@loaders.gl/3d-tiles";
 import { Protocol } from "pmtiles";
@@ -27,6 +27,7 @@ type Pass = { i: number; s: number; alt: number; d: number; t: string; f: string
 type Month = { m: number; wind: number; am: number; pm: number; ops: number };
 type Runway = { id: string; ref: string; path: [number, number][]; c: [number, number] };
 type Use = Record<string, { arr: number; dep: number }>;
+type Station = { name: string; lon: number; lat: number; h: [number, number][] };
 type Track = { path: [number, number, number][]; ground: [number, number, number][]; ts: number[]; k: "arr" | "dep" };
 
 // URL のパラメータ: ?t=10:00 でその時刻、?shot で操作部品を隠す（録画用）、?play で自動再生
@@ -37,13 +38,14 @@ const NARROW = innerWidth <= 600;
 // 高さの誇張（見やすさのため）。?z=1 で実寸
 const ZX = Math.max(0.5, Number(params.get("z") ?? 2.5));
 
-const [buf, tmeta, day, jonan, year, rw] = await Promise.all([
+const [buf, tmeta, day, jonan, year, rw, windData] = await Promise.all([
   fetch(DATA + "tracks.bin").then((r) => r.arrayBuffer()),
   fetch(DATA + "tracks.json").then((r) => r.json() as Promise<{ day: string; haneda: [number, number]; tracks: TrackMeta[] }>),
   fetch(DATA + "day.json").then((r) => r.json() as Promise<{ day: string; hours: Hour[] }>),
   fetch(DATA + "jonan.json").then((r) => r.json() as Promise<{ spot: [number, number]; r: number; ft: number; passes: Pass[] }>),
   fetch(DATA + "year.json").then((r) => r.json() as Promise<{ fy: number; months: Month[] }>),
   fetch(DATA + "runways.json").then((r) => r.json() as Promise<{ runways: Runway[]; use: Use[] }>),
+  fetch(DATA + "wind.json").then((r) => r.json() as Promise<{ day: string; stations: Station[] }>),
 ]);
 // PLATEAU 大田区の建物（2025年度、LOD2、テクスチャなし）。羽田空港のターミナルなどを含む
 const PLATEAU_OTA =
@@ -121,6 +123,62 @@ const ADDITIVE = {
   blendAlphaSrcFactor: "one",
   blendAlphaDstFactor: "one",
 } as const;
+// 風の粒子: アメダス・気象台14地点の1時間ごとの風を、距離の2乗の逆数で重み付けして補間する。
+// 時間の方向も、となりの時間の値と滑らかにつなぐ。粒子の速さは見やすさのため誇張している
+const WIND = params.get("wind") !== "0"; // ?wind=0 で風を消す
+const ST = windData.stations.map((s) => ({
+  lon: s.lon,
+  lat: s.lat,
+  // 風向は「吹いてくる方角」。流れる向き（東向き u、北向き v）に直す
+  uv: s.h.map(([deg, ws]) => [-ws * Math.sin((deg * Math.PI) / 180), -ws * Math.cos((deg * Math.PI) / 180)] as [number, number]),
+}));
+function windAt(lon: number, lat: number, t: number): [number, number] {
+  const hf = Math.min(23, Math.max(0, t / 3600 - 0.5));
+  const h0 = Math.floor(hf), h1 = Math.min(23, h0 + 1), k = hf - h0;
+  let su = 0, sv = 0, sw = 0;
+  for (const s of ST) {
+    const dx = (lon - s.lon) * Math.cos((lat * Math.PI) / 180), dy = lat - s.lat;
+    const w = 1 / (dx * dx + dy * dy + 1e-5);
+    su += w * (s.uv[h0][0] * (1 - k) + s.uv[h1][0] * k);
+    sv += w * (s.uv[h0][1] * (1 - k) + s.uv[h1][1] * k);
+    sw += w;
+  }
+  return [su / sw, sv / sw];
+}
+const BOX = { w: 139.3, e: 140.3, s: 35.15, n: 35.92 };
+const NP = NARROW ? 900 : 2600;
+const K = 0.0022; // 1 m/s の風で 1秒に動く度数（誇張）
+type Particle = { x: number; y: number; age: number; life: number };
+const rnd = () => ({ x: BOX.w + Math.random() * (BOX.e - BOX.w), y: BOX.s + Math.random() * (BOX.n - BOX.s), age: 0, life: 2 + Math.random() * 3 });
+const parts: Particle[] = Array.from({ length: NP }, () => ({ ...rnd(), age: Math.random() * 3 }));
+const streaks = new Float32Array(NP * 4);
+const colors = new Uint8ClampedArray(NP * 4); // 粒子ごとの RGBA
+let lastWind = 0;
+function stepWind(t: number, now: number) {
+  const dt = lastWind ? Math.min(0.1, (now - lastWind) / 1000) : 0;
+  lastWind = now;
+  for (let i = 0; i < NP; i++) {
+    let p = parts[i];
+    p.age += dt;
+    if (p.age > p.life || p.x < BOX.w || p.x > BOX.e || p.y < BOX.s || p.y > BOX.n) p = parts[i] = rnd();
+    const [u, v] = windAt(p.x, p.y, t);
+    const c = Math.cos((p.y * Math.PI) / 180);
+    p.x += (u * K * dt) / c;
+    p.y += v * K * dt;
+    // 風の向きに伸びる短い線（長さは風速に比例）
+    const L = 0.35;
+    streaks[i * 4] = p.x - ((u * K * L) / c);
+    streaks[i * 4 + 1] = p.y - v * K * L;
+    streaks[i * 4 + 2] = p.x;
+    streaks[i * 4 + 3] = p.y;
+    const fade = Math.min(1, p.age / 0.6, (p.life - p.age) / 0.6);
+    colors[i * 4] = 210;
+    colors[i * 4 + 1] = 222;
+    colors[i * 4 + 2] = 240;
+    colors[i * 4 + 3] = Math.max(0, fade) * 120;
+  }
+}
+
 const FONT = '"BIZ UDPGothic", "Yu Gothic UI", "Hiragino Sans", "Noto Sans JP", sans-serif';
 const TRAIL = 1500; // 光の尾の長さ（秒）。長めにして、同じ所を通る「空の道」が見えるように
 
@@ -128,6 +186,30 @@ function layers(t: number) {
   // 城南島の上を通った直後は、輪を広げて「音」を見せる
   const recent = PASSES.filter((p) => p.s <= t && t - p.s < 10);
   return [
+    // 風（地面の高さに、航跡より下に流す）
+    new LineLayer({
+      id: "wind",
+      visible: WIND,
+      data: {
+        length: NP,
+        attributes: {
+          getSourcePosition: { value: streaks, size: 2, stride: 16, offset: 0 },
+          getTargetPosition: { value: streaks, size: 2, stride: 16, offset: 8 },
+          getColor: { value: colors, size: 4, normalized: true },
+        },
+      },
+      widthMinPixels: 1.2,
+      opacity: 1,
+    }),
+    new ScatterplotLayer<Station>({
+      id: "stations",
+      visible: WIND,
+      data: windData.stations,
+      getPosition: (s) => [s.lon, s.lat],
+      getFillColor: [230, 236, 245, 170],
+      radiusUnits: "pixels",
+      getRadius: 2.5,
+    }),
     // 羽田空港の建物（PLATEAU）
     new Tile3DLayer({
       id: "plateau",
@@ -382,7 +464,15 @@ slider.addEventListener("input", () => {
   render();
 });
 
+// 止めているあいだも風を流す
+function windLoop(now: number) {
+  if (WIND) stepWind(t, now);
+  if (!playing) render();
+  requestAnimationFrame(windLoop);
+}
+
 map.on("load", () => {
+  requestAnimationFrame(windLoop);
   render();
   map.once("idle", () => document.body.classList.add("ready"));
   if (params.has("play")) setPlaying(true);

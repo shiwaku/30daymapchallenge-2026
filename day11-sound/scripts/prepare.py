@@ -11,6 +11,7 @@
   day.json      主役の日の 1時間ごとの風と、航跡から推定した運用
   jonan.json    城南島の上（半径 JONAN_R m、高度 JONAN_FT ft 未満）を通った時刻・高度・機種
   runways.json  羽田の4本の滑走路の中心線（OpenStreetMap、ODbL）と、1時間ごとの使われ方（航跡からの推定）
+  wind.json     主役の日の、東京湾まわりのアメダス・気象台14地点の1時間ごとの風向（度）・風速（m/s）
   year.json     2024年度の月ごとの「南寄りの風の時間の割合」と公表の南風運用の割合
 
 使い方: python -I day11-sound/scripts/prepare.py
@@ -223,6 +224,39 @@ def runways(hours):
     return {"runways": out, "use": use}
 
 
+def station_wind():
+    """data/jma/wind/<地点番号>_<日>.html（fetch_wind.py で取ったもの）から、地点ごとに24時間の風を出す"""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from fetch_wind import STATIONS
+
+    out = []
+    for _, block, name, kind, lat, lon in STATIONS:
+        t = open(JMA / "wind" / f"{block}_{DAY:%Y%m%d}.html", encoding="utf-8", errors="replace").read()
+        vals = {}
+        for r in re.findall(r'<tr class="mtx"[^>]*>(.*?)</tr>', t, re.S):
+            c = [html.unescape(re.sub(r"<.*?>", "", x)).strip() for x in re.findall(r"<td[^>]*>(.*?)</td>", r, re.S)]
+            if not c or not c[0].isdigit():
+                continue
+            # アメダスは 風速=6・風向=7 列目、気象台は 風速=8・風向=9 列目
+            iw, idr = (6, 7) if kind == "a" else (8, 9)
+            wd = c[idr].rstrip(")] ").strip()
+            try:
+                ws = float(c[iw].rstrip(")] "))
+            except ValueError:
+                continue
+            if wd == "静穏":
+                vals[int(c[0])] = (0, 0.0)
+            elif wd in ANG:
+                vals[int(c[0])] = (ANG[wd], ws)
+        # h時台には (h+1)時の値（h時〜h+1時の観測）を当てる。欠けた時間は前の時間の値で埋める
+        hours, last = [], (0, 0.0)
+        for h in range(24):
+            last = vals.get(h + 1, last)
+            hours.append([last[0], last[1]])
+        out.append({"name": name, "lon": round(lon, 4), "lat": round(lat, 4), "h": hours})
+    return out
+
+
 def year_wind():
     am, pm, day = defaultdict(lambda: [0, 0]), defaultdict(lambda: [0, 0]), defaultdict(lambda: [0, 0])
     for f in sorted(glob.glob(str(JMA / "hourly" / "*.html"))):
@@ -265,6 +299,7 @@ def main():
     (WEB / "runways.json").write_text(json.dumps(runways(hours), ensure_ascii=False), encoding="utf-8")
     passes = jonan_passes(tracks)
     (WEB / "jonan.json").write_text(json.dumps({"spot": JONAN, "r": JONAN_R, "ft": JONAN_FT, "passes": passes}, ensure_ascii=False), encoding="utf-8")
+    (WEB / "wind.json").write_text(json.dumps({"day": DAY.isoformat(), "stations": station_wind()}, ensure_ascii=False), encoding="utf-8")
     (WEB / "year.json").write_text(json.dumps({"fy": 2024, "months": year_wind()}, ensure_ascii=False), encoding="utf-8")
 
     npts = sum(len(t["pts"]) for t in tracks)
