@@ -98,5 +98,5 @@ python -I scripts/sound.py output/live/rec-<日時>      # 音を作って重ね
 - 準備度: ○
 - [x] データ準備
 - [x] 地図作成（Web 版）
-- [x] 動画（音つき、`output/day11-haneda.mp4`、1920×1080・約51秒。Git 管理外）
+- [x] 動画（音つき、1920×1080・約51秒。Git 管理外）。録画そのまま `output/day11-haneda.mp4`、投稿用に圧縮した `output/day11-haneda-post.mp4`（約42MB）。画面の左上に「#30DayMapChallenge Day 11 Senses: Sound」
 - [ ] 投稿（#30DayMapChallenge）
