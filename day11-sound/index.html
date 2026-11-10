@@ -7,6 +7,7 @@
 </head>
 <body>
   <div id="map"></div>
+  <div id="banner"></div>
 
   <section id="panel">
     <div class="sub">風で変わる羽田の空　<span id="date"></span></div>
@@ -45,6 +46,7 @@
       <span><i class="ln dep"></i>離陸</span>
       <span><i class="ln wind"></i>風（アメダス14地点を補間）</span>
       <span><i class="dot jonan"></i>城南島の上を通った便 <b id="jonan-count">0</b></span>
+      <span><i class="ln arrow-l"></i>羽田の風（空港の上の矢印）</span>
     </div>
 
     <div id="year">
@@ -56,7 +58,7 @@
     <p class="note">
       航跡は ADS-B（ADSB.lol）。発信していない機体は入らない。高度は気圧から出した値で、地面からの高さではない。高さは見やすさのため2.5倍にしている。
       運用は空港の近くを低く飛ぶ機体の向きから推定したもので、切り替えは管制官が風などから判断している。
-      風は、羽田・東京・千葉・横浜など14地点の1時間ごとの風向・風速を距離で重み付けして補間したもので、粒子の速さは誇張している。城南島の音は、上空 500m 以内・高度1,500ft 未満を通った機体をデータから鳴らしたもので、実際の音の大きさではない。
+      風は、羽田・東京・千葉・横浜など14地点の1時間ごとの風向・風速を距離で重み付けして補間したもので、粒子の速さは誇張している。音は、羽田の風速と、城南島から機体までの距離をもとに作ったもので、実際に録った音ではない（再生中に鳴る）。
     </p>
     <p class="src">出典: ADSB.lol（ODbL）、気象庁「過去の気象データ」（羽田）、国土交通省「羽田空港のこれから」ニュースレター第19号を加工して作成 / 滑走路: © OpenStreetMap contributors / 建物: 3D都市モデル（Project PLATEAU）大田区（2025年度） / 背景: <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院ベクトルタイル</a></p>
   </section>

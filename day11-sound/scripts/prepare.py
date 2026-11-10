@@ -11,6 +11,7 @@
   day.json      主役の日の 1時間ごとの風と、航跡から推定した運用
   jonan.json    城南島の上（半径 JONAN_R m、高度 JONAN_FT ft 未満）を通った時刻・高度・機種
   runways.json  羽田の4本の滑走路の中心線（OpenStreetMap、ODbL）と、1時間ごとの使われ方（航跡からの推定）
+  loud.json     城南島で聞こえる飛行機の音の強さ（0〜1）。2秒ごと、1日分。機体と城南島の3Dの距離から決める
   wind.json     主役の日の、東京湾まわりのアメダス・気象台14地点の1時間ごとの風向（度）・風速（m/s）
   year.json     2024年度の月ごとの「南寄りの風の時間の割合」と公表の南風運用の割合
 
@@ -257,6 +258,38 @@ def station_wind():
     return out
 
 
+LOUD_STEP = 2  # 秒
+LOUD_REF = 300  # この距離（m）で強さ 0.63 になる
+
+
+def loudness(tracks):
+    """城南島（地上）から各機体までの3Dの距離 d で、強さ = 1 - exp(-Σ (LOUD_REF / d)^2) とする。
+    音の強さの目安で、騒音の測定値ではない。航跡の点のあいだは1秒ごとに線形に補間する"""
+    n = 86400 // LOUD_STEP
+    acc = [0.0] * n
+    jx, jy = JONAN
+    cx = 111320 * math.cos(math.radians(jy))
+    for tr in tracks:
+        p = tr["pts"]
+        for a, b in zip(p, p[1:]):
+            dt = b[3] - a[3]
+            if dt <= 0 or dt > GAP_S:
+                continue
+            # 遠い区間は飛ばす（4km より遠ければ聞こえないとみなす）
+            if min(km(a[0], a[1], jx, jy), km(b[0], b[1], jx, jy)) > 4:
+                continue
+            for k in range(int(dt) + 1):
+                f = k / dt
+                x = (a[0] + (b[0] - a[0]) * f - jx) * cx
+                y = (a[1] + (b[1] - a[1]) * f - jy) * 110540
+                z = a[2] + (b[2] - a[2]) * f
+                d2 = x * x + y * y + z * z + 50 ** 2
+                i = int((a[3] + k) // LOUD_STEP)
+                if 0 <= i < n:
+                    acc[i] += (LOUD_REF ** 2) / d2 / LOUD_STEP
+    return [round(1 - math.exp(-v), 3) for v in acc]
+
+
 def year_wind():
     am, pm, day = defaultdict(lambda: [0, 0]), defaultdict(lambda: [0, 0]), defaultdict(lambda: [0, 0])
     for f in sorted(glob.glob(str(JMA / "hourly" / "*.html"))):
@@ -299,6 +332,7 @@ def main():
     (WEB / "runways.json").write_text(json.dumps(runways(hours), ensure_ascii=False), encoding="utf-8")
     passes = jonan_passes(tracks)
     (WEB / "jonan.json").write_text(json.dumps({"spot": JONAN, "r": JONAN_R, "ft": JONAN_FT, "passes": passes}, ensure_ascii=False), encoding="utf-8")
+    (WEB / "loud.json").write_text(json.dumps({"step": LOUD_STEP, "lv": loudness(tracks)}), encoding="utf-8")
     (WEB / "wind.json").write_text(json.dumps({"day": DAY.isoformat(), "stations": station_wind()}, ensure_ascii=False), encoding="utf-8")
     (WEB / "year.json").write_text(json.dumps({"fy": 2024, "months": year_wind()}, ensure_ascii=False), encoding="utf-8")
 
