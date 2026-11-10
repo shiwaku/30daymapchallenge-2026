@@ -572,7 +572,7 @@ async function tour() {
   // 23区全体で、緑から黄色へ光が広がって、いちばん光るところまで
   await playRange("11-01", "11-28", 9);
   await wait(800);
-  map.flyTo({ center: road.spot, zoom: 17.3, pitch: 64, bearing: -40, padding: PAD, duration: 3500, essential: true });
+  map.flyTo({ center: road.spot, zoom: 17.9, pitch: 66, bearing: -40, padding: PAD, duration: 3500, essential: true });
   await moved();
   // 回り込みながら、黄色い並木が縮んで散るまでをゆっくり
   map.easeTo({ bearing: 5, duration: 15000, easing: (x) => x, essential: true });
