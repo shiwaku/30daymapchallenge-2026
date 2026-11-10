@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>都道のイチョウが色づいて散るまで — #30DayMapChallenge Day 10 Prompting only</title>
+</head>
+<body>
+  <div id="map"></div>
+
+  <section id="panel">
+    <div class="sub">東京23区・都道のイチョウ <span id="count"></span>本が色づき、散るまで</div>
+    <div id="date"></div>
+    <div id="stat">
+      <div><span class="k">過去30年で、この日までに</span></div>
+      <div class="row"><i class="sw y"></i>黄葉した年 <b id="ny"></b></div>
+      <div class="row"><i class="sw f"></i>落葉した年 <b id="nf"></b></div>
+    </div>
+    <svg id="chart" viewBox="0 0 300 70" preserveAspectRatio="none"></svg>
+    <div class="ctrl">
+      <button id="play" type="button">再生</button>
+      <input id="slider" type="range" min="0" step="0.01">
+      <select id="speed">
+        <option value="0.5">ゆっくり</option>
+        <option value="1" selected>ふつう</option>
+        <option value="2">はやい</option>
+      </select>
+    </div>
+    <div class="legend">
+      <span><i class="dot g"></i>イチョウ（緑葉）</span>
+      <span><i class="dot y"></i>イチョウ（黄葉）</span>
+      <span><i class="dot f"></i>散ったあと</span>
+      <span><i class="dot o"></i>その他の街路樹</span>
+    </div>
+    <p class="note">
+      色の濃さは、東京（北の丸公園の標本木）で1991〜2020年に観測されたイチョウの黄葉日・落葉日から、
+      「その日までに黄葉（落葉）していた年の割合」で決めています。場所による差は表していません。
+    </p>
+    <p class="src">出典: 「都道の街路樹」（東京都建設局、CC BY）、生物季節観測（気象庁）を加工して作成</p>
+  </section>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

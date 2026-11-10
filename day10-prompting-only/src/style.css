@@ -1,0 +1,50 @@
+:root {
+  --bg: #0b0f14;
+  --fg: #e8ecf1;
+  --dim: #8a94a3;
+  --green: #4cc46a;
+  --yellow: #ffd23f;
+  --other: #6e7680;
+}
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
+  font-family: "BIZ UDPGothic", "Yu Gothic UI", "Hiragino Sans", "Noto Sans JP", sans-serif; }
+#map { position: absolute; inset: 0; }
+
+#panel { position: absolute; left: 32px; top: 28px; width: 460px; max-width: calc(100vw - 32px);
+  background: rgba(11, 15, 20, 0.72); padding: 16px 18px; border-radius: 6px; box-sizing: border-box; }
+.sub { font-size: 14px; color: var(--fg); }
+#date { white-space: nowrap; font-size: 60px; font-weight: 700; line-height: 1.1; margin: 4px 0 8px; letter-spacing: 0.02em; }
+#stat { font-size: 15px; color: var(--dim); }
+#stat .row { display: flex; align-items: center; gap: 8px; color: var(--fg); margin-top: 2px; }
+#stat b { font-size: 22px; font-variant-numeric: tabular-nums; }
+.sw { display: inline-block; width: 14px; height: 3px; }
+.sw.y { background: var(--yellow); }
+.sw.f { background: #c98a3b; }
+.dot.f { background: #966834; }
+#chart { width: 100%; height: 70px; margin: 10px 0 6px; display: block; }
+.ctrl { display: flex; gap: 8px; align-items: center; }
+.ctrl input { flex: 1; }
+.ctrl button, .ctrl select { background: #1b222c; color: var(--fg); border: 1px solid #333c48; border-radius: 4px;
+  padding: 4px 10px; font: inherit; font-size: 13px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; margin-top: 10px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.dot.g { background: var(--green); }
+.dot.y { background: var(--yellow); }
+.dot.o { background: var(--other); width: 5px; height: 5px; }
+.note { font-size: 11.5px; color: var(--dim); line-height: 1.55; margin: 10px 0 0; }
+.src { font-size: 11px; color: var(--dim); margin: 6px 0 0; }
+
+/* 録画用: ?shot で操作部品を隠す */
+body.shot .ctrl { display: none; }
+body.shot .maplibregl-ctrl-bottom-right { display: none; }
+
+@media (max-width: 600px) {
+  #panel { left: 16px; right: 16px; top: 16px; width: auto; padding: 12px; }
+  #date { font-size: 42px; }
+  #chart { display: none; }
+  #panel { background: none; padding: 0; }
+  .sub { font-size: 12px; }
+  .note { font-size: 10.5px; margin-top: 6px; }
+  .ctrl { margin-top: 6px; }
+}
