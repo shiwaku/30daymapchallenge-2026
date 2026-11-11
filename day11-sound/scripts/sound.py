@@ -51,6 +51,35 @@ def varying_filter(x, ctrl, lo, hi, kind, blocks=2048):
     return out
 
 
+FLYBY_SRC = ROOT / "data" / "20261103_112631571.mp4"  # 入間航空祭で録った動画（Git 管理外）
+FLYBY_FROM, FLYBY_TO = 57.5, 67.16  # 秒
+FLYBY_PEAK = 4.8  # 切り出しの頭から、いちばん大きい所までの秒数
+FLYBY_AT = [10 * 3600 + 11 * 60 + 18, 18 * 3600 + 20 * 60 + 51]  # 10:11 JAL454（城南島から59m）、18:20 JAL914（55m）
+
+
+def load_flyby():
+    raw = subprocess.run(["ffmpeg", "-loglevel", "error", "-ss", str(FLYBY_FROM), "-to", str(FLYBY_TO), "-i", str(FLYBY_SRC),
+                          "-vn", "-ac", "1", "-ar", str(SR), "-f", "s16le", "-"], check=True, capture_output=True).stdout
+    x = np.frombuffer(raw, dtype=np.int16).astype(np.float64) / 32768
+    fi = int(0.5 * SR)
+    x[:fi] *= np.linspace(0, 1, fi)
+    return x
+
+
+def plane_envelope(lv, window=0.25, release=1.0):
+    """動画の時間で、直前 window 秒の最大値を取り、release 秒で下がる包絡にする（上がるときはすぐ）"""
+    w = max(1, int(window * SR))
+    blk = 256
+    m = np.array([lv[max(0, i - w):i + blk].max() for i in range(0, len(lv), blk)])
+    k = np.exp(-blk / (release * SR))
+    env = np.zeros_like(m)
+    e = 0.0
+    for i, v in enumerate(m):
+        e = v if v > e else e * k
+        env[i] = e
+    return np.repeat(env, blk)[:len(lv)]
+
+
 def main():
     rec = Path(sys.argv[1])
     tlog = np.array(json.loads((rec / "tlog.json").read_text()))
@@ -76,9 +105,22 @@ def main():
     sr, roar = wavfile.read(ROOT / "web" / "roar.wav")
     assert sr == SR
     roar = np.resize(roar.astype(np.float64) / 32768, n)
-    plane = varying_filter(roar, lv, 400, 9400, "lowpass") * np.minimum(1, lv ** 1.2 * 0.9)
+    # 早送りでは1機の通過が数十ミリ秒になるので、通ったら一気に上げ、ゆっくり下げる包絡にする
+    env = plane_envelope(lv)
+    plane = varying_filter(roar, env, 1500, 12000, "lowpass") * env
 
-    mix = wind * 0.6 + plane * 0.9
+    # 運用が切り替わってゆっくり再生になる区間で、城南島のほぼ真上を通った1機に合わせて、
+    # 録った通過音（入間航空祭、近づく→真上→遠ざかるの約10秒）をそのまま重ねる。いちばん大きい所を通過の瞬間に合わせる
+    flyby = np.zeros(n)
+    clip = load_flyby()
+    for s_map in FLYBY_AT:
+        at = np.interp(s_map, tlog[:, 1], tlog[:, 0]) / 1000 - FLYBY_PEAK
+        i = int(at * SR)
+        a0, b0 = max(0, i), min(n, i + len(clip))
+        flyby[a0:b0] += clip[a0 - i:b0 - i]
+    # 録った音が鳴るあいだは、ループの音を下げる
+    duck = 1 - 0.7 * np.clip(varying_filter(np.abs(flyby), np.zeros(n), 2, 2, "lowpass") * 8, 0, 1)
+    mix = wind * 0.6 + plane * 0.9 * duck + flyby * 1.6
     # 始まりと終わりをなめらかに
     fade = np.minimum(1, np.minimum(tau / 1.0, (dur - tau) / 1.5))
     mix *= np.clip(fade, 0, 1)
