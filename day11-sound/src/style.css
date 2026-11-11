@@ -73,3 +73,16 @@ body.shot .maplibregl-ctrl-bottom-right { display: none; }
 .ln.arrow-l { background: #f0f4fa; height: 3px; }
 body.shot #year { display: none; }
 @media (max-width: 600px) { #banner { font-size: 18px; top: 46%; padding: 10px 14px; } #banner div { font-size: 13px; } }
+
+/* パネルの開け閉め */
+#toggle { position: absolute; right: 10px; top: 10px; width: 30px; height: 30px; border-radius: 50%; border: 1px solid #333c48;
+  background: #1b222c; color: var(--fg); font-size: 18px; line-height: 1; cursor: pointer; padding: 0; }
+#toggle:hover { background: #253040; }
+#mini { display: none; font-size: 14px; font-weight: 700; }
+#panel.collapsed #panel-body { display: none; }
+#panel.collapsed #mini { display: block; }
+#panel.collapsed { width: auto; padding-right: 52px; }
+#mini-mode.north { color: var(--north); }
+#mini-mode.south { color: var(--south); }
+#mini-mode.south-city { color: var(--south-city); }
+body.shot #toggle { display: none; }

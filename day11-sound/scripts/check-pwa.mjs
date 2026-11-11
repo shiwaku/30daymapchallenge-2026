@@ -1,0 +1,25 @@
+// 公開版（site/）のパネルの開け閉めと、PWA（Service Worker・オフラインで開けるか）を確かめる
+import { chromium } from "playwright-core";
+const base = process.argv[2] ?? "http://127.0.0.1:5193/site/";
+const browser = await chromium.launch({ channel: "chrome", args: ["--use-angle=default"] });
+const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 } });
+const page = await ctx.newPage();
+page.on("pageerror", (e) => console.log("pageerror:", e.message));
+await page.goto(base + "?t=12:00");
+await page.waitForSelector("body.ready", { timeout: 120000 });
+const man = await page.evaluate(async () => (await fetch(document.querySelector('link[rel=manifest]').href)).json());
+console.log("manifest", man.short_name, man.icons.length);
+await page.screenshot({ path: "output/web/pwa-open.png" });
+await page.click("#toggle");
+await page.waitForTimeout(300);
+await page.screenshot({ path: "output/web/pwa-closed.png" });
+console.log("collapsed", await page.evaluate(() => document.getElementById("panel").classList.contains("collapsed")));
+await page.evaluate(() => navigator.serviceWorker.ready);
+await page.reload();
+await page.waitForSelector("body.ready", { timeout: 120000 });
+console.log("controlled", await page.evaluate(() => !!navigator.serviceWorker.controller), "remembered", await page.evaluate(() => document.getElementById("panel").classList.contains("collapsed")));
+await ctx.setOffline(true);
+await page.reload();
+await page.waitForTimeout(4000);
+console.log("offline title", await page.title(), "clock", await page.evaluate(() => document.getElementById("clock")?.textContent));
+await browser.close();

@@ -4,6 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>風で変わる羽田の空 — #30DayMapChallenge Day 11 Sound</title>
+  <meta name="theme-color" content="#070a10">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="羽田の空">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="/icon-180.png">
 </head>
 <body>
   <div id="map"></div>
@@ -13,6 +20,10 @@
     <div class="day">#30DayMapChallenge Day 11 Senses: Sound</div>
     <div class="sub">風で変わる羽田の空　<span id="date"></span></div>
     <div id="clock">00:00</div>
+    <button id="toggle" type="button" aria-label="パネルを閉じる" aria-expanded="true">−</button>
+    <div id="mini"><span id="mini-mode"></span>　<span id="mini-wind"></span></div>
+
+    <div id="panel-body">
 
     <div id="wind-row">
       <svg id="wind" viewBox="-50 -50 100 100" aria-label="羽田の風">
@@ -62,6 +73,7 @@
       風は、羽田・東京・千葉・横浜など14地点の1時間ごとの風向・風速を距離で重み付けして補間したもので、粒子の速さは誇張している。音は、羽田の風速と、城南島から機体までの距離をもとに作ったもので、実際に録った音ではない（再生中に鳴る）。
     </p>
     <p class="src">出典: ADSB.lol（ODbL）、気象庁「過去の気象データ」（羽田）、国土交通省「羽田空港のこれから」ニュースレター第19号を加工して作成 / 滑走路: © OpenStreetMap contributors / 建物: 3D都市モデル（Project PLATEAU）大田区（2025年度） / 背景: <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院ベクトルタイル</a></p>
+    </div>
   </section>
 
   <script type="module" src="/src/main.ts"></script>
