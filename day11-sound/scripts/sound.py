@@ -51,6 +51,20 @@ def varying_filter(x, ctrl, lo, hi, kind, blocks=2048):
     return out
 
 
+def plane_envelope(lv, window=0.25, release=1.0):
+    """動画の時間で、直前 window 秒の最大値を取り、release 秒で下がる包絡にする（上がるときはすぐ）"""
+    w = max(1, int(window * SR))
+    blk = 256
+    m = np.array([lv[max(0, i - w):i + blk].max() for i in range(0, len(lv), blk)])
+    k = np.exp(-blk / (release * SR))
+    env = np.zeros_like(m)
+    e = 0.0
+    for i, v in enumerate(m):
+        e = v if v > e else e * k
+        env[i] = e
+    return np.repeat(env, blk)[:len(lv)]
+
+
 def main():
     rec = Path(sys.argv[1])
     tlog = np.array(json.loads((rec / "tlog.json").read_text()))
@@ -76,7 +90,9 @@ def main():
     sr, roar = wavfile.read(ROOT / "web" / "roar.wav")
     assert sr == SR
     roar = np.resize(roar.astype(np.float64) / 32768, n)
-    plane = varying_filter(roar, lv, 400, 9400, "lowpass") * np.minimum(1, lv ** 1.2 * 0.9)
+    # 早送りでは1機の通過が数十ミリ秒になるので、通ったら一気に上げ、ゆっくり下げる包絡にする
+    env = plane_envelope(lv)
+    plane = varying_filter(roar, env, 1500, 12000, "lowpass") * env
 
     mix = wind * 0.6 + plane * 0.9
     # 始まりと終わりをなめらかに

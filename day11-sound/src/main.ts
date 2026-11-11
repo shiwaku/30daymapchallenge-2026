@@ -582,15 +582,27 @@ function loudAt(t: number) {
   const a = Math.floor(i), k = i - a;
   return (loud.lv[a] ?? 0) * (1 - k) + (loud.lv[a + 1] ?? 0) * k;
 }
+// 早送りでは1機の通過が一瞬になるので、前のコマから今までの最大値を取り、通ったら一気に上げてゆっくり（約1秒）下げる
+let audioT = -1;
+let planeEnv = 0;
+let audioWall = 0;
 function updateAudio(t: number) {
   if (!audio) return;
   const now = audio.currentTime;
   const ws = hanedaWind(t)[1];
   windGain.gain.setTargetAtTime(Math.min(0.5, 0.025 * ws ** 1.4), now, 0.3);
   windFilter.frequency.setTargetAtTime(300 + ws * 90, now, 0.3);
-  const lv = loudAt(t);
-  planeGain.gain.setTargetAtTime(Math.min(1, lv ** 1.2 * 0.9), now, 0.08);
-  planeFilter.frequency.setTargetAtTime(400 + lv * 9000, now, 0.08);
+  let lv = loudAt(t);
+  if (audioT >= 0 && Math.abs(t - audioT) < 3600) {
+    const [a, b] = t > audioT ? [audioT, t] : [t, audioT];
+    for (let x = a; x <= b; x += loud.step) lv = Math.max(lv, loudAt(x));
+  }
+  audioT = t;
+  const dt = audioWall ? Math.min(0.5, now - audioWall) : 0;
+  audioWall = now;
+  planeEnv = lv > planeEnv ? lv : planeEnv * Math.exp(-dt / 1.0);
+  planeGain.gain.setTargetAtTime(planeEnv, now, 0.03);
+  planeFilter.frequency.setTargetAtTime(1500 + planeEnv * 10500, now, 0.03);
 }
 
 // 運用が切り替わる時刻（1時間ごとの推定で、前の時間と運用が変わった時間の始まり）
