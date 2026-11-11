@@ -454,12 +454,50 @@ function panel(t: number) {
     $("arrow").setAttribute("transform", `rotate(${hr.deg + 180})`);
     $("wind-text").textContent = `${hr.wd}の風 ${hr.ws?.toFixed(1)} m/s`;
   }
+  const mini = $("mini-mode");
+  mini.className = hr.mode ?? "";
+  mini.textContent = hr.mode ? MODE_NAME[hr.mode] : "便が少ない時間";
+  $("mini-wind").textContent = hr.deg !== null ? `${hr.wd}の風 ${hr.ws?.toFixed(1)} m/s` : "";
   const mode = $("mode");
   mode.className = hr.mode ?? "";
   mode.textContent = hr.mode ? MODE_NAME[hr.mode] : "便が少ない時間";
   $("mode-note").textContent = hr.mode ? MODE_NOTE[hr.mode] : "深夜・早朝は着陸・離陸ともに少ない";
   $("jonan-count").textContent = String(PASSES.filter((p) => p.s <= t).length);
   cursor.setAttribute("x", String((t / 86400) * 300 - 1));
+}
+
+// パネルの開け閉め。状態はこの端末に覚えておく（使えないときは覚えない）。スマホでは最初は閉じる
+{
+  const panelEl = $("panel");
+  const btn = $("toggle");
+  const KEY = "day11-panel";
+  let saved: string | null = null;
+  try {
+    saved = localStorage.getItem(KEY);
+  } catch {
+    saved = null;
+  }
+  const set = (collapsed: boolean) => {
+    panelEl.classList.toggle("collapsed", collapsed);
+    btn.textContent = collapsed ? "+" : "−";
+    btn.setAttribute("aria-expanded", String(!collapsed));
+    btn.setAttribute("aria-label", collapsed ? "パネルを開く" : "パネルを閉じる");
+  };
+  set(SHOT ? false : saved ? saved === "1" : NARROW);
+  btn.addEventListener("click", () => {
+    const c = !panelEl.classList.contains("collapsed");
+    set(c);
+    try {
+      localStorage.setItem(KEY, c ? "1" : "0");
+    } catch {
+      /* 覚えられなくても動く */
+    }
+  });
+}
+
+// PWA: 公開版だけ Service Worker を登録する（開発中は登録しない）
+if (import.meta.env.PROD && "serviceWorker" in navigator && !SHOT) {
+  navigator.serviceWorker.register("./sw.js").catch(() => {});
 }
 
 // 24時間の運用の帯
