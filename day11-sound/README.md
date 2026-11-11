@@ -99,24 +99,20 @@ python -I scripts/sound.py output/live/rec-<日時>      # 音を作って重ね
 
 ## 投稿文
 
-動画（`output/day11-haneda-post.mp4`）を添付。出典は画面内にもある。
+音なしの動画（`output/day11-haneda-post-nosound.mp4`、`day11-haneda-post.mp4` から音を抜いたもの）を添付。デモサイトは載せない。出典は画面内にもある。
 
-本文（X の文字数で268）:
+投稿した本文（X の文字数で213）:
 
 ```text
 #30DayMapChallenge Day 11 - Senses: Sound
-羽田の滑走路の使い方が切り替わり、空の道が入れ替わる1日を地図にしてみました✈️
-📝4/3は朝の北風運用から10時台に南風運用へ。音は機体が城南島に近いほど大きくなります
-デモサイトはこちら↓
-https://shiwaku.github.io/30daymapchallenge-2026/day11-sound/site/
-#MapLibre #deckgl
+羽田の滑走路の使い方が切り替わり、北風運用・南風運用の入れ替わる1日を地図にしてみた✈️
+4/3は朝の北風運用から10時台に南風運用へ。城南島にいたら頭の上で轟音が聞こえそうだ。
 ```
 
-リプライ（X の文字数で278）:
+リプライ（X の文字数で225）:
 
 ```text
-出典）ADSB.lol（ODbL）、気象庁「過去の気象データ」、国土交通省「羽田空港のこれから」を加工して作成、© OpenStreetMap contributors、PLATEAU（大田区）、国土地理院ベクトルタイル
-飛行機の音は入間航空祭で録ったブルーインパルス（旅客機ではありません）
+出典）ADSB.lol（ODbL）、気象庁「過去の気象データ」、国土交通省「羽田空港のこれから」を加工して作成、© OpenStreetMap contributors、3D都市モデル（PLATEAU）大田区、背景: 国土地理院ベクトルタイル
 制作に生成AI（Claude Code）を使用
 ```
 
@@ -126,4 +122,4 @@ https://shiwaku.github.io/30daymapchallenge-2026/day11-sound/site/
 - [x] データ準備
 - [x] 地図作成（Web 版）
 - [x] 動画（音つき、1920×1080・約51秒。Git 管理外）。録画そのまま `output/day11-haneda.mp4`、投稿用に圧縮した `output/day11-haneda-post.mp4`（約42MB）、軽い版 `output/day11-haneda-720p.mp4`（720p・約13MB）。画面の左上に「#30DayMapChallenge Day 11 Senses: Sound」
-- [ ] 投稿（#30DayMapChallenge）
+- [x] 投稿（#30DayMapChallenge、2026-11-11。音なしの動画）
