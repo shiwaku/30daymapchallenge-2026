@@ -325,11 +325,12 @@ function layers(t: number) {
     new PathLayer<{ p: [number, number][] }>({
       id: "wind-arrow-edge",
       data: windArrow(t),
+      parameters: { depthCompare: "always" }, // 地面と同じ高さなので、重なり順のとおりに描く
       getPath: (d) => d.p,
       getColor: [5, 7, 10, 230],
       widthUnits: "meters",
-      getWidth: 420,
-      widthMinPixels: 9,
+      getWidth: 240,
+      widthMinPixels: 6,
       capRounded: true,
       jointRounded: true,
       updateTriggers: { getPath: [Math.round(t / 60)] },
@@ -337,22 +338,23 @@ function layers(t: number) {
     new PathLayer<{ p: [number, number][] }>({
       id: "wind-arrow",
       data: windArrow(t),
+      parameters: { depthCompare: "always" }, // 地面と同じ高さなので、重なり順のとおりに描く
       getPath: (d) => d.p,
       getColor: [255, 255, 255, 245],
       widthUnits: "meters",
-      getWidth: 240,
-      widthMinPixels: 5,
+      getWidth: 130,
+      widthMinPixels: 3,
       capRounded: true,
       jointRounded: true,
       updateTriggers: { getPath: [Math.round(t / 60)] },
     }),
     new TextLayer<{ p: [number, number]; s: string }>({
       id: "wind-arrow-label",
-      data: [{ p: [ARROW_AT[0], ARROW_AT[1] - 0.03], s: windLabel(t) }],
+      data: [{ p: [ARROW_AT[0], ARROW_AT[1] - 0.018], s: windLabel(t) }],
       getPosition: (d) => d.p,
       getText: (d) => d.s,
       getColor: [255, 255, 255, 245],
-      getSize: 17,
+      getSize: 13,
       fontFamily: FONT,
       fontWeight: 700,
       characterSet: "羽田の風静穏北東南西 0123456789.m/s",
@@ -420,14 +422,14 @@ function windLabel(t: number) {
 function windArrow(t: number) {
   const [dir, ws] = hanedaWind(t);
   if (ws < 0.3) return [];
-  const L = 2200 + ws * 900; // m
+  const L = 1100 + ws * 450; // m
   const r = (dir * Math.PI) / 180;
   const cx = 111320 * Math.cos((HANEDA[1] * Math.PI) / 180), cy = 110540;
   const pt = (along: number, side: number): [number, number] => [
     ARROW_AT[0] + (Math.sin(r) * along + Math.cos(r) * side) / cx,
     ARROW_AT[1] + (Math.cos(r) * along - Math.sin(r) * side) / cy,
   ];
-  const head = Math.min(2000, L * 0.32);
+  const head = Math.min(1000, L * 0.32);
   return [{ p: [pt(-L / 2, 0), pt(L / 2, 0)] }, { p: [pt(L / 2 - head, -head * 0.6), pt(L / 2, 0), pt(L / 2 - head, head * 0.6)] }];
 }
 

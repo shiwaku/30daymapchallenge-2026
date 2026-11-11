@@ -16,7 +16,7 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
   background: rgba(7, 10, 16, 0.86); padding: 14px 16px; border-radius: 6px; box-sizing: border-box; }
 .day { font-size: 12.5px; font-weight: 700; white-space: nowrap; color: var(--jonan); letter-spacing: 0.02em; margin-bottom: 2px; }
 .sub { font-size: 14px; }
-#clock { font-size: 58px; font-weight: 700; line-height: 1.05; letter-spacing: 0.03em; font-variant-numeric: tabular-nums; margin: 2px 0 8px; }
+#clock { font-size: 40px; font-weight: 700; line-height: 1.05; letter-spacing: 0.03em; font-variant-numeric: tabular-nums; margin: 2px 0 8px; }
 .k { font-size: 11.5px; color: var(--dim); }
 #wind-row { display: flex; gap: 12px; align-items: center; }
 #wind { width: 84px; height: 84px; flex: none; }
@@ -58,7 +58,7 @@ body.shot .maplibregl-ctrl-bottom-right { display: none; }
 
 @media (max-width: 600px) {
   #panel { left: 8px; right: 8px; top: 8px; width: auto; padding: 10px; }
-  #clock { font-size: 40px; }
+  #clock { font-size: 30px; }
   #year, .note { display: none; }
 }
 
