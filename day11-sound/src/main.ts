@@ -528,8 +528,10 @@ const cursor = tl.querySelector("#tl-cursor")!;
     .join("");
 }
 
-// 音（ブラウザで聞くとき）。どちらもデータを音に置き換えたもので、実際の音ではない
-// 風の音: 羽田の風速で大きさと高さを変える。飛行機の音: 城南島で聞こえる強さ（loud.json）で大きさを変える
+// 音（ブラウザで聞くとき）
+// 風の音: 羽田の風速で大きさと高さを変えた雑音（データを音に置き換えたもの）
+// 飛行機の音: 入間航空祭で録ったブルーインパルスの通過音のループ（roar.wav、scripts/roar.py）を、
+// 城南島で聞こえる強さ（loud.json）で鳴らす。強いほど大きく、弱いほど高い音を削って遠くの音にする。旅客機の音ではない
 let audio: AudioContext | null = null;
 let windGain: GainNode, windFilter: BiquadFilterNode, planeGain: GainNode, planeFilter: BiquadFilterNode;
 function startAudio() {
@@ -556,14 +558,24 @@ function startAudio() {
   windGain.gain.value = 0;
   w.connect(windFilter).connect(windGain).connect(ctx.destination);
   w.start();
-  const p = noise(3);
   planeFilter = ctx.createBiquadFilter();
   planeFilter.type = "lowpass";
   planeGain = ctx.createGain();
   planeGain.gain.value = 0;
-  p.connect(planeFilter).connect(planeGain).connect(ctx.destination);
-  p.start();
+  planeFilter.connect(planeGain).connect(ctx.destination);
   audio = ctx;
+  // 録った音は読み込めてから鳴らす（読めなければ風の音だけ）
+  fetch(DATA + "roar.wav")
+    .then((r) => r.arrayBuffer())
+    .then((b) => ctx.decodeAudioData(b))
+    .then((buf) => {
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.loop = true;
+      src.connect(planeFilter);
+      src.start();
+    })
+    .catch(() => {});
 }
 function loudAt(t: number) {
   const i = t / loud.step;
@@ -577,8 +589,8 @@ function updateAudio(t: number) {
   windGain.gain.setTargetAtTime(Math.min(0.5, 0.025 * ws ** 1.4), now, 0.3);
   windFilter.frequency.setTargetAtTime(300 + ws * 90, now, 0.3);
   const lv = loudAt(t);
-  planeGain.gain.setTargetAtTime(lv * 0.9, now, 0.08);
-  planeFilter.frequency.setTargetAtTime(120 + lv * 900, now, 0.08);
+  planeGain.gain.setTargetAtTime(Math.min(1, lv ** 1.2 * 0.9), now, 0.08);
+  planeFilter.frequency.setTargetAtTime(400 + lv * 9000, now, 0.08);
 }
 
 // 運用が切り替わる時刻（1時間ごとの推定で、前の時間と運用が変わった時間の始まり）

@@ -1,6 +1,6 @@
 // Service Worker: ページと自分のサイトのデータ（../web/）を端末に保存し、電波が弱くても開けるようにする。
 // 背景地図（国土地理院の PMTiles、範囲指定の読み込み）と PLATEAU は保存しない（毎回ネットから読む）。
-const CACHE = "day11-v1";
+const CACHE = "day11-v2";
 
 self.addEventListener("install", (e) => {
   e.waitUntil(

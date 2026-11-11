@@ -50,7 +50,7 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
 .bar.wind { background: #3b4656; }
 .bar.ops { background: var(--south); }
 .note { font-size: 10.5px; color: var(--dim); line-height: 1.55; margin: 10px 0 0; }
-.src { font-size: 10.5px; color: var(--dim); margin: 6px 0 0; }
+.src { font-size: 10.5px; color: var(--dim); line-height: 1.5; margin: 6px 0 0; }
 .src a { color: var(--dim); }
 
 body.shot .ctrl { display: none; }
