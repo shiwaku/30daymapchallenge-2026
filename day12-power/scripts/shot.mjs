@@ -19,7 +19,9 @@ async function shot(query, file, size) {
   console.log(file);
 }
 
-for (const s of [0, 1]) await shot(`step=${s}`, `output/step${s}.png`, { width: 1600, height: 1000 });
+for (const s of [0, 1, 2]) await shot(`step=${s}`, `output/step${s}.png`, { width: 1600, height: 1000 });
 await shot("poster&step=1", "output/day12-power.png", { width: 1600, height: 1000 });
+// GIF 用（投稿表示で3段階）。scripts/gif.sh で output/day12-power.gif にする
+for (const s of [0, 1, 2]) await shot(`poster&step=${s}`, `output/story${s}.png`, { width: 1600, height: 1000 });
 await shot("step=1", "output/mobile.png", { width: 390, height: 844 });
 await browser.close();
