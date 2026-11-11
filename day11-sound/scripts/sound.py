@@ -1,8 +1,8 @@
 """録画した時刻の記録（tlog.json）から、動画に重ねる音を作り、映像と合わせて mp4 にする。
 
-音はデータを音に置き換えたもので、実際に録った音ではない。
-- 風の音: 羽田の風速（web/day.json、1時間ごとを時間で滑らかにつないだもの）で大きさと高さを変えた雑音
-- 飛行機の音: 城南島で聞こえる強さ（web/loud.json）で大きさと明るさを変えた低い雑音と、低いうなり
+- 風の音: 羽田の風速（web/day.json、1時間ごとを時間で滑らかにつないだもの）で大きさと高さを変えた雑音（データを音に置き換えたもの）
+- 飛行機の音: 入間航空祭で録ったブルーインパルスの通過音のループ（web/roar.wav、scripts/roar.py で作る）を、
+  城南島で聞こえる強さ（web/loud.json）で鳴らす。強いほど大きく、弱いほど高い音を削って遠くの音にする。旅客機の音ではない
 
 使い方: python -I day11-sound/scripts/sound.py <録画フォルダ>   （record.mjs が作った tlog.json と video.mp4 があるフォルダ）
 出力: <録画フォルダ>/sound.wav、day11-sound/output/day11-haneda.mp4
@@ -16,6 +16,7 @@ import wave
 from pathlib import Path
 
 import numpy as np
+from scipy.io import wavfile
 from scipy.signal import butter, sosfilt
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -71,12 +72,11 @@ def main():
     wind = varying_filter(wind, wctrl * 0.5, 80, 300, "highpass")
     wind *= np.minimum(1.0, 0.06 * ws ** 1.3) * gust
 
-    # 飛行機: 低めの雑音（強いほど明るく）と、低いうなり
-    pn = np.cumsum(rng.standard_normal(n)) * 0.02
-    pn -= varying_filter(pn, np.zeros(n), 20, 20, "lowpass")  # 直流をとる
-    plane = varying_filter(pn, lv, 150, 1600, "lowpass") * 3.0
-    hum = np.sin(2 * np.pi * (70 + 30 * lv) * tau) * 0.25
-    plane = (plane + hum) * lv ** 1.2
+    # 飛行機: 録った通過音のループ（ビューワと同じく、強いほど大きく明るく）
+    sr, roar = wavfile.read(ROOT / "web" / "roar.wav")
+    assert sr == SR
+    roar = np.resize(roar.astype(np.float64) / 32768, n)
+    plane = varying_filter(roar, lv, 400, 9400, "lowpass") * np.minimum(1, lv ** 1.2 * 0.9)
 
     mix = wind * 0.6 + plane * 0.9
     # 始まりと終わりをなめらかに
