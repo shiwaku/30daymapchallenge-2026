@@ -21,11 +21,9 @@ async function shot(query, file, size, hover) {
 
 const desk = { width: 1600, height: 1000 };
 await shot("", "output/overview.png", desk);
-await shot("m=13101&dir=in", "output/day13-interactions.png", desk);
-await shot("m=13101", "output/chiyoda-both.png", desk);
-await shot("m=08220", "output/tsukuba.png", desk);
-await shot("m=14133&dir=out", "output/nakahara-out.png", desk);
-await shot("mode=school", "output/school.png", desk);
+await shot("z=0010&dir=in", "output/day13-interactions.png", desk);
+await shot("p=私事", "output/shiji.png", desk);
+await shot("m=自転車", "output/bicycle.png", desk);
+await shot("z=0010&dir=in&m=鉄道", "output/tokyo-rail.png", desk);
 await shot("", "output/mobile.png", { width: 390, height: 844 });
-await shot("m=13101", "output/mobile-chiyoda.png", { width: 390, height: 844 });
 await browser.close();
