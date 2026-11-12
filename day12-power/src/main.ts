@@ -47,7 +47,8 @@ const params = new URLSearchParams(location.search);
 const POSTER = params.has("poster");
 const map = new maplibregl.Map({
   container: "map",
-  bounds: [[-150, -50], [165, 72]],
+  bounds: POSTER ? [[-168, -56], [180, 76]] : [[-150, -50], [165, 72]],
+  fitBoundsOptions: { padding: POSTER ? { left: 470, top: 10, right: 10, bottom: 10 } : 0 },
   minZoom: -1,
   maxZoom: 6,
   attributionControl: false,
