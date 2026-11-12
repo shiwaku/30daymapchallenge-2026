@@ -56,7 +56,7 @@ html, body { height: 100%; overflow: hidden; background: #0b0d12; color: #e8e8ea
 .legend .grad { width: 44px; height: 4px; border-radius: 2px; background: linear-gradient(90deg, #56c4ff, #ff963c); }
 .legend .unit { flex-basis: 100%; margin-bottom: -4px; }
 .legend .w { display: inline-flex; align-items: center; gap: 4px; }
-.legend .w i { display: inline-block; width: 22px; background: #c8c9ce; border-radius: 2px; }
+.legend .w i { display: inline-block; width: 40px; background: #c8c9ce; border-radius: 2px; }
 
 #tip { display: none; pointer-events: none; padding: 6px 9px; font-size: 12px; z-index: 5; }
 #tip .big { font-size: 16px; font-weight: 700; }

@@ -2,17 +2,19 @@ import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import { MapboxOverlay } from "@deck.gl/mapbox";
-import { ArcLayer } from "@deck.gl/layers";
+import { ArcLayer, ScatterplotLayer } from "@deck.gl/layers";
 import type { PickingInfo } from "@deck.gl/core";
 import "./style.css";
 
 // 開発時は day13-interactions/web、公開時（day13-interactions/site/）は ../web を読む
 const DATA = import.meta.env.DEV ? "./web/" : "../web/";
-const REGION: [[number, number], [number, number]] = [[138.95, 34.9], [140.9, 36.25]];
+const params0 = new URLSearchParams(location.search);
+// ?core で東京駅から約40kmの範囲に寄せる
+const REGION: [[number, number], [number, number]] = params0.has("core") ? [[139.3, 35.4], [140.2, 35.95]] : [[138.95, 34.9], [140.9, 36.25]];
 const BG = "#0b0d12";
 const FROM: [number, number, number] = [86, 196, 255]; // 出発地
 const TO: [number, number, number] = [255, 150, 60]; // 到着地
-const OVERVIEW_N = 2500; // 全体表示で描く本数（多い順）
+const OVERVIEW_N = 1000; // 全体表示で描く本数（多い順）
 
 type Zone = { c: string; n: string; x: number; y: number; g: number[]; a: number[]; s: number[] };
 type Flows = { o: number[]; d: number[]; v: number[] };
@@ -28,8 +30,8 @@ maplibregl.setWorkerUrl(workerUrl);
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector(sel) as T;
 const fmt = (v: number) => Math.round(v).toLocaleString("ja-JP");
 const pct = (a: number, b: number) => (b > 0 ? `${((a / b) * 100).toFixed(1)}%` : "—");
-const alphaOf = (v: number) => Math.min(235, 40 + 50 * Math.log10(Math.max(1, v / 100)));
-const widthOf = (v: number) => Math.min(18, Math.max(0.6, Math.sqrt(v) / 14));
+const alphaOf = (v: number) => Math.round(40 + 215 * Math.min(1, v / 8000));
+const widthOf = (v: number) => Math.min(18, Math.max(0.4, v / 700)); // 数に比例
 
 const params = new URLSearchParams(location.search);
 const SHOT = params.has("shot"); // スクリーンショット用（地図の位置を URL に書かない）
@@ -163,6 +165,19 @@ function draw() {
   });
   overlay.setProps({
     layers: [
+      // ゾーンの中で終わるトリップ（円の面積が数に比例）
+      new ScatterplotLayer<Zone>({
+        id: "intra",
+        data: sel < 0 ? zones : [zones[sel]],
+        getPosition: (z) => [z.x, z.y],
+        getRadius: (z) => Math.sqrt(pick(z.s)) * 9,
+        radiusUnits: "meters",
+        getFillColor: [210, 220, 235, 60],
+        stroked: true,
+        getLineColor: [210, 220, 235, 140],
+        lineWidthMinPixels: 0.5,
+        updateTriggers: { getRadius: [purpose, mode] },
+      }),
       new ArcLayer<Arc>({
         id: "arcs",
         data: current,
