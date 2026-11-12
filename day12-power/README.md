@@ -80,7 +80,7 @@ AIの覇権は、電力を増やせる国が取るか
 
 - 利用条件は2026年11月7日に、Ember のデータのページと IEA の利用規約（https://www.iea.org/terms）で確かめた
 - 下書きは Our World in Data の energy-data を使っていたが、発電量の列の元に Energy Institute の Statistical Review が含まれ、その再配布の条件を確かめられなかったので、Ember から直接取った
-- 画面の右下に出典を常に出す。投稿画像にも入っている
+- 画面の右下に出典を常に出す。投稿用の画像（`?poster`）では左の帯の中に出す
 
 ## 使用する技術
 
@@ -107,35 +107,33 @@ python -I scripts/gif.py                       # story0〜2 から output/day12-
 
 最初の案と下書き（世界の発電量の地図と比較表）は claude.ai のチャットで作った。データの取り直し、コード、README の下書きには Claude（Anthropic、Claude Code）を使った。
 
-## 投稿文の下書き
+## 投稿文
 
-GIF（`output/day12-power.gif`）を添付。
+段階1の投稿用画像（`output/story0.png`、`?poster&step=0`）を添付。左の帯に出典を入れ、地図に国ごとの増減（TWh）のラベルを出す。GIF は使わなかった。
 
-本文（X の文字数で279）:
+本文:
 
 ```text
 #30DayMapChallenge Day 12 - Power
 AIの覇権は電力で決まる？ 各国の発電量の伸びを地図にしてみた⚡
-📝データセンターの需要増は、米国では発電の伸びの86〜136%、中国では7%ほど。この伸びが続くと、10年後の中国の発電量は米国の3〜3.7倍
-デモサイトはこちら↓
-https://shiwaku.github.io/30daymapchallenge-2026/day12-power/site/
+📝この10年、電気を一番増やしたのは中国。米国の14倍
 #MapLibre
 ```
 
-リプライ（X の文字数で274）:
+リプライ:
 
 ```text
-出典）Ember Yearly Electricity Data（CC BY 4.0）、IEA Energy and AI（CC BY 4.0）を加工して作成 / Natural Earth
-10年後の値は過去10年の伸びを延ばした計算で、公式の見通しではありません。半導体・資金・人材は扱っていません
 制作に生成AI（Claude）を使用（案と下書き、コードの作成）
 ```
+
+「米国の14倍」は2014→2024年の増加量（中国 +4,244TWh ÷ 米国 +295TWh ≒ 14.4）。
 
 ## 状況
 
 - [x] データ準備（Ember・IEA・Natural Earth。利用条件を確認）
 - [x] 地図作成（index.html）
 - [x] スクリーンショット（output/day12-power.png）
-- [x] 3段階のストーリーの GIF（output/day12-power.gif、約3.7MB・15.6秒）
-- [ ] 投稿（#30DayMapChallenge）
+- [x] 3段階のストーリーの GIF（output/day12-power.gif、約3.7MB・15.6秒。投稿には使わなかった）
+- [x] 投稿（#30DayMapChallenge、段階1の画像 output/story0.png）
 
 送電網の地図（はじめ Day 12 用に作ったもの）は Day 17 Light & dark に移した。
