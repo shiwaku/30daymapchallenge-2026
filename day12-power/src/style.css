@@ -78,7 +78,9 @@ html, body { height: 100%; overflow: hidden; background: #0b0d12; color: #e8e8ea
 .maplibregl-ctrl-attrib-button { filter: invert(1); }
 .maplibregl-ctrl-group { background: rgba(232, 232, 234, 0.85); }
 
-.poster .steps, .poster .maplibregl-ctrl-group { display: none; }
+.poster .steps, .poster .maplibregl-ctrl-group, .poster #lead, .poster #note, .poster .maplibregl-ctrl-attrib { display: none; }
+.psrc { display: none; }
+.poster .psrc { display: block; margin: 10px 0 0; color: #c8c9ce; font-size: 12px; line-height: 1.5; }
 
 /* スマートフォン: 説明を省いて、パネルを下に置く */
 @media (max-width: 700px) {
