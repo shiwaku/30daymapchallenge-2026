@@ -98,3 +98,9 @@ html, body { height: 100%; overflow: hidden; background: #0b0d12; color: #e8e8ea
   .callout .cs { display: none; }
 }
 .poster #title { top: 0; left: 0; bottom: 0; width: 440px; max-height: none; border-radius: 0; border: 0; border-right: 1px solid #2a2d36; background: #0b0d12; padding: 28px 24px; display: flex; flex-direction: column; justify-content: center; }
+.lbl { display: flex; flex-direction: column; align-items: center; pointer-events: none; color: #fff; line-height: 1.1; text-shadow: 0 0 3px #0b0d12, 0 0 6px #0b0d12, 0 0 10px #0b0d12; }
+.lbl .ln { font-size: 12px; font-weight: 700; }
+.lbl .lv { font-size: 15px; font-weight: 900; }
+.lbl.big .ln { font-size: 16px; }
+.lbl.big .lv { font-size: 26px; }
+.lbl.neg .lv { color: #bcd3f0; }

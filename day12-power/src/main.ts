@@ -235,6 +235,21 @@ async function main() {
     return new maplibregl.Marker({ element: el }).setLngLat(OUT_ANCHOR[k]);
   });
 
+  // 段階1のラベル: 増減の大きい国に、国名と増減（TWh）
+  const LBL: Record<string, [string, [number, number]]> = {
+    CHN: ["中国", [103, 34]], IND: ["インド", [78, 17]], USA: ["米国", [-99, 39]], IDN: ["インドネシア", [114, -2]],
+    VNM: ["ベトナム", [106, 14]], BRA: ["ブラジル", [-52, -10]], RUS: ["ロシア", [96, 62]], SAU: ["サウジアラビア", [45, 23]],
+    DEU: ["ドイツ", [12, 50]], GBR: ["英国", [-9, 55]], JPN: ["日本", [139, 37]],
+  };
+  const dOf = Object.fromEntries([...stats.top_increase, ...stats.top_decrease].map((t) => [t.iso, t.d]));
+  const labels = Object.entries(LBL).filter(([k]) => dOf[k] != null).map(([k, [nm, ll]]) => {
+    const d = dOf[k];
+    const el = document.createElement("div");
+    el.className = `lbl${k === "CHN" ? " big" : ""}${d < 0 ? " neg" : ""}`;
+    el.innerHTML = `<span class="ln">${nm}</span><span class="lv">${sign(d)}</span>`;
+    return new maplibregl.Marker({ element: el }).setLngLat(ll);
+  });
+
   const buttons = [...document.querySelectorAll<HTMLButtonElement>("#steps button")];
   let step = 0;
   let timer: number | undefined;
@@ -247,6 +262,7 @@ async function main() {
     map.setPaintProperty("fill", "fill-opacity", i === 0 ? 1 : 0.55);
     markers.forEach((m) => (i === 1 ? m.addTo(map) : m.remove()));
     outMarkers.forEach((m) => (i === 2 ? m.addTo(map) : m.remove()));
+    labels.forEach((m) => (i === 0 ? m.addTo(map) : m.remove()));
   }
   buttons.forEach((b, j) => b.addEventListener("click", () => { window.clearInterval(timer); show(j); }));
 
