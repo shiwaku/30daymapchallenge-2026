@@ -30,12 +30,17 @@ interface Stats {
   compare: Comp[];
   sensitivity: Record<string, { y0: number; y1: number; per_year: number; ratio: number | null }[]>;
   top_increase: { iso: string; name_en: string; d: number }[];
+  outlook: {
+    from: number; base: number; to: number; ratio_now: number; ratio_lin: number; ratio_cagr: number;
+    areas: Record<string, { actual: number[]; lin: number[]; cagr: number[]; r: number }>;
+  };
 }
 
 // 比較の吹き出しを置く位置
 const ANCHOR: Record<string, [number, number]> = {
   USA: [-100, 40], CHN: [96, 31], EUR: [12, 50], JPN: [152, 45],
 };
+const OUT_ANCHOR: Record<string, [number, number]> = { USA: [-100, 40], CHN: [112, 42], IND: [72, 8] };
 
 maplibregl.setWorkerUrl(workerUrl);
 const params = new URLSearchParams(location.search);
@@ -86,6 +91,46 @@ function fit() {
       : { left: 8, right: 8, top: 8, bottom: window.innerHeight - panel.top + 8 },
     animate: false,
   });
+}
+
+// 10年後の見通しのグラフ。実績（実線）と、過去10年の伸びを延ばした2通り（毎年同じ量・同じ率）の帯
+const OUT_COLOR: Record<string, string> = { CHN: "#ffd27a", USA: "#ff6b5b", IND: "#ec8a2a" };
+const OUT_NAME: Record<string, string> = { CHN: "中国", USA: "米国", IND: "インド" };
+// 2034年の幅（百の位で丸める）。同じなら1つだけ出す
+const outRange = (a: { lin: number[]; cagr: number[] }) => {
+  const r = (v: number) => fmt(Math.round(v / 100) * 100);
+  const lo = r(a.lin[a.lin.length - 1]), hi = r(a.cagr[a.cagr.length - 1]);
+  return lo === hi ? lo : `${lo}〜${hi}`;
+};
+function outlookChart(o: Stats["outlook"]): string {
+  const W = 360, H = 170, L = 34, R = 74, T = 8, B = 18;
+  const x = (y: number) => L + ((y - o.from) / (o.to - o.from)) * (W - L - R);
+  const max = 18000;
+  const y = (v: number) => T + (1 - v / max) * (H - T - B);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="中国・米国・インドの発電量の実績と10年後の見通し">`;
+  for (const v of [0, 5000, 10000, 15000]) {
+    svg += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#2a2d35"/>` +
+      `<text x="${L - 4}" y="${y(v) + 3}" fill="#8a8c93" font-size="9" text-anchor="end">${fmt(v)}</text>`;
+  }
+  svg += `<line x1="${x(o.base)}" x2="${x(o.base)}" y1="${T}" y2="${H - B}" stroke="#555" stroke-dasharray="2 3"/>`;
+  for (const yr of [o.from, o.base, o.to]) svg += `<text x="${x(yr)}" y="${H - 4}" fill="#8a8c93" font-size="9" text-anchor="middle">${yr}</text>`;
+  // ラベルの高さ（重ならないよう、米国は上、インドは下にずらす）
+  const LABEL_DY: Record<string, number> = { CHN: 0, USA: -10, IND: 14 };
+  for (const k of ["IND", "USA", "CHN"]) {
+    const a = o.areas[k], c = OUT_COLOR[k];
+    const act = a.actual.map((v, i) => `${x(o.from + i)},${y(v)}`).join(" ");
+    const hiL = a.cagr.map((v, i) => `${x(o.base + i)},${y(v)}`);
+    const loL = a.lin.map((v, i) => `${x(o.base + i)},${y(v)}`).reverse();
+    svg += `<polygon points="${[...hiL, ...loL].join(" ")}" fill="${c}" opacity="0.25"/>` +
+      `<polyline points="${a.cagr.map((v, i) => `${x(o.base + i)},${y(v)}`).join(" ")}" fill="none" stroke="${c}" stroke-dasharray="3 3"/>` +
+      `<polyline points="${a.lin.map((v, i) => `${x(o.base + i)},${y(v)}`).join(" ")}" fill="none" stroke="${c}" stroke-dasharray="3 3"/>` +
+      `<polyline points="${act}" fill="none" stroke="${c}" stroke-width="2"/>`;
+    const lo = a.lin[a.lin.length - 1], hi = a.cagr[a.cagr.length - 1];
+    const ly = y((lo + hi) / 2) + LABEL_DY[k];
+    svg += `<text x="${x(o.to) + 4}" y="${ly}" fill="${c}" font-size="11" font-weight="700">${OUT_NAME[k]}</text>` +
+      `<text x="${x(o.to) + 4}" y="${ly + 11}" fill="#c8c9ce" font-size="9">${outRange(a)}</text>`;
+  }
+  return svg + `</svg><div class="cmp-unit">発電量（TWh）。実線は実績、帯は${o.base}年から、過去10年の伸び（毎年同じ量／同じ率）を延ばした値</div>`;
 }
 
 function spark(s: (number | null)[], from: number): string {
@@ -173,6 +218,22 @@ async function main() {
       `<div class="small">米国の割合は、発電の伸びを測る期間で変わる（${rng("USA")}）。中国は${rng("CHN")}。</div>`,
   ];
 
+  const O = stats.outlook;
+  captions.push(() =>
+    `過去10年の伸びが続くと、${O.to}年の中国の発電量は<b class="hi">米国の${fmt(O.ratio_lin, 1)}〜${fmt(O.ratio_cagr, 1)}倍</b>（${O.base}年は${fmt(O.ratio_now, 1)}倍）。` +
+    `<div class="small">電力の面で見る限り、次の10年に余裕があるのは中国。米国はデータセンターの伸びが発電の伸びを上回る。インドは伸びが速い（年${fmt(O.areas.IND.r, 1)}%）が、${O.to}年でも米国に届かない。</div>` +
+    `<div class="small">AIの覇権は電力だけでは決まらない。半導体・資金・人材はこの地図では扱っていない。</div>`);
+  $("#outlook").innerHTML = outlookChart(O);
+  const outMarkers = ["CHN", "USA", "IND"].map((k) => {
+    const a = O.areas[k];
+    const el = document.createElement("div");
+    el.className = "callout";
+    el.innerHTML = `<div class="cn">${OUT_NAME[k]} ${O.to}年</div>` +
+      `<div class="cr" style="color:${OUT_COLOR[k]}">${outRange(a)}</div>` +
+      `<div class="cs">TWh（${O.base}年 ${fmt(Math.round(a.actual[a.actual.length - 1] / 100) * 100)}）</div>`;
+    return new maplibregl.Marker({ element: el }).setLngLat(OUT_ANCHOR[k]);
+  });
+
   const buttons = [...document.querySelectorAll<HTMLButtonElement>("#steps button")];
   let step = 0;
   let timer: number | undefined;
@@ -181,8 +242,10 @@ async function main() {
     buttons.forEach((b, j) => b.classList.toggle("on", j === i));
     $("#caption").innerHTML = captions[i]();
     $("#compare").style.display = i === 1 ? "" : "none";
-    map.setPaintProperty("fill", "fill-opacity", i === 1 ? 0.55 : 1);
+    $("#outlook").style.display = i === 2 ? "" : "none";
+    map.setPaintProperty("fill", "fill-opacity", i === 0 ? 1 : 0.55);
     markers.forEach((m) => (i === 1 ? m.addTo(map) : m.remove()));
+    outMarkers.forEach((m) => (i === 2 ? m.addTo(map) : m.remove()));
   }
   buttons.forEach((b, j) => b.addEventListener("click", () => { window.clearInterval(timer); show(j); }));
 
@@ -219,7 +282,7 @@ async function main() {
   if (s0 != null) show(Number(s0));
   else {
     show(0);
-    timer = window.setInterval(() => show((step + 1) % 2), 6000);
+    timer = window.setInterval(() => show((step + 1) % captions.length), 6000);
   }
   map.once("idle", () => document.body.classList.add("ready"));
 }

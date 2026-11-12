@@ -108,6 +108,25 @@ def main() -> None:
             rows_.append({"y0": a0, "y1": a1, "per_year": round(float(py), 1),
                           "ratio": round(x["inc"] / 6 / float(py), 3) if py > 0.5 else None})
         sens[x["key"]] = rows_
+    # 10年後の見通し（中国と米国）。過去10年（2014→2024）の伸びをそのまま延ばした2通り。公式の見通しではない
+    #   lin: 毎年同じ量だけ増える（2014→2024 の年あたり増加量）
+    #   cagr: 毎年同じ率で増える（2014→2024 の年平均伸び率）
+    Y_OUT = Y1 + 10
+    outlook = {"from": SERIES_FROM, "base": Y1, "to": Y_OUT, "areas": {}}
+    for key, area in (("CHN", "China"), ("USA", "United States"), ("IND", "India")):
+        sg = gen.loc[area]
+        g0, g1 = float(sg[Y0]), float(sg[Y1])
+        step, r = (g1 - g0) / (Y1 - Y0), (g1 / g0) ** (1 / (Y1 - Y0)) - 1
+        outlook["areas"][key] = {
+            "actual": [round(float(sg[y]), 1) for y in range(SERIES_FROM, Y1 + 1)],
+            "lin": [round(g1 + step * k, 1) for k in range(0, Y_OUT - Y1 + 1)],
+            "cagr": [round(g1 * (1 + r) ** k, 1) for k in range(0, Y_OUT - Y1 + 1)],
+            "r": round(r * 100, 2),
+        }
+    a_c, a_u = outlook["areas"]["CHN"], outlook["areas"]["USA"]
+    outlook["ratio_now"] = round(a_c["actual"][-1] / a_u["actual"][-1], 2)
+    outlook["ratio_lin"] = round(a_c["lin"][-1] / a_u["lin"][-1], 2)
+    outlook["ratio_cagr"] = round(a_c["cagr"][-1] / a_u["cagr"][-1], 2)
     top = sorted(vals.items(), key=lambda kv: -kv[1]["d"])
     stats = {
         "years": [Y0, Y1], "dc_years": [Y_DC0, Y_DC1], "series_from": SERIES_FROM,
@@ -115,6 +134,7 @@ def main() -> None:
         "world": row("World"),
         "compare": comp,
         "sensitivity": sens,
+        "outlook": outlook,
         "top_increase": [{"iso": k, "name_en": v["name_en"], "d": v["d"]} for k, v in top[:12]],
         "top_decrease": [{"iso": k, "name_en": v["name_en"], "d": v["d"]} for k, v in top[::-1][:8]],
         "sources": {
