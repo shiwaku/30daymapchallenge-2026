@@ -20,6 +20,8 @@ async function shot(query, file, size, hover) {
 }
 
 const desk = { width: 1600, height: 1000 };
+await shot("core&p=通勤", "output/c-commute.png", desk);
+await shot("core&p=私事", "output/c-shiji.png", desk);
 await shot("", "output/overview.png", desk);
 await shot("z=0010&dir=in", "output/day13-interactions.png", desk);
 await shot("p=私事", "output/shiji.png", desk);
