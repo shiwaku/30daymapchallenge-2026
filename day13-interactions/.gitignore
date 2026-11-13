@@ -1,0 +1,4 @@
+# build_pt.py が書くが、ビューワでは使わない（muni.json などを使う）
+web/flows.json
+web/stats.json
+web/areas.geojson
