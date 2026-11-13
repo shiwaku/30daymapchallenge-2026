@@ -3,56 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>東京都市圏 人の動き — #30DayMapChallenge Day 13 Interactions</title>
+  <title>私事トリップの流れ — #30DayMapChallenge Day 13 Interactions</title>
 </head>
 <body>
   <div id="map"></div>
 
-  <section id="title" class="panel">
-    <h1>通勤は都心へ、私事は近所で</h1>
+  <section id="title">
+    <h1>自宅から私事へ、<br>市区町村をまたぐ流れ</h1>
     <div class="sub">#30DayMapChallenge 2026 Day 13 — Interactions</div>
-    <p id="lead">
-      2018年の東京都市圏パーソントリップ調査から、平日1日にゾーンとゾーンのあいだを動くトリップ数（OD 量）を線で、ゾーンの中で終わるトリップを円で描いた。
-      通勤は四方から都心へ集まり、ゾーンの中で終わるのは18%。私事（買い物・食事など）は53%がゾーンの中で終わる。
-      線は出発地（青）から到着地（橙）へ向かい、太いほど多い。目的と代表交通手段で切り替えられ、ゾーンをクリックするとそこを出る流れ・来る流れになる。
-    </p>
-    <div class="row">
-      <input id="search" type="search" list="names" placeholder="ゾーンを探す（例: 千代田区、新宿駅）" autocomplete="off">
-      <datalist id="names"></datalist>
-    </div>
-    <div class="row seg" id="purpose">
-      <button type="button" data-v="all" class="on">全目的</button>
-      <button type="button" data-v="通勤">通勤</button>
-      <button type="button" data-v="通学">通学</button>
-      <button type="button" data-v="私事">私事</button>
-      <button type="button" data-v="業務">業務</button>
-      <button type="button" data-v="帰宅">帰宅</button>
-    </div>
-    <div class="row seg" id="mode">
-      <button type="button" data-v="all" class="on">全手段</button>
-      <button type="button" data-v="鉄道">鉄道</button>
-      <button type="button" data-v="バス">バス</button>
-      <button type="button" data-v="自動車">自動車</button>
-      <button type="button" data-v="自転車">自転車</button>
-      <button type="button" data-v="徒歩">徒歩</button>
-    </div>
-    <div class="row seg" id="dir">
-      <button type="button" data-v="both" class="on">出入り両方</button>
-      <button type="button" data-v="out">出る</button>
-      <button type="button" data-v="in">来る</button>
-    </div>
+    <p id="lead"></p>
     <div id="card"></div>
-    <div class="legend">
-      <span class="grad"></span><span>出発地 → 到着地</span><span class="unit">線の太さ（トリップ/日、いまのズーム）</span>
-      <span class="w"><i data-v="2000"></i>2,000</span>
-      <span class="w"><i data-v="10000"></i>1万</span>
-      <span class="w"><i data-v="20000"></i>2万</span>
-      <span class="unit">○ = ゾーンの中で終わるトリップ（面積が数に比例）</span>
-    </div>
-    <p class="note" id="note"></p>
+    <div class="legend" id="legend"></div>
+    <details class="more"><summary>データと注記</summary><p class="note" id="note"></p></details>
   </section>
 
-  <div id="tip" class="panel"></div>
+  <div id="tip"></div>
 
   <script type="module" src="/src/main.ts"></script>
 </body>

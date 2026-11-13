@@ -14,18 +14,13 @@ async function shot(query, file, size, hover) {
   await page.goto(`${url}?shot&${query}`);
   await page.waitForSelector("body.ready", { timeout: 120000 });
   await page.waitForTimeout(1500);
-  await page.screenshot({ path: file });
+  await page.screenshot({ path: file, fullPage: true });
   await page.close();
   console.log(file);
 }
 
 const desk = { width: 1600, height: 1000 };
-await shot("core&p=通勤", "output/c-commute.png", desk);
-await shot("core&p=私事", "output/c-shiji.png", desk);
-await shot("", "output/overview.png", desk);
-await shot("z=0010&dir=in", "output/day13-interactions.png", desk);
-await shot("p=私事", "output/shiji.png", desk);
-await shot("m=自転車", "output/bicycle.png", desk);
-await shot("z=0010&dir=in&m=鉄道", "output/tokyo-rail.png", desk);
-await shot("", "output/mobile.png", { width: 390, height: 844 });
+await shot("", "output/day13-interactions.png", desk);
+await shot("m=" + encodeURIComponent("世田谷区"), "output/muni-setagaya.png", desk);
+await shot("", "output/muni-mobile.png", { width: 390, height: 844 });
 await browser.close();

@@ -6,7 +6,7 @@
     "strict": true,
     "noEmit": true,
     "lib": ["ES2022", "DOM"],
-    "types": ["vite/client"]
+    "types": ["vite/client", "geojson"]
   },
   "include": ["src"]
 }
