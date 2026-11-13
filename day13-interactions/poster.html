@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>4都市の区どうしの流れ — #30DayMapChallenge Day 13</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { width: 1600px; background: #0b0d12; color: #e8e8ea; font-family: "Noto Sans JP", system-ui, sans-serif; }
+    header { padding: 34px 40px 18px; display: flex; align-items: flex-end; gap: 40px; }
+    h1 { font-size: 34px; line-height: 1.3; font-weight: 700; }
+    .sub { margin-top: 6px; font-size: 15px; color: #8a8e9b; }
+    .key { margin-left: auto; font-size: 14px; color: #b9bcc6; line-height: 1.9; text-align: right; }
+    .key i { display: inline-block; width: 36px; vertical-align: middle; background: #ffa046; border-radius: 1px; margin: 0 6px 0 14px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 0 6px; }
+    .cell { position: relative; height: 780px; }
+    .cell iframe { width: 100%; height: 100%; border: 0; display: block; }
+    .cap { position: absolute; left: 20px; top: 16px; pointer-events: none; text-shadow: 0 0 6px #0b0d12, 0 0 3px #0b0d12; }
+    .cap b { font-size: 30px; font-weight: 700; }
+    .cap .n { margin-top: 2px; font-size: 16px; color: #ffa046; }
+    .cap .t { margin-top: 2px; font-size: 14px; color: #c8c9ce; }
+    footer { padding: 14px 40px 26px; font-size: 13px; color: #8a8e9b; line-height: 1.7; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>自宅から私事へ、区をまたぐ流れ</h1>
+      <div class="sub">東京23区・横浜市・さいたま市・千葉市の、区どうしの自宅－私事トリップ（平日、同じ縮尺）　#30DayMapChallenge 2026 Day 13 — Interactions</div>
+    </div>
+    <div class="key">➤ 発地（自宅）→ 着地（私事の目的地）<br>太さはトリップ数<i style="height:0.55px"></i>300<i style="height:4.8px"></i>3,000<i style="height:15.9px"></i>10,000</div>
+  </header>
+  <div class="grid" id="grid"></div>
+  <footer id="foot"></footer>
+  <script type="module">
+    const CITIES = ["23区", "横浜市", "さいたま市", "千葉市"];
+    const Z = new URLSearchParams(location.search).get("z") ?? "10.15";
+    const MIN = 300;
+    const mu = await fetch("./web/muni.json").then((r) => r.json());
+    const fmt = (v) => Math.round(v).toLocaleString("ja-JP");
+    const inCity = (c, n) => (c === "23区" ? n.endsWith("区") && !n.includes("市") : n.startsWith(c) && n.endsWith("区"));
+    const grid = document.getElementById("grid");
+    for (const c of CITIES) {
+      const ids = new Set(mu.units.map((u, i) => (inCity(c, u.n) ? i : -1)).filter((i) => i >= 0));
+      let sum = 0, top = -1;
+      mu.o.forEach((o, k) => {
+        if (ids.has(o) && ids.has(mu.d[k])) {
+          sum += mu.v[k];
+          if (top < 0 || mu.v[k] > mu.v[top]) top = k;
+        }
+      });
+      const name = c === "23区" ? "東京23区" : c;
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.innerHTML =
+        `<iframe src="./?shot&bare&fit=${encodeURIComponent(c)}&z=${Z}&min=${MIN}"></iframe>` +
+        `<div class="cap"><b>${name}</b><div class="n">区どうし ${fmt(sum)} トリップ/日（${ids.size}区）</div>` +
+        `<div class="t">最多 ${mu.units[mu.o[top]].n.replace(c === "23区" ? "" : c, "")} → ${mu.units[mu.d[top]].n.replace(c === "23区" ? "" : c, "")} ${fmt(mu.v[top])}</div></div>`;
+      grid.appendChild(cell);
+    }
+    document.getElementById("foot").innerHTML =
+      `第6回東京都市圏パーソントリップ調査（2018年、平日）の拡大値。表d-1 の目的種類「自宅－私事」（代表交通手段が鉄道・バス・自動車・自転車・徒歩）を区にまとめ、同じ市（東京は23区）の中の区どうしの流れのうち ${fmt(MIN)} トリップ/日以上の組を描いた。` +
+      `抽出調査なので小さい組ほど誤差が大きい（5,136トリップ未満は相対誤差30%を超える目安）。<br>` +
+      `出典：東京都市圏交通計画協議会ホームページ（第6回東京都市圏パーソントリップ調査 基礎集計 表d-1、計画基本ゾーン・小ゾーン）を加工して作成／国土数値情報（駅別乗降客数・鉄道）（国土交通省）を加工して作成`;
+    // すべての地図が描き終わったら合図
+    const frames = [...grid.querySelectorAll("iframe")];
+    const wait = (f) => new Promise((ok) => {
+      const t = setInterval(() => { if (f.contentDocument?.body?.classList.contains("ready")) { clearInterval(t); ok(); } }, 200);
+    });
+    await Promise.all(frames.map(wait));
+    document.body.classList.add("ready");
+  </script>
+</body>
+</html>
