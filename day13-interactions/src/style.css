@@ -68,3 +68,6 @@ html, body { height: 100%; overflow: hidden; background: #0b0d12; color: #e8e8ea
 }
 .legend .ar2 { font-style: normal; font-size: 14px; font-weight: 700; }
 .legend .nw { flex-wrap: nowrap; align-items: flex-start; gap: 8px; }
+/* ?bare: 地図だけ（4都市の比較画像用） */
+body.bare #title, body.bare .maplibregl-ctrl-bottom-right, body.bare .maplibregl-ctrl-attrib { display: none; }
+body.bare #map { left: 0; }

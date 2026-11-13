@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>4つの区の流れ — #30DayMapChallenge Day 13</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { width: 1600px; background: #0b0d12; color: #e8e8ea; font-family: "Noto Sans JP", system-ui, sans-serif; }
+    header { padding: 34px 40px 18px; display: flex; align-items: flex-end; gap: 40px; }
+    h1 { font-size: 34px; line-height: 1.3; font-weight: 700; }
+    .sub { margin-top: 6px; font-size: 15px; color: #8a8e9b; }
+    .key { margin-left: auto; font-size: 14px; color: #b9bcc6; line-height: 1.9; text-align: right; white-space: nowrap; }
+    .key b { font-weight: 700; }
+    .key i.w { display: inline-block; width: 36px; vertical-align: middle; background: #c8c9ce; border-radius: 1px; margin: 0 6px 0 14px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 0 6px; }
+    .cell { position: relative; height: 780px; }
+    .cell iframe { width: 100%; height: 100%; border: 0; display: block; }
+    .cap { position: absolute; left: 14px; top: 12px; pointer-events: none; padding: 10px 16px 12px; border-radius: 8px; background: rgba(11, 13, 18, 0.86); border: 1px solid rgba(255, 255, 255, 0.08); font-variant-numeric: tabular-nums; }
+    .cap b { font-size: 30px; font-weight: 700; }
+    .cap .r { margin-top: 3px; font-size: 16px; line-height: 1.5; }
+    .cap .t { margin-top: 2px; font-size: 14px; color: #c8c9ce; }
+    footer { padding: 14px 40px 26px; font-size: 13px; color: #8a8e9b; line-height: 1.7; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>どこから来て、どこへ行くか</h1>
+      <div class="sub">池袋・渋谷・新宿・東京（千代田区）の、自宅－私事トリップ（平日、同じ縮尺）<br>#30DayMapChallenge 2026 Day 13 — Interactions</div>
+    </div>
+    <div class="key">
+      <b style="color:#b98cff">➤ 外内</b> ほか → ここ　<b style="color:#ffa046">➤ 内外</b> ここ → ほか　<b style="color:#dfe3ec">↻ 内々</b> ここ → ここ<br>
+      太さはトリップ数<i class="w" id="w1"></i>1,000<i class="w" id="w5"></i>5,000<i class="w" id="w10"></i>10,000
+    </div>
+  </header>
+  <div class="grid" id="grid"></div>
+  <footer id="foot"></footer>
+  <script type="module">
+    const WARDS = [["豊島区", "池袋（豊島区）"], ["渋谷区", "渋谷区"], ["新宿区", "新宿区"], ["千代田区", "東京（千代田区）"]];
+    const Z = Number(new URLSearchParams(location.search).get("z") ?? "11.2");
+    const mu = await fetch("./web/muni.json").then((r) => r.json());
+    const fmt = (v) => Math.round(v).toLocaleString("ja-JP");
+    // 凡例の線の太さ（main.ts と同じ補間: ズーム 7/9/12 で 0.45/1.1/3.2 倍、指数 1.6）
+    const S = [[7, 0.45], [9, 1.1], [12, 3.2]];
+    let f = S[2][1];
+    for (let k = 1; k < S.length; k++) {
+      const [z0, f0] = S[k - 1], [z1, f1] = S[k];
+      if (Z <= z1) { f = f0 + (f1 - f0) * ((1.6 ** (Z - z0) - 1) / (1.6 ** (z1 - z0) - 1)); break; }
+    }
+    for (const [id, v] of [["w1", 1000], ["w5", 5000], ["w10", 10000]]) document.getElementById(id).style.height = `${(v / 1000) * f}px`;
+    const grid = document.getElementById("grid");
+    for (const [w, title] of WARDS) {
+      const i = mu.units.findIndex((u) => u.n === w);
+      const u = mu.units[i];
+      let out = 0, inn = 0, top = -1;
+      mu.o.forEach((o, k) => {
+        if (o === i) out += mu.v[k];
+        if (mu.d[k] === i) { inn += mu.v[k]; if (top < 0 || mu.v[k] > mu.v[top]) top = k; }
+      });
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.innerHTML =
+        `<iframe src="./?shot&bare&m=${encodeURIComponent(w)}&z=${Z}"></iframe>` +
+        `<div class="cap"><b>${title}</b>` +
+        `<div class="r"><span style="color:#b98cff">外内 ${fmt(inn)}</span>　<span style="color:#ffa046">内外 ${fmt(out)}</span>　<span style="color:#dfe3ec">内々 ${fmt(u.intra)}</span></div>` +
+        `<div class="t">来る元の最多 ${mu.units[mu.o[top]].n} ${fmt(mu.v[top])}</div></div>`;
+      grid.appendChild(cell);
+    }
+    document.getElementById("foot").innerHTML =
+      `第6回東京都市圏パーソントリップ調査（2018年、平日）の拡大値。表d-1 の目的種類「自宅－私事」（自宅を発地、私事の目的地を着地とするトリップ。代表交通手段が鉄道・バス・自動車・自転車・徒歩）を市区町村にまとめた。単位はトリップ/日。` +
+      `100トリップ/日以上の組を描いた。抽出調査なので小さい組ほど誤差が大きい（5,136トリップ未満は相対誤差30%を超える目安）。<br>` +
+      `出典：東京都市圏交通計画協議会ホームページ（第6回東京都市圏パーソントリップ調査 基礎集計 表d-1、計画基本ゾーン・小ゾーン）を加工して作成／国土数値情報（駅別乗降客数・鉄道）（国土交通省）を加工して作成`;
+    const frames = [...grid.querySelectorAll("iframe")];
+    const wait = (fr) => new Promise((ok) => {
+      const t = setInterval(() => { if (fr.contentDocument?.body?.classList.contains("ready")) { clearInterval(t); ok(); } }, 200);
+    });
+    await Promise.all(frames.map(wait));
+    document.body.classList.add("ready");
+  </script>
+</body>
+</html>
