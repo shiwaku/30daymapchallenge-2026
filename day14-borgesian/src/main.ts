@@ -85,7 +85,11 @@ for (let r = R0; r <= RPOP; r++) {
 
 const ZT = 25; // MapLibre のタイルのズームの上限
 // レイヤーの minzoom/maxzoom はスタイルの決まりで24までしか書けないので、ズーム25より先の出し分けは不透明度で行う
+// 線は寄るほど太く・濃くする（写真がぼやけてくる高い解像度でも格子が見えるように）
 const GA = 0.5;
+const GA_HI = 0.85;
+const GZ = 17; // ここまでに GA から GA_HI へ上げる
+const gridWidth = ["interpolate", ["linear"], ["zoom"], 12, 0.8, GZ, 1.4, 26, 2] as unknown as ExpressionSpecification;
 function gridLayer(source: string, minzoom: number, opacity: unknown[]): LayerSpecification {
   return {
     id: source,
@@ -93,7 +97,7 @@ function gridLayer(source: string, minzoom: number, opacity: unknown[]): LayerSp
     source,
     "source-layer": "grid",
     minzoom,
-    paint: { "line-color": "#ffffff", "line-opacity": ["interpolate", ["linear"], ["zoom"], ...opacity] as unknown as ExpressionSpecification, "line-width": 0.8 },
+    paint: { "line-color": "#ffffff", "line-opacity": ["interpolate", ["linear"], ["zoom"], ...opacity] as unknown as ExpressionSpecification, "line-width": gridWidth },
   };
 }
 
@@ -140,9 +144,9 @@ const map = new maplibregl.Map({
       // 空中写真を人口の上に乗算で重ねる（人口の色に写真の模様が乗る）
       { id: "photo", type: "raster", source: "photo", minzoom: PHOTO_IN[0], paint: { "raster-opacity": zfade(PHOTO_IN, 0, 1), "raster-saturation": -0.25, "raster-layer-blend": "multiply" } },
       // 解像度15〜30: 人口なしの格子だけ
-      gridLayer("grid", POP_OUT[0], [POP_OUT[0], 0, POP_OUT[1], GA, ZT + 0.999, GA, ZT + 1, 0]),
-      gridLayer("grid29", 24, [ZT + 0.999, 0, ZT + 1, GA, ZT + 1.999, GA, ZT + 2, 0]),
-      gridLayer("grid30", 24, [ZT + 1.999, 0, ZT + 2, GA]),
+      gridLayer("grid", POP_OUT[0], [POP_OUT[0], 0, POP_OUT[1], GA, GZ, GA_HI, ZT + 0.999, GA_HI, ZT + 1, 0]),
+      gridLayer("grid29", 24, [ZT + 0.999, 0, ZT + 1, GA_HI, ZT + 1.999, GA_HI, ZT + 2, 0]),
+      gridLayer("grid30", 24, [ZT + 1.999, 0, ZT + 2, GA_HI]),
     ],
     sky: { "atmosphere-blend": ["interpolate", ["linear"], ["zoom"], 0, 0.6, 5, 0] },
   },
