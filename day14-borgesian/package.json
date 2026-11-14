@@ -1,0 +1,22 @@
+{
+  "name": "day14-borgesian",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@maplibre/vt-pbf": "4.3.3",
+    "a5-js": "1.0.0",
+    "maplibre-gl": "6.18.0",
+    "pmtiles": "4.3.0"
+  },
+  "devDependencies": {
+    "@types/geojson": "^7946.0.16",
+    "playwright-core": "1.64.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.4"
+  }
+}
