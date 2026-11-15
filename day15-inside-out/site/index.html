@@ -10,15 +10,22 @@
   html, body { margin: 0; height: 100%; background: #05070d; }
   #map { position: absolute; inset: 0; }
   #credit { position: absolute; left: 12px; bottom: 10px; color: #c9d1dc; font: 12px/1.5 sans-serif; text-shadow: 0 0 4px #000; }
+  #title { position: absolute; left: 28px; top: 22px; color: #f2f4f7; font: 700 40px/1.2 sans-serif; text-shadow: 0 0 6px #000; display: none; }
+  #title small { display: block; margin-top: 6px; color: #c9d1dc; font: 400 18px/1.4 sans-serif; }
+  body.rec #title { display: block; }
+  body.rec #credit { left: 28px; bottom: 18px; font-size: 14px; }
 </style>
 </head>
 <body>
 <div id="map"></div>
 <div id="credit">
-  標高を反転（陸↔海）／陸: Mapterhorn（Copernicus GLO-30 ほか, mapterhorn.com/attribution）／海底: GEBCO_2026 Grid
+  #30DayMapChallenge 2026 Day 15<br>
+  陸: Mapterhorn（Copernicus GLO-30・国土地理院 基盤地図情報 ほか, mapterhorn.com/attribution）／海底: GEBCO Compilation Group (2026) GEBCO_2026 Grid
 </div>
+<div id="title">Inside out<small>陸と海を裏返した地球（標高の符号を反転）</small></div>
 <script>
 const params = new URLSearchParams(location.search);
+if (params.has('rec')) document.body.classList.add('rec');
 const maxzoom = Number(params.get('maxzoom') || 5);
 const map = new maplibregl.Map({
   container: 'map',

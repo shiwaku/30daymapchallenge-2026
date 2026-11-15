@@ -76,7 +76,9 @@ python -I scripts/render_globe.py 140 20 5              # output/day15_inside_ou
 python -m http.server 8715 --bind 127.0.0.1             # http://127.0.0.1:8715/site/index.html?maxzoom=7
 ```
 
-`site/index.html` は `?lon=&lat=&zoom=` で場所、`?spin=度/秒` で自動回転（画面録画用）。
+`site/index.html` は `?lon=&lat=&zoom=` で場所、`?spin=度/秒` で自動回転、`?rec` で題と大きめの出典を出す（画面録画用）。
+
+動画は、上の http.server を開いたまま `node scripts/record.mjs` で撮る（Playwright で画面をそのまま録画。12度/秒で30秒＝1周、1080×1080、`output/day15-inside-out.mp4`）。`--shots` で録る前の確認用の静止画を撮る。playwright-core は Day 14 の `node_modules` のものを使う。
 
 ## 生成AIの使用
 
@@ -87,5 +89,5 @@ python -m http.server 8715 --bind 127.0.0.1             # http://127.0.0.1:8715/
 - [x] データ準備（Mapterhorn z0〜z7、GEBCO_2026）
 - [x] 地図作成（裏返したタイル、site/index.html）
 - [x] 静止画（output/day15_inside_out_globe.png、画面内に出典あり）
-- [ ] 回る地球の画面録画
+- [x] 回る地球の画面録画（output/day15-inside-out.mp4、30秒で1周、画面内に題と出典あり）
 - [ ] 投稿（#30DayMapChallenge）
