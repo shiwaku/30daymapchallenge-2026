@@ -13,7 +13,12 @@
   #title { position: absolute; left: 28px; top: 22px; color: #f2f4f7; font: 700 40px/1.2 sans-serif; text-shadow: 0 0 6px #000; display: none; }
   #title small { display: block; margin-top: 6px; color: #c9d1dc; font: 400 18px/1.4 sans-serif; }
   body.rec #title { display: block; }
-  body.rec #credit { left: 28px; bottom: 18px; font-size: 14px; }
+  body.rec #credit { left: 0; right: 0; bottom: 0; padding: 10px 28px 14px; font-size: 14px; background: rgba(5,7,13,.72); }
+  .lbl { pointer-events: none; opacity: 0; transition: opacity .6s; color: #fff; font: 600 26px/1.15 sans-serif; text-shadow: 0 0 6px #000, 0 0 3px #000; white-space: nowrap; }
+  .lbl.on { opacity: 1; }
+  .lbl small { display: block; font: 400 16px/1.4 sans-serif; color: #e6ebf2; }
+  .lbl::before { content: ''; position: absolute; left: -7px; top: -7px; width: 10px; height: 10px; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 4px #000; }
+  .lbl .t { position: relative; left: 14px; top: -14px; }
 </style>
 </head>
 <body>
@@ -89,6 +94,44 @@ if (spin) {
     requestAnimationFrame(step);
   };
   map.once('idle', () => requestAnimationFrame(step));
+}
+// ?tour: 高い山脈（もとの海溝）と深い海（もとの山）を順に回る（画面録画用）。値は裏返したタイル z7 の値
+if (params.has('tour')) {
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const idle = () => new Promise((r) => (map.areTilesLoaded() ? r() : map.once('idle', r)));
+  const fly = (center, zoom, duration) => new Promise((r) => { map.once('moveend', r); map.flyTo({ center, zoom, duration, essential: true }); });
+  const label = (lon, lat, big, small) => {
+    const el = document.createElement('div');
+    el.className = 'lbl';
+    el.innerHTML = `<div class="t">${big}<small>${small}</small></div>`;
+    new maplibregl.Marker({ element: el, anchor: 'top-left' }).setLngLat([lon, lat]).addTo(map);
+    return el;
+  };
+  const stops = [
+    { center: [142.6, 14], zoom: 4.0, labels: [[142.59, 11.37, '10,922m', 'いちばん高い山（もとはマリアナ海溝）']] },
+    { center: [142, 39], zoom: 4.0, labels: [[149.66, 43.78, '9,654m', 'もとは千島海溝'], [138.73, 35.36, '深さ 3,662m', 'もとは富士山']] },
+    { center: [87, 30], zoom: 4.0, labels: [[86.93, 27.99, '深さ 8,535m', 'いちばん深い海（もとはエベレスト）']] },
+    { center: [-71, -21], zoom: 3.8, labels: [[-72.83, -17.88, '8,514m', 'もとはペルー・チリ海溝'], [-68.54, -27.11, '深さ 6,784m', 'もとはアンデス山脈']] },
+  ];
+  map.once('idle', async () => {
+    document.body.classList.add('tour-start');
+    await wait(2500);
+    for (const [i, st] of stops.entries()) {
+      if (i === 2 || i === 3) { await fly([(map.getCenter().lng + st.center[0]) / 2, 10], 2.4, 3500); }
+      await fly(st.center, st.zoom, 3500);
+      await idle();
+      const els = st.labels.map((l) => label(...l));
+      await wait(50);
+      els.forEach((e) => e.classList.add('on'));
+      await wait(4000);
+      els.forEach((e) => e.classList.remove('on'));
+      await wait(600);
+      els.forEach((e) => e.remove());
+    }
+    await fly([-40, 10], 2.6, 4000);
+    await wait(2500);
+    document.body.classList.add('tour-done');
+  });
 }
 </script>
 </body>

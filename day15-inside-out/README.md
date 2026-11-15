@@ -38,6 +38,7 @@
 - 湖（カスピ海・五大湖・琵琶湖など）は Mapterhorn の水面の高さのまま。湖底は入れていない。死海のような海面より低い陸もそのまま
 - 細かさが違う。陸（今の海）は Mapterhorn の z7、海底（今の陸）は GEBCO の15秒格子（約460m）。拡大すると、裏返した海の底のほうが細かく見える
 - Web メルカトルのタイルは緯度 ±85°まで。静止画では、それより極側を GEBCO の4分格子で埋めた（Mapterhorn は使っていない）
+- 動画のラベルの値（マリアナ海溝 10,922m、エベレスト 深さ8,535m など）は、裏返したタイル z7（1画素 約600m）の中のいちばん高い・深い画素の値。細かさが足りないぶん、山の高さは実際より低く出る（エベレストの実際の標高は8,849m）
 - 南極・グリーンランドは氷の表面の高さ（GEBCO の ice surface 版。Mapterhorn も氷の表面）
 
 ## データ
@@ -83,11 +84,33 @@ python -m http.server 8715 --bind 127.0.0.1             # http://127.0.0.1:8715/
 
 `site/index.html` は `?lon=&lat=&zoom=` で場所、`?spin=度/秒` で自動回転、`?rec` で題と大きめの出典を出す（画面録画用）。
 
-動画は、上の http.server を開いたまま `node scripts/record.mjs` で撮る（Playwright で画面をそのまま録画。12度/秒で30秒＝1周、1080×1080、`output/day15-inside-out.mp4`）。`--shots` で録る前の確認用の静止画を撮る。playwright-core は Day 14 の `node_modules` のものを使う。
+投稿した動画は `node scripts/record.mjs --tour` で撮る（`?tour`: 地球儀からマリアナ海溝・日本・エベレスト・南米を順に回り、高さ・深さのラベルを出す。49秒、`output/day15-inside-out-tour.mp4`）。
+
+回るだけの動画は、上の http.server を開いたまま `node scripts/record.mjs` で撮る（Playwright で画面をそのまま録画。12度/秒で30秒＝1周、1080×1080、`output/day15-inside-out.mp4`）。`--shots` で録る前の確認用の静止画を撮る。playwright-core は Day 14 の `node_modules` のものを使う。
 
 ## 生成AIの使用
 
 データの調べ、コード、README の下書きに Claude（Anthropic、Claude Code）を使った。
+
+## 投稿文
+
+動画（`output/day15-inside-out-tour.mp4`、49秒）を添付。出典は画面内にもある。タイルを公開していないのでデモサイトの URL は載せない。
+
+本文（X の文字数で197）:
+
+```text
+#30DayMapChallenge Day 15 - Inside out
+陸の標高と海の深さをひっくり返して、陸と海を入れ替えた地球にしてみました🌏
+📝いちばん高い山はマリアナ海溝で10,922m。エベレストはいちばん深い海になる
+#MapLibre
+```
+
+リプライ:
+
+```text
+出典）陸: Mapterhorn（Copernicus GLO-30・国土地理院 基盤地図情報 ほか、mapterhorn.com/attribution）、海底: GEBCO Compilation Group (2026) GEBCO_2026 Grid を加工して作成
+制作に生成AI（Claude Code）を使用
+```
 
 ## 状況
 
@@ -95,4 +118,4 @@ python -m http.server 8715 --bind 127.0.0.1             # http://127.0.0.1:8715/
 - [x] 地図作成（裏返したタイル、site/index.html）
 - [x] 静止画（output/day15_inside_out_globe.png、画面内に出典あり）
 - [x] 回る地球の画面録画（output/day15-inside-out.mp4、30秒で1周、画面内に題と出典あり）
-- [ ] 投稿（#30DayMapChallenge）
+- [x] 投稿（#30DayMapChallenge、2026-11-15。海溝と山を回る動画）
