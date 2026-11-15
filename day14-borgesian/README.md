@@ -91,9 +91,33 @@ node scripts/record.mjs        # ?tour を録画して output/day14-borgesian.mp
 
 制作に生成AI（Claude）を使用（データの加工、コードの作成）。
 
+## 投稿文
+
+動画（`output/day14-borgesian.mp4`、45秒）を添付。出典は画面内にもある。
+
+本文（X の文字数で262）:
+
+```text
+#30DayMapChallenge Day 14 - Borgesian map
+日本の人口の地図を、A5（地球を同じ面積の五角形に区切る格子）でどこまでも細かくしてみました🗺️
+📝人口が見えるのは356m四方まで。それより細かくしても網しか残らない
+デモサイトはこちら↓
+https://shiwaku.github.io/30daymapchallenge-2026/day14-borgesian/site/
+#MapLibre #A5
+```
+
+リプライ:
+
+```text
+出典）政府統計の総合窓口（e-Stat）令和2年国勢調査 地域メッシュ統計（125mメッシュ）を加工して作成、地理院タイル（全国最新写真（シームレス））、格子: A5
+制作に生成AI（Claude Code）を使用
+```
+
+「356m四方」は解像度14の五角形1つの広さ（約0.13km²）を正方形にしたときの1辺。
+
 ## 状況
 
 - [x] データ準備
 - [x] 地図作成
 - [x] スクリーンショット / 短い動画（`output/day14-1-japan.png`・`day14-2-tokyo-r14.png`・`day14-3-r22.png`・`day14-4-r30.png`・`day14-borgesian.mp4`）
-- [ ] 投稿（#30DayMapChallenge）
+- [x] 投稿（#30DayMapChallenge、2026-11-15。動画1本）
