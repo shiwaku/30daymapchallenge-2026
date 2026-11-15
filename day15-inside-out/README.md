@@ -25,7 +25,7 @@
 - 中央海嶺はまわりの深海平原より浅いので、裏返すと高原の中を走る谷になる
 - 日本列島は細長い海になり、富士山は深い穴になる。伊豆諸島は点々と並ぶ小さな湖になる
 
-陸の地形は Mapterhorn、海底の地形は GEBCO_2026 でつないでいる。
+陸の地形は Mapterhorn（公式の配布 `planet.pmtiles` の値をそのまま使う）、海底の地形は GEBCO_2026 でつないでいる。
 
 ### 先行作品
 
@@ -44,7 +44,7 @@
 
 | データ | 提供 | ライセンス・利用条件 | URL |
 |---|---|---|---|
-| Mapterhorn（`planet.pmtiles` の z0〜z7、Terrarium 形式、2026年11月7日取得） | Mapterhorn（元データは Copernicus GLO-30、国土地理院 基盤地図情報 数値標高モデル ほか151件） | 元データごとのライセンス（一覧は https://mapterhorn.com/attribution ） | https://mapterhorn.com/ |
+| Mapterhorn（`planet.pmtiles` の z0〜z7、Terrarium 形式、2026年11月7日取得） | Mapterhorn（元データは Copernicus GLO-30、国土地理院 基盤地図情報 数値標高モデル ほか151件） | 元データごとのライセンス（一覧は https://mapterhorn.com/attribution ） | https://mapterhorn.com/ （公式の配布 https://download.mapterhorn.com/planet.pmtiles から直接取得） |
 | GEBCO_2026 Grid（ice surface elevation、GeoTIFF、2026年11月7日取得） | GEBCO Compilation Group | パブリックドメイン。出典の表示を求められている（GEBCO の利用条件） | https://www.gebco.net/ |
 
 - GEBCO の引用: GEBCO Bathymetric Compilation Group 2026 (2026). The GEBCO_2026 Grid - a continuous terrain model for oceans and land at 15 arc-second intervals. doi:10.5285/4f68d5c7-45eb-f999-e063-7086abc036fa
