@@ -48,6 +48,11 @@
 | GEBCO_2026 Grid（ice surface elevation、GeoTIFF、2026年11月7日取得） | GEBCO Compilation Group | パブリックドメイン。出典の表示を求められている（GEBCO の利用条件） | https://www.gebco.net/ |
 
 - GEBCO の引用: GEBCO Bathymetric Compilation Group 2026 (2026). The GEBCO_2026 Grid - a continuous terrain model for oceans and land at 15 arc-second intervals. doi:10.5285/4f68d5c7-45eb-f999-e063-7086abc036fa
+- Mapterhorn の配信の構成（`https://download.mapterhorn.com/download_urls.json` の version 0.0.13、2026-11-15 に確認）
+  - `planet.pmtiles`: 全世界の z0〜z12（約356GB、2026年9月11日更新）
+  - `6-{x}-{y}.pmtiles`: z13 から先を z6 のタイル1枚の範囲ごとに分けたもの（458ファイル）。どこまで細かいかは地域で違い、z13〜z18。日本の周りは14ファイル（約250GB）
+  - タイルは WebP・Terrarium エンコード・512px
+  - ここで使ったのは `planet.pmtiles` の z0〜z7 だけ（HTTP の範囲指定で読み出した）。地域ごとのファイルは使っていない
 - Mapterhorn の日本部分の元データは国土地理院の基盤地図情報（数値標高モデル）。Mapterhorn の出典表示に従い、国土地理院・Copernicus GLO-30 を画像に書いた。ほかの元データは mapterhorn.com/attribution へのリンクで示す
 - 加工: 2つをつなぎ、標高の符号を反転した
 - 取得したデータ（`data/`）と作ったタイル（`output/tiles/`、4.7GB）は Git 管理外
