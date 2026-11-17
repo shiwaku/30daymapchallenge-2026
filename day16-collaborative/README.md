@@ -75,7 +75,7 @@ node scripts/record.mjs                # output/day16-collaborative.webm（約34
 - [x] データ準備（兵庫県 DSM・DEM の切り出し、利用条件の確認、山城攻城記様の了承）
 - [x] 地図作成（index.html）
 - [x] スクリーンショット・動画（`output/day16-collaborative.png`、`output/day16-collaborative.mp4`。出典入り）
-- [x] 投稿（#30DayMapChallenge、2026-11-17）
+- [ ] 投稿（#30DayMapChallenge）
 
 ## 投稿文の下書き
 
