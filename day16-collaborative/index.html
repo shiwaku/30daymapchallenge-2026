@@ -73,7 +73,8 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 const params = new URLSearchParams(location.search);
 const POSTER = params.has("poster");
 if (POSTER) document.body.classList.add("poster");
-const DATA = "./web/";
+// 公開版は R2 から読む（GitHub Pages からは回線によって遅いことがある）。手元では ./web/
+const DATA = /^(localhost|127\.)/.test(location.hostname) ? "./web/" : "https://shi-works.com/pmtiles/30daymapchallenge-2026/day16/";
 
 const meta = await (await fetch(DATA + "meta.json")).json();
 const buf = await (await fetch(DATA + "dsm.bin")).arrayBuffer();
