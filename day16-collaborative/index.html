@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>雲海の竹田城</title>
+<style>
+  :root { --fg: #f4efe6; --sub: #c9c2b6; }
+  html, body { margin: 0; height: 100%; background: #1b2233; color: var(--fg);
+    font-family: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif; overflow: hidden; }
+  canvas { display: block; }
+  #panel { position: absolute; left: 20px; top: 20px; max-width: 360px; padding: 16px 18px;
+    background: rgba(20, 26, 40, 0.62); border-radius: 10px; backdrop-filter: blur(4px); }
+  h1 { margin: 0 0 4px; font-size: 26px; letter-spacing: .04em; }
+  .tag { color: var(--sub); font-size: 13px; margin-bottom: 10px; }
+  p { margin: 6px 0; font-size: 13.5px; line-height: 1.6; }
+  #level { font-size: 30px; font-weight: 700; color: #ffd9a0; }
+  #level small { font-size: 13px; font-weight: 400; color: var(--sub); }
+  input[type=range] { width: 100%; }
+  #credit { position: absolute; left: 12px; bottom: 10px; right: 12px; width: fit-content; font-size: 11.5px;
+    color: var(--sub); background: rgba(20, 26, 40, 0.62); padding: 4px 8px; border-radius: 6px; }
+  #credit a { color: var(--sub); }
+  body.poster #ctrl, body.poster #replay { display: none; }
+  #map { position: absolute; inset: 0; z-index: 1; transition: opacity 1.4s ease; }
+  #map.gone { opacity: 0; pointer-events: none; }
+  #panel, #credit { z-index: 2; }
+  #count { font-size: 30px; font-weight: 700; color: #ffd9a0; }
+  #count small { font-size: 13px; font-weight: 400; color: var(--sub); }
+  body:not(.castle) .castle-only, body.castle .map-only { display: none; }
+  #replay { margin-top: 8px; background: #3a4560; color: var(--fg); border: 0; border-radius: 6px;
+    padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+  @media (max-width: 600px) { #panel { left: 10px; right: 10px; top: 10px; max-width: none; padding: 12px; }
+    h1 { font-size: 21px; } }
+</style>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/pmtiles@4.3.0/dist/pmtiles.js"></script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="panel">
+  <h1>雲海の竹田城</h1>
+  <div class="tag">#30DayMapChallenge 2026 Day 16 — Collaborative map</div>
+  <div class="map-only">
+    <p>山城攻城記様が歩いて記事にした城。</p>
+    <div id="count">— <small>城</small></div>
+  </div>
+  <div class="castle-only">
+    <p>そのうちの一つ、兵庫の竹田城。0.5m間隔の表層の高さ（DSM）で、木の1本まで立体にして、雲海に沈めた。</p>
+    <div id="level">— <small>雲の上端の標高</small></div>
+    <div id="ctrl">
+      <input id="slider" type="range" min="150" max="390" step="1" value="330">
+      <p><label><input id="play" type="checkbox" checked> 雲を動かす</label></p>
+    </div>
+  </div>
+  <button id="replay" type="button">最初から</button>
+</div>
+<div id="map"></div>
+<div id="credit">
+  標高: <a href="https://web.pref.hyogo.lg.jp/kk26/3dgeo.html">兵庫県 50cmメッシュ DSM（2021〜2022年度）</a>を加工して作成（CC BY 4.0）／
+  城の位置: <a href="https://gosenzo.net/yamajiro/">山城攻城記</a>様のデータ（許可を得て使用）／
+  背景: <a href="https://github.com/gsi-cyberjapan/optimal_bvmap">国土地理院最適化ベクトルタイル</a>
+</div>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+const params = new URLSearchParams(location.search);
+const POSTER = params.has("poster");
+if (POSTER) document.body.classList.add("poster");
+const DATA = "./web/";
+
+const meta = await (await fetch(DATA + "meta.json")).json();
+const buf = await (await fetch(DATA + "dsm.bin")).arrayBuffer();
+const raw = new Uint16Array(buf);
+const W = meta.width, H = meta.height;
+
+// 地形のメッシュ（2m 間隔に間引いて頂点を作る。色テクスチャは 0.5m）
+const STEP = 2;
+const nx = Math.floor((W - 1) / STEP) + 1, ny = Math.floor((H - 1) / STEP) + 1;
+const geo = new THREE.PlaneGeometry((nx - 1) * STEP, (ny - 1) * STEP, nx - 1, ny - 1);
+geo.rotateX(-Math.PI / 2);
+const pos = geo.attributes.position;
+for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+  const z = raw[(j * STEP) * W + i * STEP] * meta.scale + meta.base;
+  pos.setY(j * nx + i, z);
+}
+geo.computeVertexNormals();
+const cx = ((nx - 1) * STEP) / 2, cz = ((ny - 1) * STEP) / 2;
+
+const tex = await new THREE.TextureLoader().loadAsync(DATA + "color.jpg");
+tex.colorSpace = THREE.SRGBColorSpace;
+tex.anisotropy = 8;
+
+const uniforms = {
+  map: { value: tex },
+  cloud: { value: 330 },
+  time: { value: 0 },
+  sun: { value: new THREE.Vector3(-0.6, 0.55, 0.4).normalize() },
+};
+
+const NOISE = `
+float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float noise(vec2 p){ vec2 i = floor(p), f = fract(p); vec2 u = f*f*(3.0-2.0*f);
+  return mix(mix(hash(i), hash(i+vec2(1,0)), u.x), mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), u.x), u.y); }
+float fbm(vec2 p){ float v = 0.0, a = 0.5; for (int k = 0; k < 5; k++){ v += a*noise(p); p *= 2.03; a *= 0.5; } return v; }
+`;
+
+const terrainMat = new THREE.ShaderMaterial({
+  uniforms,
+  vertexShader: `
+    varying vec2 vUv; varying vec3 vPos; varying vec3 vN;
+    void main(){ vUv = uv; vPos = position; vN = normal;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: NOISE + `
+    uniform sampler2D map; uniform float cloud; uniform float time; uniform vec3 sun;
+    varying vec2 vUv; varying vec3 vPos; varying vec3 vN;
+    void main(){
+      vec3 c = texture2D(map, vUv).rgb;
+      float l = 0.55 + 0.6 * max(dot(normalize(vN), sun), 0.0);
+      c *= l * vec3(1.06, 1.0, 0.94);
+      // 雲の上端は場所ごとに少し上下する
+      float top = cloud + (fbm(vPos.xz * 0.004 + vec2(time*0.010, time*0.004)) - 0.5) * 26.0;
+      float d = top - vPos.y;
+      float f = smoothstep(-6.0, 28.0, d);
+      vec3 fogc = mix(vec3(0.93, 0.92, 0.95), vec3(1.0, 0.86, 0.72), 0.25);
+      gl_FragColor = vec4(mix(c, fogc, f), 1.0);
+      #include <colorspace_fragment>
+    }`,
+});
+const terrain = new THREE.Mesh(geo, terrainMat);
+terrain.position.set(-cx, 0, -cz);
+
+// 雲の上面（雲の上端の少し上に、もやもやした半透明の面を重ねる）
+const cloudMat = new THREE.ShaderMaterial({
+  uniforms, transparent: true, depthWrite: false,
+  vertexShader: `varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz;
+    gl_Position = projectionMatrix * viewMatrix * w; }`,
+  fragmentShader: NOISE + `
+    uniform float time; varying vec3 vW;
+    void main(){
+      float n = fbm(vW.xz * 0.0035 + vec2(time*0.008, time*0.003));
+      float n2 = fbm(vW.xz * 0.02 - vec2(time*0.02, 0.0));
+      float a = smoothstep(0.35, 0.75, n * 0.75 + n2 * 0.35);
+      float r = length(vW.xz) / 900.0; a *= 1.0 - smoothstep(0.7, 1.0, r);
+      float sh = smoothstep(0.3, 0.8, n);
+      vec3 col = mix(vec3(0.62, 0.64, 0.76), vec3(1.0, 0.92, 0.84), sh);
+      gl_FragColor = vec4(col, a * 0.9);
+      #include <colorspace_fragment>
+    }`,
+});
+const layers = [];
+for (let k = 0; k < 3; k++) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(2400, 2400), cloudMat);
+  m.rotation.x = -Math.PI / 2; layers.push(m);
+}
+
+// 雲の底（不透明）。地形の外や雲の切れ目から下が透けないようにする
+const base = new THREE.Mesh(new THREE.PlaneGeometry(20000, 20000),
+  new THREE.MeshBasicMaterial({ color: new THREE.Color(0.84, 0.84, 0.90) }));
+base.rotation.x = -Math.PI / 2;
+
+const scene = new THREE.Scene();
+scene.add(terrain, base, ...layers);
+// 空（夜明けのグラデーション）
+const sky = new THREE.Mesh(new THREE.SphereGeometry(5000, 32, 16), new THREE.ShaderMaterial({
+  side: THREE.BackSide, depthWrite: false,
+  vertexShader: `varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `varying vec3 vP; void main(){ float h = normalize(vP).y;
+    vec3 c = mix(vec3(1.0, 0.78, 0.6), vec3(0.32, 0.42, 0.62), smoothstep(-0.02, 0.35, h));
+    gl_FragColor = vec4(c, 1.0);
+    #include <colorspace_fragment>
+  }`,
+}));
+scene.add(sky);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const camera = new THREE.PerspectiveCamera(34, innerWidth / innerHeight, 5, 12000);
+const castle = new THREE.Vector3(meta.castle.x - cx, 340, meta.castle.y - cz);
+const FINAL_POS = new THREE.Vector3(castle.x + 240, 352, castle.z + 330);
+const FINAL_TGT = castle.clone().setY(312);
+// 導入の傾けは、城（FINAL_TGT）を中心に球面座標で回して、城が画面の中央から外れないようにする
+const FINAL_SPH = new THREE.Spherical().setFromVector3(FINAL_POS.clone().sub(FINAL_TGT));
+const TOP_SPH = new THREE.Spherical(950, 0.02, FINAL_SPH.theta);
+const TOP_POS = new THREE.Vector3().setFromSpherical(TOP_SPH).add(FINAL_TGT);
+const TOP_TGT = FINAL_TGT;
+camera.position.copy(FINAL_POS);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.copy(FINAL_TGT);
+controls.enableDamping = true;
+controls.maxPolarAngle = Math.PI * 0.47;
+controls.update();
+
+const slider = document.getElementById("slider");
+const play = document.getElementById("play");
+const levelEl = document.getElementById("level");
+let level = Number(params.get("cloud") ?? 330);
+slider.value = level;
+slider.addEventListener("input", () => { level = Number(slider.value); play.checked = false; });
+
+// 左上のパネルに城が隠れないよう、画面の中心をパネルの分だけずらす（広い画面は右下へ、狭い画面は下へ）
+const panelEl = document.getElementById("panel");
+function applyOffset() {
+  const r = panelEl.getBoundingClientRect();
+  const wide = innerWidth >= 700;
+  const ox = wide ? -(r.right + 12) / 2 : 0;
+  const oy = wide ? -innerHeight * 0.06 : -(r.bottom + 8) / 2;
+  camera.aspect = innerWidth / innerHeight;
+  // 縦長の画面でも、横長（16:10）のときと同じ横の画角にして城の横幅を収める
+  const hf = 2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(17)) * 1.6);
+  camera.fov = camera.aspect < 1.6 ? Math.min(90, THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(hf / 2) / camera.aspect))) : 34;
+  camera.setViewOffset(innerWidth, innerHeight, ox, oy, innerWidth, innerHeight);
+}
+applyOffset();
+addEventListener("resize", () => {
+  applyOffset();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+// ---- 導入: 山城攻城記の城の地図 → 竹田城へ飛ぶ → 3D に切り替えて傾ける ----
+const SCENE = params.get("scene");            // overview: 地図だけ / castle: 3D だけ
+const INTRO = !POSTER && !SCENE && params.get("intro") !== "0";
+const mapEl = document.getElementById("map");
+const CASTLE_LL = [134.829109, 35.300474];
+let tilt = null;
+let clock0 = 0;
+const clock = new THREE.Clock();
+const ease = (x) => x < 0.5 ? 4*x*x*x : 1 - Math.pow(-2*x + 2, 3) / 2;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function loadCastles() {
+  // 配信元の geojson には裸の NaN が入るので、値の位置の NaN だけ null にしてから読む
+  const text = await (await fetch("https://shiwaku.github.io/yamajiro-geojson/castles-data.geojson")).text();
+  return JSON.parse(text.replace(/([:,[]\s*)NaN(?=\s*[,\]}])/g, "$1null"));
+}
+const proto = new pmtiles.Protocol();
+maplibregl.addProtocol("pmtiles", proto.tile);
+const WEST = [[130.4, 32.6], [138.2, 36.6]];
+const map = new maplibregl.Map({
+  container: "map", attributionControl: false, bounds: WEST, fitBoundsOptions: { padding: 40 },
+  interactive: !INTRO, canvasContextAttributes: { preserveDrawingBuffer: true },
+  style: { version: 8,
+    sources: { gsi: { type: "vector", url: "pmtiles://https://cyberjapandata.gsi.go.jp/xyz/optimal_bvmap-v1/optimal_bvmap-v1.pmtiles" } },
+    layers: [{ id: "bg", type: "background", paint: { "background-color": "#222a3a" } }] },
+});
+// load は城のデータより先に終わることがあるので、地図を作った直後に待ち受ける
+const mapLoaded = new Promise((r) => map.once("load", r));
+const castles = await loadCastles();
+document.getElementById("count").innerHTML = `${castles.features.length.toLocaleString("ja-JP")} <small>城（約半分が広島県）</small>`;
+await mapLoaded;
+map.addLayer({ id: "water", type: "fill", source: "gsi", "source-layer": "WA", paint: { "fill-color": "#0c111c" } });
+map.addLayer({ id: "coast", type: "line", source: "gsi", "source-layer": "Cstline", paint: { "line-color": "#3a4760", "line-width": 0.8 } });
+map.addSource("castles", { type: "geojson", data: castles });
+map.addLayer({ id: "glow", type: "circle", source: "castles", paint: {
+  "circle-color": "#ffb45a", "circle-blur": 1, "circle-opacity": 0.45,
+  "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 7, 10, 14, 15, 26] } });
+map.addLayer({ id: "dot", type: "circle", source: "castles", paint: {
+  "circle-color": "#fff1d6", "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 1.6, 10, 3, 15, 5] } });
+map.addSource("takeda", { type: "geojson", data: { type: "Feature", geometry: { type: "Point", coordinates: CASTLE_LL }, properties: {} } });
+map.addLayer({ id: "takeda-ring", type: "circle", source: "takeda", paint: {
+  "circle-opacity": 0, "circle-stroke-color": "#ffd9a0", "circle-stroke-width": 2, "circle-stroke-opacity": 0,
+  "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 10, 15, 34] } });
+
+function showCastle(animated) {
+  document.body.classList.add("castle");
+  mapEl.classList.add("gone");
+  applyOffset();
+  if (animated) {
+    tilt = { t0: clock.getElapsedTime() };
+    camera.position.copy(TOP_POS); controls.target.copy(TOP_TGT);
+    level = 385; play.checked = false; controls.enabled = false;
+  }
+}
+async function runIntro() {
+  tilt = null;
+  document.body.classList.remove("castle");
+  mapEl.classList.remove("gone");
+  map.setPaintProperty("takeda-ring", "circle-stroke-opacity", 0);
+  map.fitBounds(WEST, { padding: 40, animate: false });
+  await sleep(3500);
+  map.setPaintProperty("takeda-ring", "circle-stroke-opacity", 1);
+  await sleep(1200);
+  map.flyTo({ center: CASTLE_LL, zoom: 16, duration: 7000, essential: true });
+  await new Promise((r) => map.once("moveend", r));
+  showCastle(true);
+}
+document.getElementById("replay").addEventListener("click", () => runIntro());
+if (SCENE === "overview") { /* 地図のまま */ }
+else if (INTRO) runIntro();
+else showCastle(false);
+
+function frame() {
+  const t = clock.getElapsedTime();
+  if (tilt) {
+    // 地図が消えるのを 1 秒待ってから、7 秒で真上から斜めへ。雲も城の上から下がる
+    const k = Math.min((t - tilt.t0 - 1.0) / 7.0, 1);
+    const e = ease(Math.max(k, 0));
+    const sph = new THREE.Spherical(
+      TOP_SPH.radius + (FINAL_SPH.radius - TOP_SPH.radius) * e,
+      TOP_SPH.phi + (FINAL_SPH.phi - TOP_SPH.phi) * e,
+      FINAL_SPH.theta);
+    camera.position.setFromSpherical(sph).add(FINAL_TGT);
+    controls.target.copy(FINAL_TGT);
+    // 雲は傾けはじめてから少し遅れて下がる
+    level = 385 - (385 - 290) * ease(Math.min(Math.max((k - 0.25) / 0.75, 0), 1));
+    slider.value = level;
+    if (k >= 1) { tilt = null; controls.enabled = true; play.checked = true; clock0 = t; }
+  } else if (play.checked && !POSTER) {
+    // 谷を満たした雲が、ゆっくり下がって城が現れ、また上がる
+    level = 245 + 45 * Math.cos((t - clock0) * 0.12);
+    slider.value = level;
+  }
+  uniforms.cloud.value = level;
+  uniforms.time.value = t * 10;
+  layers.forEach((m, k) => { m.position.y = level - 4 + k * 5; });
+  base.position.y = level - 18;
+  levelEl.innerHTML = `${Math.round(level)}m <small>雲の上端の標高（城の最高所 ${Math.round(meta.dem_max)}m）</small>`;
+  controls.update();
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+frame();
+document.body.classList.add("ready");
+window.__day16 = { camera, controls, setLevel: (v) => { level = v; play.checked = false; } };
+</script>
+</body>
+</html>
