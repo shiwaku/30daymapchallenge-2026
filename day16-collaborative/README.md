@@ -45,6 +45,7 @@
 
 - DSM・DEM は、AWS の公開バケット（`s3://japan-pointcloud/Hyogo/2022/01/LP/{DSM,DEM}/TXT/05/MF/51/05MF51.zip`）から、竹田城を含む図郭 05MF51 だけを取った（各約240MB、Git 管理外の `data/`）。利用条件は 2026年11月17日に G空間情報センターのデータセットのページと兵庫県のページで確かめた
 - 取り出した結果（`web/dsm.bin` 約3.4MB、`web/color.jpg` 約2.8MB、`web/meta.json`）をこのリポジトリに置く
+- 公開版は、同じファイルを R2（`https://shi-works.com/pmtiles/30daymapchallenge-2026/day16/`）から読む（GitHub Pages からは回線によって遅いことがあるため）。localhost では `web/` を読む
 - 山城攻城記様のデータはこのリポジトリに複製せず、配信先（`https://shiwaku.github.io/yamajiro-geojson/castles-data.geojson`）からブラウザで読む。配信元の値に裸の `NaN` が入るので、読んだあと `null` に置き換える
 - 画面の下に出典を常に出す。動画・投稿画像にも入っている
 - 広島県の城（DoboX の点群）も考えたが、木や建物の点まで入ったオリジナルデータは申請制（利用規約の「特定データ」）で、成果物を公開してよいか書かれていないので使わなかった
