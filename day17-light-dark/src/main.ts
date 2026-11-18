@@ -83,7 +83,7 @@ async function main() {
   // ---- 背景（暗く、控えめに） ----
   map.addLayer({
     id: "water", type: "fill", source: "gsi", "source-layer": "WA",
-    paint: { "fill-color": "#070a12" },
+    paint: { "fill-color": BG }, // 海の塗りが無いタイルがあり、色を変えると四角い段差が出る
   });
   map.addLayer({
     id: "coast", type: "line", source: "gsi", "source-layer": "Cstline",
@@ -102,8 +102,10 @@ async function main() {
   // ---- 送電線（発光） ----
   map.addSource("power", { type: "geojson", data: power, tolerance: 0.25, buffer: 64 });
   for (const g of [
-    { id: "glow-outer", w: [5, 14, 36], blur: [5, 12, 30], o: [0.16, 0.22, 0.25] },
-    { id: "glow-inner", w: [1.8, 4.5, 10], blur: [1.2, 3, 6], o: [0.45, 0.6, 0.65] },
+    // 広いにじみを重ねて、線が密なところほど明るく見えるようにする
+    { id: "glow-wide", w: [16, 34, 80], blur: [16, 34, 80], o: [0.09, 0.1, 0.1] },
+    { id: "glow-outer", w: [6, 16, 36], blur: [6, 14, 30], o: [0.3, 0.3, 0.28] },
+    { id: "glow-inner", w: [2.4, 5, 10], blur: [1.6, 3, 6], o: [0.75, 0.75, 0.7] },
   ]) {
     map.addLayer({
       id: g.id, type: "line", source: "power",
@@ -121,8 +123,8 @@ async function main() {
     layout: { "line-cap": "round", "line-join": "round" },
     paint: {
       "line-color": CORE,
-      "line-width": ["interpolate", ["exponential", 1.6], ["zoom"], 4, 0.35, 9, 0.9, 15, 2.2],
-      "line-opacity": ["interpolate", ["linear"], ["zoom"], 4, 0.7, 8, 0.9],
+      "line-width": ["interpolate", ["exponential", 1.6], ["zoom"], 4, 0.5, 9, 1.0, 15, 2.2],
+      "line-opacity": ["interpolate", ["linear"], ["zoom"], 4, 0.9, 8, 1],
     },
   });
 
@@ -199,7 +201,34 @@ async function main() {
     map.getCanvas().style.cursor = "pointer";
   });
 
-  map.once("idle", () => document.body.classList.add("ready"));
+  map.once("idle", () => {
+    document.body.classList.add("ready");
+    if (TOUR) tour();
+  });
+}
+
+// ---- ?tour: 全国 → 関東 → 多摩 → 全国（録画用） ----
+const TOUR = params.has("tour");
+if (TOUR) document.body.classList.add("tour");
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const tilesReady = () =>
+  new Promise<void>((r) => (map.areTilesLoaded() ? r() : map.once("idle", () => r())));
+async function fly(o: { center: [number, number]; zoom: number }, ms: number) {
+  map.flyTo({ ...o, duration: ms, essential: true, curve: 1.2 });
+  await new Promise((r) => map.once("moveend", r));
+  await tilesReady();
+}
+async function tour() {
+  const home = { center: map.getCenter().toArray() as [number, number], zoom: map.getZoom() };
+  document.body.classList.add("tour-start");
+  await wait(3000);
+  await fly({ center: [139.6, 35.62], zoom: 8.2 }, 6000);
+  await wait(2500);
+  await fly({ center: [139.33, 35.795], zoom: 12.5 }, 6000);
+  await wait(3000);
+  await fly(home, 6000);
+  await wait(3000);
+  document.body.classList.add("tour-done");
 }
 
 map.on("load", () => {

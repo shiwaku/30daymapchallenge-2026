@@ -56,8 +56,8 @@
 
 - Python（`pmtiles`・`mapbox-vector-tile`・Shapely・pyproj）: PMTiles のディレクトリからズーム14のタイルを数え、続いているタイルをまとめて Range リクエストで取得。タイルから `PwrTrnsmL` と `Anno` のレイヤだけを取り出して解析する
 - Shapely: タイルの範囲で切る → 経緯度に戻す → タイルの境目でつなぐ（`line_merge`）
-- Vite 8 ＋ MapLibre GL JS 6 ＋ pmtiles（TypeScript）。送電線は GeoJSON を3本の線（太くぼかした線2本＋芯）で重ねて光らせる
-- 確認・投稿画像は playwright-core（Chrome）で撮る
+- Vite 8 ＋ MapLibre GL JS 6 ＋ pmtiles（TypeScript）。送電線は GeoJSON を4本の線（太くぼかした線3本＋芯）で重ねて光らせる。線が密なところほどにじみが重なって明るくなる
+- 確認・投稿画像は playwright-core（Chrome）で撮る。投稿用の動画は `?tour` を playwright-core で画面そのまま録画し、ffmpeg で mp4 にする
 - 公開版は `site/`（`npm run build` の出力）。GitHub Pages では /day17-light-dark/site/、データは ../web/ を読む
 
 ## 作り方
@@ -69,16 +69,18 @@ python -X utf8 scripts/build.py           # web/power.geojson, web/plants.geojso
 npm run dev                                # http://localhost:5173/
 npm run build                              # site/ に出力
 node scripts/shot.mjs http://localhost:5173/   # output/ にスクリーンショット
+node scripts/record.mjs --shots            # 録る前に ?tour の途中を静止画で確認（output/live/）
+node scripts/record.mjs                    # output/day17-light-dark.mp4（1920x1080、約30秒）
 ```
 
-URL に `?poster` を付けると、拡大ボタンを消して全国を表示する（投稿画像用。出典は残る）。
+URL に `?poster` を付けると、拡大ボタンを消して全国を表示する（投稿画像用。出典は残る）。`?tour` を付けると、全国 → 関東 → 多摩 → 全国と動く（約30秒、動画用）。
 
 ## 状況
 
 - [x] データ準備（ズーム14のタイルから送電線・注記を取り出し。利用規約を確認）
 - [x] 地図作成（index.html）
 - [x] スクリーンショット（`output/day17-light-dark.png`、`output/mobile.png` ほか。出典入り）
-- [ ] 短い動画（画面録画）
+- [x] 短い動画（画面録画。`output/day17-light-dark.mp4`、出典は画面内）
 - [ ] 投稿（#30DayMapChallenge）
 
 ## 投稿文の下書き
@@ -91,13 +93,10 @@ URL に `?poster` を付けると、拡大ボタンを消して全国を表示�
 
 📝送電線はズーム14〜16にしか無いので、z14のタイル約14万枚を読みました。線の合計は約7.7万km
 
-デモサイトはこちら↓
-https://shiwaku.github.io/30daymapchallenge-2026/day17-light-dark/site/
-
 #MapLibre #PMTiles
 ```
 
-（画像 `output/day17-light-dark.png` を添付する）
+（動画 `output/day17-light-dark.mp4` を添付する）
 
 リプライ:
 
