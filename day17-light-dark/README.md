@@ -81,7 +81,7 @@ URL に `?poster` を付けると、拡大ボタンを消して全国を表示�
 - [x] 地図作成（index.html）
 - [x] スクリーンショット（`output/day17-light-dark.png`、`output/mobile.png` ほか。出典入り）
 - [x] 短い動画（画面録画。`output/day17-light-dark.mp4`、出典は画面内）
-- [ ] 投稿（#30DayMapChallenge）
+- [x] 投稿（#30DayMapChallenge。2026-11-18、動画）
 
 ## 投稿文の下書き
 
