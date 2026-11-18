@@ -40,7 +40,7 @@ html, body { height: 100%; overflow: hidden; background: #05060a; color: #e8e8ea
 #credit a { color: #e8e8ea; }
 .maplibregl-ctrl-bottom-right { bottom: 24px; }
 .maplibregl-ctrl-group { background: rgba(232, 232, 234, 0.85); }
-.poster .maplibregl-ctrl-group { display: none; }
+.poster .maplibregl-ctrl-group, .tour .maplibregl-ctrl-group { display: none; }
 
 /* スマートフォン: パネルを下に置き、説明を省く */
 @media (max-width: 700px) {
